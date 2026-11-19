@@ -7,3 +7,5 @@ pnpm-lock.yaml
 # 长篇文档保留原文排版
 design.md
 development-plan.md
+# 路线图等长文档不参与格式化（表格宽度会被人为重排）
+docs/

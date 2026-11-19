@@ -5,7 +5,8 @@
 ## 文档
 
 - 玩法与世界观：[design.md](design.md)（GDD v1.0）
-- 工程计划与排期：[development-plan.md](development-plan.md)（v0.2，含 §5.2 实现偏差记录、§8.1 当前进度、§8.2–8.4 各阶段记录）
+- 工程计划与排期：[development-plan.md](development-plan.md)
+- 后续路线（M4 及以后）：[docs/roadmap-m4-plus.md](docs/roadmap-m4-plus.md)（世代更替、生涯与抉择、完整 UI 与校准、战争与七国）（v0.2，含 §5.2 实现偏差记录、§8.1 当前进度、§8.2–8.4 各阶段记录）
 
 ## 当前状态
 
