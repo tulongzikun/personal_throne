@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# build output (dist/index.html is a release artifact, rebuilt by `pnpm build`)
+dist/
+
+# local tooling / scratch
+.tmp/
+.tools/
+
+# editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
