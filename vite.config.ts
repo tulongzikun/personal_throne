@@ -29,5 +29,10 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     passWithNoTests: true,
+    // 多个 100 年模拟用例并行跑会在 2 核 CI 机器上互相拖死（本地 24 核看不出来），
+    // 因此测试文件串行执行，并给单例放宽默认 5 s 的上限。
+    fileParallelism: false,
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });
