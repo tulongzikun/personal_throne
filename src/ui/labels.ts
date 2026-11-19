@@ -68,6 +68,28 @@ export const HISTORY_KIND_LABELS: Record<HistoryKind, string> = {
   death: '死亡',
 };
 
+export const SKILL_LABELS: Record<string, string> = {
+  trade: '贸易',
+  negotiation: '谈判',
+  persuasion: '说服',
+  intimidation: '威吓',
+  insight: '洞察',
+  law: '律法',
+  melee: '格斗',
+  tactics: '战术',
+  stealth: '潜行',
+  appraisal: '估值',
+  craft: '工艺',
+};
+
+export const TRAIT_LABELS: Record<string, string> = {
+  ambition: '野心',
+  authority: '威严',
+  caution: '谨慎',
+  charisma: '魅力',
+  loyalty: '忠诚',
+};
+
 export const RACE_LABELS: Record<string, string> = {
   human: '人类',
   dwarf: '矮人',

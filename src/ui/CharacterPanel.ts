@@ -107,15 +107,12 @@ export class CharacterPanel {
     if (traitEntries.length === 0) traits.append(el('li', 'empty', '没有显著性格'));
     this.host.append(traits);
 
-    this.host.append(el('h3', 'section-title', '人物名录'));
+    this.host.append(el('h3', 'section-title', '其他人（只读）'));
+    this.host.append(el('p', 'hint', '你自己固定在左上角的玩家卡；这里只列出世界中的其他人物。'));
     const roster = el('ul', 'row-list row-list--compact');
     const characters = Object.values(state.characters)
-      .filter((character) => character.alive)
-      .sort((a, b) => {
-        if (a.id === state.playerId) return -1;
-        if (b.id === state.playerId) return 1;
-        return b.wealth - a.wealth;
-      });
+      .filter((character) => character.alive && character.id !== state.playerId)
+      .sort((a, b) => b.wealth - a.wealth);
     for (const character of characters) {
       const characterOrg = character.organizationId
         ? state.organizations[character.organizationId]

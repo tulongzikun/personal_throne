@@ -24,6 +24,7 @@ import { EventDialog, type WorldSignal } from './EventDialog';
 import { HistoryPanel } from './HistoryPanel';
 import { MapView, countryPalette } from './MapView';
 import { OrganizationPanel } from './OrganizationPanel';
+import { PlayerPanel } from './PlayerPanel';
 import { RegionPanel } from './RegionPanel';
 import { button, el, fmtMoney, messageOf } from './dom';
 
@@ -69,6 +70,7 @@ export class App {
   private readonly deps: UiDeps;
   private readonly topbar: TopbarRefs;
   private readonly timeHint: HTMLElement;
+  private readonly playerPanel: PlayerPanel;
   private readonly mapView: MapView;
   private readonly regionPanel: RegionPanel;
   private readonly characterPanel: CharacterPanel;
@@ -98,6 +100,9 @@ export class App {
     this.topbar = this.buildTopbar(this.shell);
 
     const workspace = el('main', 'workspace');
+    const playerRail = el('aside', 'player-rail');
+    playerRail.dataset.panel = 'player';
+    playerRail.setAttribute('aria-label', '玩家概览');
     const mapSection = el('section', 'panel map-panel');
     mapSection.dataset.panel = 'map';
     const mapHead = el('div', 'panel__head');
@@ -133,7 +138,7 @@ export class App {
       panels.append(section);
     }
     inspector.append(tabbar, panels);
-    workspace.append(mapSection, inspector);
+    workspace.append(playerRail, mapSection, inspector);
     this.shell.append(workspace);
 
     this.mapView = new MapView(mapHost, engine.state, (regionId) => this.openRegion(regionId));
@@ -147,6 +152,7 @@ export class App {
       openOrganization: (orgId) => this.openOrganization(orgId),
       openCharacter: (characterId) => this.openCharacter(characterId),
     };
+    this.playerPanel = new PlayerPanel(playerRail, this.deps);
     this.regionPanel = new RegionPanel(this.sectionOf('region'), this.deps);
     this.characterPanel = new CharacterPanel(this.sectionOf('character'), this.deps);
     this.organizationPanel = new OrganizationPanel(this.sectionOf('organization'), this.deps);
@@ -308,6 +314,7 @@ export class App {
     }
 
     this.mapView.update(state);
+    this.playerPanel.update();
     this.panelFor(this.activeTab).update();
     this.timeHint.textContent = `第 ${state.clock.day} 天 · 每周市场 / 每月组织·国家·事件 / 每年人口`;
     for (const [speed, node] of this.speedButtons) {
