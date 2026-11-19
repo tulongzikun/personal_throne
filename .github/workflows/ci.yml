@@ -35,15 +35,13 @@ jobs:
       - name: 构建单文件
         run: pnpm build
 
-      - name: 校验单文件产物
-        run: |
-          test -f dist/index.html
-          size=$(stat -c%s dist/index.html)
-          echo "dist/index.html = ${size} bytes"
-          # 发布包体积预算：1.5 MiB
-          test "${size}" -lt 1572864
+      - name: 生成发布产物并校验（单文件 / 无外链 / ≤1.5MiB）
+        run: node scripts/release.mjs
+
+      - name: 提交的 release/index.html 必须与构建一致
+        run: git diff --exit-code -- release/index.html
 
       - uses: actions/upload-artifact@v4
         with:
-          name: throne-and-gold
-          path: dist/index.html
+          name: throne-and-gold-html
+          path: release/index.html

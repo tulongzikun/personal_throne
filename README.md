@@ -36,8 +36,12 @@ pnpm format         # Prettier
 
 ## 发布
 
-`pnpm build` 生成 `dist/index.html`，所有 JS/CSS/图片内联为单文件，离线双击即可游玩，
-体积预算 ≤ 1.5 MiB（CI 会校验）。
+`pnpm release` = `pnpm build` + 复制到 **`release/index.html`**。所有 JS/CSS/图片内联为
+单文件，离线双击即可游玩，体积预算 ≤ 1.5 MiB（脚本与 CI 会校验，且会拦截任何外部引用）。
+
+- `release/index.html` 是**仓库内可下载的成品**，每个阶段完成、验证通过后更新并提交；
+- `dist/` 只是构建缓存，不进仓库；
+- 版本对齐 `package.json` 的 `version`，HTML 里写入 `<title>` 与页脚版本号。
 
 ## 架构速览
 
