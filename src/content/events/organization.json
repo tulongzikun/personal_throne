@@ -1,0 +1,178 @@
+[
+  {
+    "id": "ev_org_boom",
+    "domain": "organization",
+    "scope": "organization",
+    "risk": {
+      "lambda0": 0.02,
+      "terms": [
+        {
+          "path": "conflict",
+          "coef": -1.2
+        },
+        {
+          "path": "leadership.legitimacy",
+          "coef": 0.8
+        }
+      ]
+    },
+    "cooldownDays": 150,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "cash",
+        "value": 240
+      },
+      {
+        "kind": "add",
+        "path": "leadership.legitimacy",
+        "value": 0.04
+      }
+    ],
+    "text": {
+      "title": "生意兴隆",
+      "body": "一段意外的商机让账房忙到深夜，现金与声望都有进项。"
+    }
+  },
+  {
+    "id": "ev_org_feud",
+    "domain": "organization",
+    "scope": "organization",
+    "conditions": {
+      "any": [
+        {
+          "path": "conflict",
+          "op": ">",
+          "value": 0.4
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.03,
+      "terms": [
+        {
+          "path": "conflict",
+          "coef": 2
+        }
+      ]
+    },
+    "exclusivity": "org_power",
+    "cooldownDays": 90,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "conflict",
+        "value": 0.08
+      },
+      {
+        "kind": "add",
+        "path": "cash",
+        "value": -160
+      }
+    ],
+    "text": {
+      "title": "内斗升级",
+      "body": "两位管事在账房当众争吵，帮派与行会各自站队，生意受了影响。"
+    }
+  },
+  {
+    "id": "ev_org_coup",
+    "domain": "organization",
+    "scope": "organization",
+    "conditions": {
+      "all": [
+        {
+          "path": "conflict",
+          "op": ">",
+          "value": 0.3
+        },
+        {
+          "path": "leadership.legitimacy",
+          "op": "<",
+          "value": 0.5
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.04,
+      "terms": [
+        {
+          "path": "conflict",
+          "coef": 2.5
+        },
+        {
+          "path": "leadership.legitimacy",
+          "coef": -1.5
+        }
+      ]
+    },
+    "exclusivity": "org_power",
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "leadership.legitimacy",
+        "value": -0.18
+      },
+      {
+        "kind": "add",
+        "path": "conflict",
+        "value": 0.1
+      }
+    ],
+    "text": {
+      "title": "逼宫",
+      "body": "几个大股东联手发难，领袖在议事厅被围住，权威一夜之间摇摇欲坠。"
+    }
+  },
+  {
+    "id": "ev_org_split",
+    "domain": "organization",
+    "scope": "organization",
+    "conditions": {
+      "all": [
+        {
+          "path": "conflict",
+          "op": ">",
+          "value": 0.45
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.025,
+      "terms": [
+        {
+          "path": "conflict",
+          "coef": 3
+        },
+        {
+          "path": "governance",
+          "coef": -1
+        }
+      ]
+    },
+    "exclusivity": "org_power",
+    "cooldownDays": 300,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "members",
+        "value": -18
+      },
+      {
+        "kind": "add",
+        "path": "cash",
+        "value": -420
+      },
+      {
+        "kind": "add",
+        "path": "scale",
+        "value": -0.05
+      }
+    ],
+    "text": {
+      "title": "分裂",
+      "body": "一批骨干带着客户另立门户，组织的根基被硬生生掰下一角。"
+    }
+  }
+]

@@ -53,4 +53,6 @@ mkdirSync(targetDir, { recursive: true });
 copyFileSync(source, target);
 
 const budget = ((bytes / MAX_BYTES) * 100).toFixed(1);
-console.log(`[release] ✓ release/index.html  ${bytes.toLocaleString()} 字节（预算占用 ${budget}%）`);
+console.log(
+  `[release] ✓ release/index.html  ${bytes.toLocaleString()} 字节（预算占用 ${budget}%）`,
+);

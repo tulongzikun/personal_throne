@@ -1,0 +1,514 @@
+{
+  "id": "world_aetheria",
+  "startDay": 1,
+  "playerId": "c_player",
+  "regions": [
+    {
+      "id": "r_silvermoon",
+      "name": "银月城",
+      "countryId": "c_kingdom",
+      "population": 42000,
+      "terrain": "city",
+      "x": 200,
+      "y": 160,
+      "links": [
+        {
+          "to": "r_greenfield",
+          "days": 3,
+          "capacity": 600
+        },
+        {
+          "to": "r_portlumen",
+          "days": 8,
+          "capacity": 400
+        }
+      ]
+    },
+    {
+      "id": "r_greenfield",
+      "name": "绿野镇",
+      "countryId": "c_kingdom",
+      "population": 26000,
+      "terrain": "plains",
+      "x": 260,
+      "y": 200,
+      "links": [
+        {
+          "to": "r_silvermoon",
+          "days": 3,
+          "capacity": 600
+        },
+        {
+          "to": "r_ironpeak",
+          "days": 4,
+          "capacity": 300
+        },
+        {
+          "to": "r_tidemarket",
+          "days": 6,
+          "capacity": 300
+        }
+      ]
+    },
+    {
+      "id": "r_ironpeak",
+      "name": "铁峰堡",
+      "countryId": "c_kingdom",
+      "population": 15000,
+      "terrain": "mountains",
+      "x": 320,
+      "y": 140,
+      "links": [
+        {
+          "to": "r_greenfield",
+          "days": 4,
+          "capacity": 300
+        }
+      ]
+    },
+    {
+      "id": "r_portlumen",
+      "name": "流明港",
+      "countryId": "c_league",
+      "population": 38000,
+      "terrain": "coast",
+      "x": 140,
+      "y": 300,
+      "links": [
+        {
+          "to": "r_silvermoon",
+          "days": 8,
+          "capacity": 400
+        },
+        {
+          "to": "r_tidemarket",
+          "days": 2,
+          "capacity": 500
+        }
+      ]
+    },
+    {
+      "id": "r_tidemarket",
+      "name": "潮汐市",
+      "countryId": "c_league",
+      "population": 21000,
+      "terrain": "coast",
+      "x": 220,
+      "y": 330,
+      "links": [
+        {
+          "to": "r_portlumen",
+          "days": 2,
+          "capacity": 500
+        },
+        {
+          "to": "r_greenfield",
+          "days": 6,
+          "capacity": 300
+        }
+      ]
+    }
+  ],
+  "characters": [
+    {
+      "id": "c_player",
+      "name": "艾伦·格雷",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 31,
+      "regionId": "r_greenfield",
+      "organizationId": "o_grainwheel",
+      "wealth": 1500,
+      "skills": {
+        "trade": 6,
+        "negotiation": 5,
+        "appraisal": 4,
+        "insight": 3
+      },
+      "traits": {
+        "ambition": 0.7,
+        "loyalty": 0.5,
+        "caution": 0.45,
+        "charisma": 0.6
+      }
+    },
+    {
+      "id": "c_king_aerik",
+      "name": "艾瑞克三世",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 58,
+      "regionId": "r_silvermoon",
+      "organizationId": null,
+      "wealth": 24000,
+      "skills": {
+        "law": 5,
+        "persuasion": 6,
+        "insight": 5
+      },
+      "traits": {
+        "authority": 0.8,
+        "loyalty": 0.4,
+        "caution": 0.6
+      }
+    },
+    {
+      "id": "c_consul_mira",
+      "name": "米拉·韦恩",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 44,
+      "regionId": "r_portlumen",
+      "organizationId": null,
+      "wealth": 18000,
+      "skills": {
+        "persuasion": 7,
+        "law": 5,
+        "insight": 4
+      },
+      "traits": {
+        "authority": 0.6,
+        "charisma": 0.75,
+        "caution": 0.5
+      }
+    },
+    {
+      "id": "c_grainwheel_hob",
+      "name": "霍布·金穗",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 49,
+      "regionId": "r_greenfield",
+      "organizationId": "o_grainwheel",
+      "wealth": 3200,
+      "skills": {
+        "trade": 5,
+        "appraisal": 5
+      },
+      "traits": {
+        "loyalty": 0.7,
+        "caution": 0.6,
+        "ambition": 0.35
+      }
+    },
+    {
+      "id": "c_ironhand_garrick",
+      "name": "加里克·铁手",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 52,
+      "regionId": "r_silvermoon",
+      "organizationId": "o_ironhand",
+      "wealth": 6400,
+      "skills": {
+        "trade": 7,
+        "negotiation": 6,
+        "intimidation": 4
+      },
+      "traits": {
+        "ambition": 0.8,
+        "loyalty": 0.4,
+        "caution": 0.5
+      }
+    },
+    {
+      "id": "c_peakmine_helga",
+      "name": "赫尔加·石肩",
+      "raceId": "dwarf",
+      "classId": "merchant",
+      "age": 63,
+      "regionId": "r_ironpeak",
+      "organizationId": "o_peakmine",
+      "wealth": 5200,
+      "skills": {
+        "appraisal": 7,
+        "trade": 5,
+        "craft": 6
+      },
+      "traits": {
+        "caution": 0.75,
+        "loyalty": 0.6,
+        "ambition": 0.4
+      }
+    },
+    {
+      "id": "c_bluewave_soren",
+      "name": "索伦·蓝帆",
+      "raceId": "elf",
+      "classId": "merchant",
+      "age": 88,
+      "regionId": "r_portlumen",
+      "organizationId": "o_bluewave",
+      "wealth": 8800,
+      "skills": {
+        "trade": 6,
+        "negotiation": 7,
+        "appraisal": 5
+      },
+      "traits": {
+        "ambition": 0.55,
+        "caution": 0.6,
+        "charisma": 0.7
+      }
+    },
+    {
+      "id": "c_bank_odell",
+      "name": "奥德尔·金秤",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 61,
+      "regionId": "r_portlumen",
+      "organizationId": "o_leaguebank",
+      "wealth": 15600,
+      "skills": {
+        "appraisal": 8,
+        "law": 6,
+        "negotiation": 6
+      },
+      "traits": {
+        "caution": 0.8,
+        "ambition": 0.5,
+        "loyalty": 0.5
+      }
+    },
+    {
+      "id": "c_guard_captain",
+      "name": "罗德里克队长",
+      "raceId": "human",
+      "classId": "mercenary",
+      "age": 45,
+      "regionId": "r_silvermoon",
+      "organizationId": "o_silverguard",
+      "wealth": 2100,
+      "skills": {
+        "melee": 7,
+        "tactics": 5,
+        "intimidation": 5
+      },
+      "traits": {
+        "loyalty": 0.85,
+        "caution": 0.5,
+        "ambition": 0.25
+      }
+    },
+    {
+      "id": "c_freeblades_vex",
+      "name": "薇克丝",
+      "raceId": "human",
+      "classId": "mercenary",
+      "age": 33,
+      "regionId": "r_tidemarket",
+      "organizationId": "o_freeblades",
+      "wealth": 1800,
+      "skills": {
+        "melee": 8,
+        "tactics": 4,
+        "intimidation": 6
+      },
+      "traits": {
+        "ambition": 0.7,
+        "loyalty": 0.3,
+        "caution": 0.4
+      }
+    },
+    {
+      "id": "c_vareth_lord",
+      "name": "老瓦雷斯勋爵",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 66,
+      "regionId": "r_greenfield",
+      "organizationId": "o_house_vareth",
+      "wealth": 12400,
+      "skills": {
+        "law": 6,
+        "persuasion": 5,
+        "insight": 6
+      },
+      "traits": {
+        "authority": 0.75,
+        "loyalty": 0.5,
+        "ambition": 0.6
+      }
+    },
+    {
+      "id": "c_nightpouch_rusk",
+      "name": "鲁斯克",
+      "raceId": "human",
+      "classId": "mercenary",
+      "age": 37,
+      "regionId": "r_tidemarket",
+      "organizationId": "o_nightpouch",
+      "wealth": 2600,
+      "skills": {
+        "stealth": 7,
+        "intimidation": 5,
+        "appraisal": 4
+      },
+      "traits": {
+        "caution": 0.7,
+        "loyalty": 0.35,
+        "ambition": 0.65
+      }
+    },
+    {
+      "id": "c_threadguild_maven",
+      "name": "梅文·织锦",
+      "raceId": "elf",
+      "classId": "merchant",
+      "age": 132,
+      "regionId": "r_silvermoon",
+      "organizationId": "o_threadguild",
+      "wealth": 7400,
+      "skills": {
+        "appraisal": 7,
+        "trade": 6,
+        "negotiation": 5
+      },
+      "traits": {
+        "caution": 0.65,
+        "ambition": 0.45,
+        "charisma": 0.6
+      }
+    },
+    {
+      "id": "c_chancellor_hale",
+      "name": "哈尔大臣",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 63,
+      "regionId": "r_silvermoon",
+      "organizationId": null,
+      "wealth": 9800,
+      "skills": {
+        "law": 7,
+        "insight": 6,
+        "persuasion": 5
+      },
+      "traits": {
+        "authority": 0.7,
+        "caution": 0.65,
+        "ambition": 0.55
+      }
+    },
+    {
+      "id": "c_treasurer_lin",
+      "name": "林司库",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 50,
+      "regionId": "r_silvermoon",
+      "organizationId": null,
+      "wealth": 7200,
+      "skills": {
+        "appraisal": 6,
+        "law": 5,
+        "insight": 5
+      },
+      "traits": {
+        "caution": 0.8,
+        "loyalty": 0.6,
+        "ambition": 0.3
+      }
+    },
+    {
+      "id": "c_marshal_dorn",
+      "name": "多恩元帅",
+      "raceId": "human",
+      "classId": "mercenary",
+      "age": 54,
+      "regionId": "r_silvermoon",
+      "organizationId": "o_silverguard",
+      "wealth": 4600,
+      "skills": {
+        "tactics": 8,
+        "melee": 6,
+        "intimidation": 4
+      },
+      "traits": {
+        "authority": 0.75,
+        "loyalty": 0.55,
+        "caution": 0.5
+      }
+    },
+    {
+      "id": "c_league_speaker_tomas",
+      "name": "托马斯议长",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 57,
+      "regionId": "r_portlumen",
+      "organizationId": null,
+      "wealth": 11200,
+      "skills": {
+        "persuasion": 7,
+        "law": 6,
+        "insight": 5
+      },
+      "traits": {
+        "authority": 0.6,
+        "charisma": 0.7,
+        "caution": 0.6
+      }
+    },
+    {
+      "id": "c_smuggler_queen_nia",
+      "name": "妮娅",
+      "raceId": "human",
+      "classId": "mercenary",
+      "age": 29,
+      "regionId": "r_tidemarket",
+      "organizationId": "o_nightpouch",
+      "wealth": 3400,
+      "skills": {
+        "stealth": 6,
+        "negotiation": 6,
+        "insight": 5
+      },
+      "traits": {
+        "ambition": 0.75,
+        "caution": 0.5,
+        "charisma": 0.65
+      }
+    },
+    {
+      "id": "c_widow_sera",
+      "name": "塞拉寡妇",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 42,
+      "regionId": "r_portlumen",
+      "organizationId": "o_bluewave",
+      "wealth": 2900,
+      "skills": {
+        "trade": 5,
+        "appraisal": 6
+      },
+      "traits": {
+        "caution": 0.6,
+        "loyalty": 0.55,
+        "ambition": 0.4
+      }
+    },
+    {
+      "id": "c_young_heir_aldric",
+      "name": "奥德里克少主",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 24,
+      "regionId": "r_silvermoon",
+      "organizationId": null,
+      "wealth": 5600,
+      "skills": {
+        "law": 3,
+        "persuasion": 4,
+        "insight": 3
+      },
+      "traits": {
+        "ambition": 0.6,
+        "caution": 0.35,
+        "charisma": 0.55
+      }
+    }
+  ]
+}

@@ -7,6 +7,16 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    files: ['src/**/*.ts', 'tests/**/*.ts'],
+    rules: {
+      // 结算函数常保留未用的上下文参数以对齐统一签名，允许下划线前缀。
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
     files: ['src/**/*.ts'],
     languageOptions: {
       globals: {
@@ -17,6 +27,15 @@ export default tseslint.config(
         console: 'readonly',
         setTimeout: 'readonly',
         requestAnimationFrame: 'readonly',
+      },
+    },
+  },
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
       },
     },
   },

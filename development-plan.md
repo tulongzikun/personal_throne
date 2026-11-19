@@ -1,8 +1,9 @@
 # 《王座与黄金》开发计划
 
-**Throne & Gold — Development Plan v0.1**
+**Throne & Gold — Development Plan v0.2**
 
 - 编制日期：2026-11-19
+- 修订日期：2026-11-19（v0.2：按仓库实现现状校准 §1/§5 目录与 §9 测试，新增 §5.2「实现偏差记录」与 §8.1「当前进度」）
 - 依据文档：`design.md`（GDD v1.0，2107 行）
 - 交付目标：16 周内产出可玩的单文件 MVP（`dist/index.html`）
 - 人力假设：1 名开发者 + AI 结对开发
@@ -26,9 +27,11 @@
 
 ### 1.1 现状
 
-- 仓库仅有 `README.md` 与 `design.md`，**没有任何代码、构建配置或测试**。
-- GDD 已明确 MVP 规模、模拟分层、事件模型与验收场景，具备直接开工条件。
-- 原型期的单 HTML Demo 不在本仓库中，本计划按"从零搭建"编排，不假设可复用代码。
+- M0 工程基线已落地：Vite + `vite-plugin-singlefile`、TypeScript 严格模式、ESLint 架构约束（`core`/`systems` 禁依赖 UI 与存档层、禁 `Math.random` 与 `new Date()`）、Vitest、GitHub Actions。
+- M1 模拟核心主体已落地：`src/core/` 8 个模块、`src/systems/` 14 个文件（6 个域）、14 条事件内容、存档信封与 IndexedDB 槽位、`pnpm sim` 命令行、5 个测试文件（33 条用例）。
+- 当前处于「测试与性能收尾」阶段：100 年模拟可跑通、R1/R2/R3/R6 有回归用例，但性能基线、R8 内容校验用例与验收场景 A–F 的判定证据尚不完整（详见 §8.1、§9）。
+- UI 仅 `src/main.ts` 引导页与 `src/ui/styles/base.css`；`src/ui/` 下的面板与地图组件尚未创建，M5 才开始。
+- `release/index.html` 已是仓库内可下载的成品（当前 2,730 字节，占 1.5 MiB 预算约 0.17%）。
 
 ### 1.2 交付形态
 
@@ -42,8 +45,9 @@
 
 ### 1.3 环境要求
 
-- Node.js 22 LTS、pnpm 9+
+- Node.js 22 LTS、pnpm 11（`packageManager: pnpm@11.28.5`）
 - Git、VS Code（推荐插件：ESLint、Prettier、Vitest）
+- 开发期另需 `tsx`（已列入 `devDependencies`，仅用于 `pnpm sim`，不进入产物）
 - 无后端、无数据库、无云服务
 
 ---
@@ -95,8 +99,9 @@
 | UI | 原生 DOM + 轻量组件类（`mount/update/dispose`） | 面板式界面，组件约 15 个；无虚拟 DOM 需求 | React/Vue：为单文件体积与长期依赖增加成本 |
 | 地图 | SVG + 手写投影 | 区域数量少（5 城），SVG 便于命中测试与主题化 | Canvas（交互与缩放成本高）、地图库（体积） |
 | 测试 | Vitest（node 环境 + 少量 jsdom） | 与 Vite 同源，快 | Jest（配置重） |
+| 开发期 CLI | `tsx`（devDependency） | 直接执行 `scripts/sim.ts` 这类 TS 脚本，ESM 下零额外配置，且不参与打包 | ts-node（与 ESM/Vite 生态摩擦大）、先编译再运行（多一步产物） |
 | 存档 | IndexedDB（主）+ localStorage（设置）+ 文件导出 | 快照体积可控（< 2 MB），IndexedDB 容量足够 | 纯 localStorage（5 MB 上限风险） |
-| 架构风格 | 结构化对象 + 系统函数（非 ECS） | 实体 < 200，系统 7 个；ECS 在此规模只增加间接层 | ECS |
+| 架构风格 | 结构化对象 + 系统函数（非 ECS） | 实体 < 200，系统 14 个文件、6 个域；ECS 在此规模只增加间接层 | ECS |
 | 状态管理 | `GameEngine` 单一 store + 订阅通知 | 权威状态唯一，UI 只读快照 | Redux 类库 |
 
 **版本策略**：`package.json` 使用 caret 范围并在 `pnpm-lock.yaml` 锁定；升级依赖只在里程碑边界进行，且必须跑完整的确定性回归测试。
@@ -125,7 +130,7 @@ flowchart LR
 
 ### 4.2 五条铁律
 
-1. **core 不依赖 UI**：`src/core/**` 不得 import `ui/`、`storage/`、DOM API、`window`。
+1. **core 不依赖 UI**：`src/core/**` 与 `src/systems/**` 不得 import `ui/`、`storage/`、DOM API、`window`（ESLint `no-restricted-imports` 拦截）。
 2. **单一写入口**：权威状态只能由 `GameEngine.dispatch()`（玩家命令）或系统结算函数修改；UI 不得直接改状态。
 3. **随机唯一来源**：禁止 `Math.random()`；所有随机数来自 `Random.ts` 的命名流，可序列化、可复现。
 4. **顺序确定**：所有实体遍历按稳定 ID 排序；结算按 `(日, 相位, 序号)` 三元组排序，禁止依赖 `Object.keys` 的插入顺序。
@@ -141,6 +146,8 @@ flowchart LR
   → History 追加 + 快照版本号 +1 → 通知订阅者
   → UI 从快照重建视图（增量更新）
 ```
+
+> **实现状态（v0.2）**：`GameEngine` 当前对外是 `dispatch()`、`advanceDays()`、`advanceTo()`、`hash()` 与只读 `state`；`snapshot()`、`subscribe()` 与中断通知属于 M5 接入 UI 时的工作，尚未实现。确定性校验目前用 `hash()` 代替快照版本号。
 
 ### 4.4 结算相位（同一天内的固定顺序）
 
@@ -159,141 +166,163 @@ flowchart LR
 
 ## 5. 目录结构与模块职责
 
-### 5.1 目标结构
+### 5.1 当前结构（v0.2 实测）
+
+与 v0.1 计划的差异集中在内容装配、CLI/发布脚本与 `release/`，逐项理由见 §5.2。
 
 ```
-throne-and-gold/
+personal_throne/                # 仓库根即项目根
 │
-├── index.html                  # HTML 入口
-├── package.json
-├── tsconfig.json
-├── vite.config.ts              # 单文件打包配置
+├── index.html                  # HTML 入口（Vite 注入 /src/main.ts）
+├── package.json                # 脚本与 devDependencies（含 tsx）
+├── tsconfig.json               # strict + noUncheckedIndexedAccess + @/* 别名
+├── vite.config.ts              # singlefile 打包与 vitest 配置
+├── eslint.config.js            # 架构依赖方向 + 随机/时间禁令
 │
 ├── src/
-│   ├── main.ts                 # 程序入口
+│   ├── main.ts                 # 引导页；M5 接 App.mount
 │   │
-│   ├── core/                   # 核心引擎（不依赖 UI）
-│   │   ├── GameEngine.ts       # 世界模拟入口
-│   │   ├── WorldState.ts       # 世界状态类型
-│   │   ├── GameClock.ts        # 时间推进
-│   │   ├── CommandBus.ts       # 玩家命令
-│   │   ├── EventEngine.ts      # 概率事件
-│   │   ├── Random.ts           # 可复现随机数
-│   │   ├── History.ts          # 历史记录
-│   │   └── SimulationTier.ts   # L1/L2/L3 模拟管理
+│   ├── core/                   # 8 个模块，不依赖 UI/存档（已实现）
+│   │   ├── GameEngine.ts
+│   │   ├── WorldState.ts
+│   │   ├── GameClock.ts
+│   │   ├── CommandBus.ts
+│   │   ├── EventEngine.ts
+│   │   ├── Random.ts
+│   │   ├── History.ts
+│   │   └── SimulationTier.ts
 │   │
-│   ├── systems/                # 世界模拟业务系统
-│   │   ├── character/
-│   │   │   ├── Character.ts
-│   │   │   ├── CharacterSystem.ts
-│   │   │   └── SkillCheck.ts
-│   │   ├── organization/
-│   │   │   ├── Organization.ts
-│   │   │   ├── OrganizationSystem.ts
-│   │   │   ├── Finance.ts
-│   │   │   └── OrganizationRisk.ts
-│   │   ├── country/
-│   │   │   ├── Country.ts
-│   │   │   ├── CountrySystem.ts
-│   │   │   └── PolicySystem.ts
-│   │   ├── economy/
-│   │   │   ├── MarketSystem.ts
-│   │   │   ├── ProductionSystem.ts
-│   │   │   └── TradeSystem.ts
-│   │   ├── npc/
-│   │   │   └── DecisionSystem.ts
-│   │   └── military/
-│   │       └── WarSystem.ts
+│   ├── systems/                # 14 个文件，6 个域（已实现）
+│   │   ├── character/          # Character / CharacterSystem / SkillCheck
+│   │   ├── organization/       # Organization / OrganizationSystem / Finance / OrganizationRisk
+│   │   ├── country/            # CountrySystem / PolicySystem（国家类型在 core/WorldState.ts）
+│   │   ├── economy/            # MarketSystem / ProductionSystem / TradeSystem
+│   │   ├── npc/                # DecisionSystem
+│   │   └── military/           # WarSystem（当前仅月度军费结算）
 │   │
-│   ├── content/                # 游戏静态内容
+│   ├── content/                # 静态内容（JSON 只在这里被 import）
+│   │   ├── index.ts            # 唯一装配器：content / CONTENT_VERSION / eventsById
 │   │   ├── races.json
 │   │   ├── classes.json
 │   │   ├── items.json
+│   │   ├── goods.json          # 商品定义单列（v0.2 新增）
 │   │   ├── organizations.json
 │   │   ├── countries.json
-│   │   ├── world.json
-│   │   ├── balance.json        # 新增：可调参数集中管理
+│   │   ├── world.json          # 2 国 5 区 20 人
+│   │   ├── balance.json
 │   │   └── events/
-│   │       ├── organization.json
-│   │       ├── country.json
-│   │       ├── economy.json
-│   │       └── adventure.json
+│   │       ├── organization.json   # 4 条
+│   │       ├── country.json        # 4 条
+│   │       ├── economy.json        # 3 条
+│   │       └── adventure.json      # 3 条
 │   │
-│   ├── ui/                     # 界面
-│   │   ├── App.ts
-│   │   ├── MapView.ts
-│   │   ├── CharacterPanel.ts
-│   │   ├── OrganizationPanel.ts
-│   │   ├── CountryPanel.ts
-│   │   ├── EventDialog.ts
-│   │   ├── HistoryPanel.ts
-│   │   └── styles/
+│   ├── storage/
+│   │   ├── SaveManager.ts      # 信封、序列化/校验、IndexedDB 槽位、文件导出
+│   │   └── Migration.ts        # SAVE_FORMAT / SAVE_FORMAT_VERSION / migrateSave
 │   │
-│   ├── storage/                # 存档
-│   │   ├── SaveManager.ts
-│   │   └── Migration.ts
+│   ├── ui/                     # M5 才建组件；当前只有 styles/base.css
+│   │   └── styles/base.css
 │   │
-│   └── assets/                 # 图片、图标等静态资源
+│   └── assets/
 │
-├── tests/
+├── scripts/
+│   ├── sim.ts                  # pnpm sim --years N --seed S [--check]（tsx 执行）
+│   └── release.mjs             # dist → release，校验无外链与 ≤1,572,864 字节
+│
+├── tests/                      # 5 个测试文件（33 条用例）
+│   ├── simulation.test.ts
+│   ├── fastforward.test.ts
 │   ├── organization.test.ts
 │   ├── country.test.ts
 │   ├── events.test.ts
-│   ├── fastforward.test.ts
-│   ├── simulation.test.ts
-│   └── helpers/                # 新增：测试夹具与不变量断言
+│   └── helpers/index.ts        # makeWorld / makeEngine
+│
+├── release/
+│   └── index.html              # 仓库内发布的成品单文件（已提交，CI 校验一致）
 │
 └── dist/
-    └── index.html              # 最终唯一的发布文件
+    └── index.html              # 构建缓存（.gitignore 忽略）
 ```
 
-**相对原始清单的增量（仅 2 处，均必要）**
+**相对 v0.1 计划的增量（6 处）**
 
-| 增量 | 原因 |
-|---|---|
-| `src/content/balance.json` | GDD 19.4 要求"通过模拟结果调整模型系数"；系数散落在各系统会导致调参不可追溯。集中为单一文件后，批量模拟可整文件替换做对照实验。 |
-| `tests/helpers/` | 种子世界构造、快照哈希、会计恒等式断言在 5 个测试文件中复用，避免复制粘贴。 |
+| 增量 | 职责 | 原因 |
+|---|---|---|
+| `src/content/goods.json` | 商品定义（4 种：粮食、铁矿、武器、奢侈品）单列 | 商品同时被市场、生产、商路与组织 industry 引用；从 `world.json` 抽出后，调价与新增商品不必改地图文件。 |
+| `src/content/index.ts` | 唯一 import JSON 的装配器，导出 `content: WorldContent`、`CONTENT_VERSION = '0.1.0'`、`eventsById` | 引擎只接收装配好的对象，不感知文件系统；事件在装配时按 id 排序，保证候选遍历顺序稳定。 |
+| `scripts/sim.ts` | `pnpm sim --years N --seed S [--check]`，输出摘要、状态哈希与耗时 | M1 的验收入口；`--check` 复跑并比对哈希，直接对应 R1。 |
+| `scripts/release.mjs` | 校验 `dist/index.html` 存在、非空、无外链、≤ 1,572,864 字节后复制为 `release/index.html` | 发布物必须在仓库内可直接下载；三道校验保证「单文件、零外链、不超预算」不会靠人工检查。 |
+| `release/index.html` | 仓库内发布的成品单文件（当前 2,730 字节） | 构建目录 `dist/` 被 gitignore，发布物需要独立落点；CI 用 `git diff --exit-code -- release/index.html` 确认提交的产物与构建一致。 |
+| `tests/helpers/index.ts` | `makeWorld(seed)` / `makeEngine(seed)` 测试夹具 | 5 个测试文件共用固定内容 + 固定种子，避免每个用例重复构造世界。 |
 
-### 5.2 模块职责与里程碑归属
+`src/content/balance.json`（v0.1 已列）职责不变：所有可调系数集中一处，批量模拟时可整文件替换做对照。
+
+> 仍按原计划待增补：`src/ui/` 面板与地图组件、`src/assets/` 图片/图标、`tests/helpers` 中的快照哈希与会计不变量断言工具。当前仓库**没有** `systems/country/Country.ts`，国家类型直接定义在 `core/WorldState.ts`。
+
+### 5.2 实现偏差记录
+
+记录「计划写的」与「代码实际做的」之间的差异。**未验证的能力不写成已完成**；状态列只描述仓库里能读到的事实。
+
+| # | 计划 / v0.1 写法 | 代码现状（v0.2） | 理由与影响 |
+|---|---|---|---|
+| 1 | 内容目录只有 `world.json` 承载商品与地图 | 商品拆到 `goods.json`；`world.json` 只留地图、初始人物与地区 | 见 §5.1 增量表；`world.json` 从 9 KB 级降到只含地理与人物，改商品不再碰地图 |
+| 2 | 各模块自行 import JSON | 仅 `src/content/index.ts` import JSON，导出 `content`、`CONTENT_VERSION`、`eventsById` | 保持「引擎不认识文件系统」；事件按 id 排序后装配，遍历顺序确定 |
+| 3 | 无开发期 CLI | `scripts/sim.ts` + `pnpm sim`（`--years` / `--seed` / `--check`） | M1 验收入口；`--check` 两次运行比哈希，是 R1 的手工版 |
+| 4 | 发布 = `pnpm build` 产出 `dist/index.html` | `pnpm release` = build + `scripts/release.mjs`：存在性、无外链（`<script src>` / 外部 `<link href>` / `@import` / `url(http…)`）、≤ 1,572,864 字节，逐项通过才复制到 `release/index.html` | 单文件与体积预算是硬约束，交给脚本而不是 checklist；失败不产生半成品 |
+| 5 | 发布物只在 `dist/` | `release/index.html` 进仓库并随阶段提交 | `dist/` 被 gitignore；仓库内的成品才可直接下载双击；CI 校验「提交的 release 与构建一致」 |
+| 6 | `tsconfig`/`vite`/`vitest` 即可 | 额外 devDependency `tsx` | 只服务 `pnpm sim` 运行 TS CLI：ESM 下零配置、无需预编译产物、不进 bundle。选择它而非 ts-node 是为了避开与 Vite/Vitest 的 ESM 解析差异 |
+| 7 | M1 命令集：`move` / `work` / `invest` / `createOrg` / `joinOrg` / `setStrategy` / `negotiate` / `lobby` / `advance` / `save` | 实际 8 条：`invest` / `recruit` / `set_strategy` / `take_loan` / `repay_debt` / `buy_asset` / `open_route` / `lobby` | 先打通「组织经营 + 商路 + 游说」闭环；移动、打工、创建组织等留到 M2/M4，届时再扩 `CommandBus` 联合类型 |
+| 8 | `EventDef.text` 用 `titleKey` / `bodyKey`，且有 `choices` | 当前 `text: { title, body }` 直接内联中文；`choices` 未实现，玩家干预统一走 `Command` | 单语言 MVP 不需要 key 间接层；本地化时再统一切 key（见 §6 注）。事件选项的 UI 在 M5 补 |
+| 9 | `GameEngine` 暴露 `snapshot()` / `subscribe()` | 当前只有 `dispatch()` / `advanceDays()` / `advanceTo()` / `hash()` 与只读 `state` | UI 未接入，订阅与快照没有消费者；先以 `hash()` 支撑确定性回归，M5 再加快照与通知 |
+| 10 | `GameClock.nextInterrupt()` | 只实现 `nextBoundary()`；`ScheduledEvent` 有 `kind: 'interrupt'` 占位，但没有中断查询 API | 中断由「需要玩家决策」定义，等 M5 事件弹窗一起设计，避免先写一个没有调用方的接口 |
+| 11 | `systems/country/Country.ts` | 无此文件；`Country` / `CountryDef` / `PolicyVector` 在 `core/WorldState.ts` | 国家实体字段少且被 core 直接引用，单列文件只会造成循环依赖风险；政策逻辑仍在 `PolicySystem.ts` |
+| 12 | `WarSystem` 属 M6 | 文件已存在并接入引擎，但只做月度军费结算（`settleMonthlyMilitary`），没有战役、领土变更 | 军费是国民经济闭环的一部分，先按「军事开支」占位；深度战争仍按 M6 立项 |
+| 13 | UI 组件在 M5 建 | `src/ui/` 仅 `styles/base.css`；`src/main.ts` 仍是引导页，文案写着「M0 工程基线已就绪」 | 阶段文案未随 M1 更新，属已知文案债；M5 接 `App` 时一并替换 |
+| 14 | ESLint 禁 `Math.random()` 与 `Date.now()` | 规则拦截 `Math.random` 与 `new Date()`；`Date.now()` 尚无专门选择器 | `new Date()` 是主要的时间泄漏形态；`Date.now()` 由评审兜底，后续可补 `MemberExpression` 规则 |
+| 15 | 里程碑 M2–M4 尚未开始 | 组织/经济/国家/人物/NPC 的系统文件与 14 条事件已随 M1 落地，但验收指标与场景测试未完成 | 代码骨架先行不等于里程碑完成；M2–M4 的退出标准仍按 §8 执行，本文档不提前打勾 |
+
+### 5.3 模块职责与里程碑归属
 
 | 文件 | 职责 | 关键导出 | 里程碑 |
 |---|---|---|---|
-| `index.html` | 唯一挂载点、字体与 meta、首屏骨架 | — | M0 |
-| `package.json` | 脚本：`dev` / `build` / `test` / `typecheck` / `sim` / `lint` | — | M0 |
-| `tsconfig.json` | strict、`moduleResolution: bundler`、路径别名 `@/*` | — | M0 |
-| `vite.config.ts` | singlefile 插件、`assetsInlineLimit`、`build.target: es2022` | — | M0 |
-| `src/main.ts` | 装配顺序：加载内容 → 校验 → 读档或开新世界 → `new GameEngine` → `App.mount` | `bootstrap()` | M1 / M5 |
-| `core/WorldState.ts` | 权威状态类型、工厂、深拷贝、完整性校验 | `WorldState`, `createWorld()`, `validateWorld()` | M1 |
-| `core/GameClock.ts` | 日/月/年换算（360 天/年）、结算队列、下一中断点 | `GameClock`, `advanceDays()`, `nextBoundary()` | M1 |
-| `core/CommandBus.ts` | 命令联合类型、参数校验、序列化（存档与回放共用） | `Command`, `validateCommand()` | M1 |
-| `core/GameEngine.ts` | 唯一写入口：`dispatch` / `advanceTo` / `snapshot` / 订阅 | `GameEngine` | M1 |
-| `core/Random.ts` | 种子派生、命名流、计数、快照 | `Random`, `hashSeed()`, `rngFor()` | M1 |
-| `core/EventEngine.ts` | 事件加载与编译、λ 风险、竞争抽样、冷却、后续队列 | `EventEngine`, `compileEvent()` | M1 / M2 |
-| `core/History.ts` | 追加式历史、按年/实体索引、摘要生成 | `History`, `appendRecord()` | M1 / M5 |
-| `core/SimulationTier.ts` | L1/L2/L3 分配、升降层、聚合与展开 | `assignTiers()`, `promote()`, `demote()` | M2 |
-| `systems/character/Character.ts` | 人物实体、属性、关系槽位 | `Character` | M4 |
-| `systems/character/CharacterSystem.ts` | 成长、年龄、健康、死亡判定、职位变动 | `settleCharacters()` | M4 |
-| `systems/character/SkillCheck.ts` | `D20 + Skill + Equip + Situation`、成功率预估 | `rollCheck()`, `estimateOdds()` | M4 |
-| `systems/organization/Organization.ts` | 组织实体、生命周期状态、三权（所有权/治理权/影响力） | `Organization` | M2 |
-| `systems/organization/Finance.ts` | 月度损益、资产负债、现金流、利息与税 | `settleFinance()` | M2 |
-| `systems/organization/OrganizationRisk.ts` | 分裂/破产/收购/改革四类风险强度 | `riskSplit()`, `riskBankrupt()` | M2 |
-| `systems/organization/OrganizationSystem.ts` | 规模、治理、冲突、派系、生命周期迁移、玩家权限校验 | `settleOrganizations()` | M2 |
-| `systems/country/Country.ts` | 国家实体、政体、财政、合法性、外交 | `Country` | M3 |
-| `systems/country/PolicySystem.ts` | 政策向量、三阶段改革、政体变更 | `settlePolicy()` | M3 |
-| `systems/country/CountrySystem.ts` | 预算、债务、稳定性聚合、国家事件结算 | `settleCountries()` | M3 |
-| `systems/economy/MarketSystem.ts` | 地区×商品市场、价格调整、库存 | `settleMarkets()` | M2 |
-| `systems/economy/ProductionSystem.ts` | 投入产出约束、产能、效率 | `settleProduction()` | M2 |
-| `systems/economy/TradeSystem.ts` | 商路、运力、关税、运输时间 | `settleTrade()` | M2 |
-| `systems/npc/DecisionSystem.ts` | 效用评分、月度决策、群体化非重要 NPC | `settleDecisions()` | M3 |
-| `systems/military/WarSystem.ts` | 战争触发、简化结算、领土变更 | `settleWars()` | M6 |
-| `content/*.json` | 静态内容；`world.json` 含地图与初始布局 | — | M1–M4 渐进 |
-| `content/events/*.json` | 事件池，按域拆分 | — | M2–M4 |
-| `ui/App.ts` | 布局、路由式面板切换、全局订阅 | `App` | M5 |
-| `ui/MapView.ts` | SVG 地图、四图层、点击选择 | `MapView` | M5 |
-| `ui/*Panel.ts` | 人物/组织/国家/历史面板 | — | M5（组织面板 M2 起有调试版） |
-| `ui/EventDialog.ts` | 事件卡、选项、成本与风险说明 | `EventDialog` | M2（最小）/ M5（完整） |
-| `storage/SaveManager.ts` | 槽位、自动存档、导入导出、快照压缩 | `SaveManager` | M1 基础 / M5 完整 |
-| `storage/Migration.ts` | `schemaVersion` 迁移链 | `migrate()` | M1 预留 / M5 完整 |
+| `index.html` | 唯一挂载点、字体与 meta、首屏骨架样式 | — | M0 完成 |
+| `package.json` | 脚本：`dev` / `build` / `release` / `preview` / `typecheck` / `test` / `test:watch` / `sim` / `lint` / `format`；devDeps 含 `tsx` | — | M0 完成 |
+| `tsconfig.json` | strict、`noUncheckedIndexedAccess`、`moduleResolution: bundler`、路径别名 `@/*` | — | M0 完成 |
+| `vite.config.ts` | singlefile 插件、`assetsInlineLimit: 100_000_000`、`build.target: es2022`、vitest node 环境 | — | M0 完成 |
+| `eslint.config.js` | core/systems 禁 import ui/storage；禁 `Math.random` 与 `new Date()` | — | M0 完成 |
+| `src/main.ts` | 引导页（标题 + 版本）；M5 改为加载内容 → 校验 → 读档 → `App.mount` | — | M0 / M5 |
+| `core/WorldState.ts` | 状态与内容类型、工厂、完整性校验、状态哈希 | `WorldState`, `WorldContent`, `createWorld()`, `validateWorld()`, `hashWorld()`, `monthKeyOf()` | M1 完成 |
+| `core/GameClock.ts` | 360 天/年、相位枚举、结算点、下一边界、日期格式化 | `GameClock`, `DAYS_PER_YEAR`, `Phase`, `settlementPoints()`, `nextBoundary()` | M1 完成（`nextInterrupt()` 未实现） |
+| `core/CommandBus.ts` | 8 条命令的联合类型、校验与结算 | `Command`, `applyCommand()`, `CommandResult` | M1 完成 |
+| `core/GameEngine.ts` | 唯一写入口与时间推进；按日触发相位结算 | `GameEngine`（`dispatch` / `advanceDays` / `advanceTo` / `hash`） | M1 完成（无 `snapshot`/`subscribe`） |
+| `core/Random.ts` | FNV-1a 种子派生、命名流、计数器、快照 | `Random`, `fnv1a64()`, `keyOf()` | M1 完成 |
+| `core/EventEngine.ts` | 条件求值、λ 风险、互斥竞速、冷却、效果应用、后续事件 | `evaluate()`, `collectCandidates()`, `selectTriggered()`, `applyEvent()` | M1 完成 |
+| `core/History.ts` | 追加式历史、查询、月度摘要 | `History`, `HistoryRecord`, `HistoryKind` | M1 完成 |
+| `core/SimulationTier.ts` | L1/L2/L3 评分与升降层、国家聚合 | `Tier`, `computeTiers()`, `applyTiers()` | M1 完成（M2 继续校准） |
+| `systems/character/Character.ts` | 人物查询、派生技能、财富转移 | `effectiveSkill()`, `transferWealth()` | M4 骨架 |
+| `systems/character/CharacterSystem.ts` | 月度成长、年度老化、死亡与领袖继承 | `settleMonthlyCharacters()`, `settleYearlyCharacters()`, `handleDeath()` | M4 骨架 |
+| `systems/character/SkillCheck.ts` | D20 检定、对抗检定 | `skillCheck()`, `opposedCheck()` | M4 骨架 |
+| `systems/organization/Organization.ts` | 股权、控股、继承顺序、估值 | `majorityHolder()`, `successionOrder()`, `valuation()` | M2 骨架 |
+| `systems/organization/Finance.ts` | 月度损益、权益与会计恒等式 | `settleMonthlyFinance()`, `equityOf()` | M2 骨架 |
+| `systems/organization/OrganizationRisk.ts` | 冲突/资金/规模的风险增量 | `settleMonthlyRisk()` | M2 骨架 |
+| `systems/organization/OrganizationSystem.ts` | 月度编排：财务 → 风险 → 生命周期 | `monthlyOrganizationSettlement()` | M2 骨架 |
+| `systems/country/CountrySystem.ts` | 月度预算、债务、稳定性聚合 | `settleMonthlyCountry()` | M3 骨架 |
+| `systems/country/PolicySystem.ts` | 政策压力、提案、政体差异 | `evaluatePolicyPressure()`, `runPolicyRound()`, `capitalWeight()` | M3 骨架 |
+| `systems/economy/MarketSystem.ts` | 地区×商品价格与库存 | `settleMonthlyMarket()`, `priceOf()` | M2 骨架 |
+| `systems/economy/ProductionSystem.ts` | 投入产出、产能、效率 | `settleMonthlyProduction()` | M2 骨架 |
+| `systems/economy/TradeSystem.ts` | 商路流量、运力、关税 | `settleMonthlyTrade()` | M2 骨架 |
+| `systems/npc/DecisionSystem.ts` | 效用评分与月度决策 | `strategyUtility()`, `settleMonthlyDecisions()` | M3 骨架 |
+| `systems/military/WarSystem.ts` | 月度军费结算；战争深度模拟未做 | `settleMonthlyMilitary()`, `totalArmySize()` | M6（占位） |
+| `content/index.ts` | 唯一 JSON 装配器；事件按 id 排序 | `content`, `CONTENT_VERSION`, `eventsById` | M1 完成 |
+| `content/*.json` | 静态内容；`world.json` 2 国 5 区 20 人，`goods.json` 4 商品 | — | M1 完成 |
+| `content/events/*.json` | 14 条事件（组织 4 / 国家 4 / 经济 3 / 冒险 3） | — | M1 完成（M2–M4 继续扩） |
+| `storage/SaveManager.ts` | 信封、序列化与校验、IndexedDB 槽位、文件导入导出 | `createEnvelope()`, `serializeSave()`, `parseSave()`, `readSlot()`, `writeSlot()`, `listSlots()`, `deleteSlot()`, `downloadSave()`, `readSaveFile()` | M1 基础完成 |
+| `storage/Migration.ts` | 信封与世界状态迁移、错误类型 | `SAVE_FORMAT`, `SAVE_FORMAT_VERSION`, `SaveError`, `migrateSave()`, `migrateWorldState()` | M1 完成（仅 v1） |
+| `scripts/sim.ts` | 无 UI 快进、摘要、耗时、`--check` 复跑 | — | M1 完成 |
+| `scripts/release.mjs` | 发布校验（存在/无外链/体积）并复制 | — | M0 完成 |
+| `release/index.html` | 仓库内成品单文件 | — | 每阶段更新 |
+| `tests/helpers/index.ts` | 固定内容 + 固定种子的测试夹具 | `makeWorld()`, `makeEngine()` | M1 完成 |
+| `ui/App.ts` 等 | 布局、面板、SVG 地图、事件弹窗（**尚未创建**） | — | M5 |
 
 **依赖方向**：`ui → core, storage`；`core → systems, content`；`systems → core（类型）, content`；`content` 不依赖任何代码。任何反向依赖由 ESLint `no-restricted-imports` 拦截。
 
@@ -301,26 +330,28 @@ throne-and-gold/
 
 ## 6. 核心数据模型（草案）
 
-类型定义分散在各自模块，`WorldState.ts` 只做聚合与校验。
+类型定义分散在各自模块，`WorldState.ts` 只做聚合与校验。以下结构已按 v0.2 代码校准（以 `src/core/WorldState.ts` 为准）。
 
 ```ts
 // core/WorldState.ts
 interface WorldState {
-  meta: { schemaVersion: number; contentVersion: string; seed: string; createdAt: number };
-  clock: ClockState;                 // day 从 1 开始
+  meta: { schemaVersion; contentVersion; seed; createdAt; worldId };
+  clock: { day: number };                   // day 从 1 开始
   playerId: CharacterId;
   characters: Record<CharacterId, Character>;
   organizations: Record<OrgId, Organization>;
   countries: Record<CountryId, Country>;
   regions: Record<RegionId, Region>;
-  markets: Record<MarketKey, Market>;      // `${regionId}:${goodId}`
+  markets: Record<MarketKey, Market>;       // `${regionId}:${goodId}`
   contracts: Record<ContractId, Contract>;
-  relations: Relation[];                    // 有向边，按 (from,to,type) 唯一
+  relations: Relation[];                    // 有向边
   armies: Record<ArmyId, Army>;
   tiers: Record<EntityId, 1 | 2 | 3>;
-  pendingEvents: ScheduledEvent[];          // 最小堆，序列化时按 (day,phase,seq) 排序
+  pendingEvents: ScheduledEvent[];          // 按 (day, phase, seq) 稳定排序
   rngCounters: Record<string, number>;
-  historyCursor: number;
+  cooldowns: Record<string, number>;        // `${eventId}@${entityId}` → 解禁日
+  history: HistoryRecord[];
+  scheduleSeq: number;                      // 调度序号，只增不减
 }
 ```
 
@@ -328,30 +359,28 @@ interface WorldState {
 interface Organization {
   id: OrgId; name: string; type: OrgType; industry: GoodId | 'service';
   foundedDay: number; homeRegionId: RegionId;
-  scale: number;                    // 综合规模 0–100+
+  scale: number;                     // 综合规模 0–100+
   cash: number; assets: number; liabilities: number;
   members: number; payrollMonthly: number;
-  leadership: { leaderId: CharacterId; legitimacy: number };  // 0–100
-  conflict: number; governance: number; efficiency: number;   // 0–100
-  factionIds: FactionId[];
-  strategy: OrgStrategy;            // 扩张/稳健/收缩/转型
+  leadership: { leaderId: CharacterId; legitimacy: number };  // 0–1
+  conflict: number; governance: number; efficiency: number;   // 0–1
+  strategy: 'expand'|'steady'|'contract'|'pivot';
   lifecycle: 'founded'|'growing'|'stable'|'expanding'|'crisis'|'restructuring'|'shrinking'|'dissolved';
-  shares: ShareHolding[];           // 所有权；治理权单独由职位表表达
-  historyIds: number[];
+  shares: { characterId: CharacterId; share: number }[];      // 所有权；治理权由 leadership 表达
+  lastMonthRevenue: number; lastMonthCost: number;            // 上月经营数据，供 UI 与再投资
 }
 ```
 
 ```ts
 interface Country {
-  id: CountryId; name: string; polity: Polity;
+  id: CountryId; name: string; polity: 'monarchy'|'republic';
   regionIds: RegionId[]; population: number;
   treasury: number; monthlyRevenue: number; monthlyExpense: number;
   debt: number; military: number;
-  legitimacy: number; stability: number;   // 0–100，聚合值
+  legitimacy: number; stability: number;   // 0–1，聚合值
   rulerId: CharacterId;
-  factions: FactionId[];
   policies: PolicyVector;                  // 税率/关税/军费/贸易自由度/监管强度
-  diplomacy: Record<CountryId, number>;    // -100..100
+  diplomacy: Record<CountryId, number>;    // -100..100（M3 起使用）
 }
 ```
 
@@ -368,23 +397,23 @@ interface Market {
 interface EventDef {
   id: string; domain: 'organization'|'country'|'economy'|'adventure';
   scope: 'organization'|'country'|'region'|'character';
-  conditions: Expr;                 // 受限 DSL
+  conditions?: Expr;                // 受限 DSL：all / any / not / {path,op,value}
   risk: { lambda0: number; terms: { path: string; coef: number }[] };
   exclusivity?: string;             // 同组事件互斥
   cooldownDays: number;
   weight?: number;
-  effects: Effect[];                // set/add/mul/create/relation/schedule
-  choices?: Choice[];               // 玩家可干预时的选项
-  text: { titleKey: string; bodyKey: string };
+  effects: Effect[];                // add / mul / set / schedule
+  text: { title: string; body: string };   // 当前内联中文，非 i18n key
 }
 ```
 
 **约定**
 
 - 所有金额为整数"铜币"，避免浮点误差；比率用 0–1 浮点。
-- 所有 0–100 的抽象指标（合法性、冲突、治理）在内部统一为 0–1，展示层再乘 100。
+- 所有 0–1 的抽象指标（合法性、冲突、治理）在内部统一为 0–1，展示层再乘 100。
 - 所有 ID 为稳定字符串（`org_blackcrow`），不使用自增数字，便于跨层与存档迁移。
 - 时间统一存 `day`（整数），派生 `year/month/dayOfMonth` 只读计算。
+- **与计划的差异**：`EventDef` 不再用 `titleKey/bodyKey`，也没有 `choices`；事件选项属于 M5 的 UI 工作，玩家干预统一走 `Command`（见 §5.2 第 8 条）。
 
 ---
 
@@ -409,13 +438,13 @@ interface EventDef {
 
 ### 7.3 事件引擎
 
-1. **加载期**：读取 JSON → JSON Schema 校验 → 编译条件表达式为闭包树 → 校验引用（商品、地区、组织 ID 必须存在）→ 失败则构建报错。
+1. **加载期**：`content/index.ts` import JSON → TypeScript 在编译期按 `EventDef` 校验形状 → `validateWorld()` 在运行时校验引用（事件效果指向的组织/地区/人物必须存在）→ 失败则测试或构建报错。**说明**：未引入 JSON Schema 校验库，"编译条件为闭包树"也未实现，条件在每个结算点按 `Expr` 直接求值（内容量级下开销可忽略，见 §5.2 第 2、8 条）。
 2. **风险计算**：`λ = λ0 × exp(Σ βᵢ·xᵢ)`，`xᵢ` 为归一化状态变量（0–1 或 z-score 后 clamp）。
 3. **抽样**：对区间 `Δt`，`P = 1 − exp(−λ·Δt)`；同一 `exclusivity` 组内用指数竞速：`t_i = −ln(U_i)/λ_i`，取最小 `t_i` 且 `t_i ≤ Δt` 者发生，其余进入冷却。
 4. **条件**：事件发生前必须通过 `conditions`（避免"高风险但条件不满足"仍被抽中）。
-5. **效果**：只允许白名单操作；每个效果写一条 `HistoryRecord`，`causeEventId` 指回触发事件，保证可追溯。
-6. **后续事件**：`schedule` 效果写入 `pendingEvents`，带 `parentEventId`，形成事件链。
-7. **玩家干预**：`choices` 中每项声明成本、成功率、可见后果与隐藏后果；选择后走 `Command`，不直接改状态。
+5. **效果**：只允许 `add` / `mul` / `set` / `schedule` 四类；每个效果写一条 `HistoryRecord`，`causeEventId` 指回触发事件，保证可追溯。
+6. **后续事件**：`schedule` 效果写入 `pendingEvents`，`seq` 由 `scheduleSeq` 递增生成，形成事件链。
+7. **玩家干预**：**尚未实现**。计划中的 `choices`（每项声明成本、成功率、可见/隐藏后果）随 M5 的事件弹窗一起做；在此之前玩家干预只能走 `CommandBus`，不直接改状态。
 
 ### 7.4 组织财务
 
@@ -455,10 +484,18 @@ interface EventDef {
 
 ### 7.9 存档、迁移与回放
 
-- 快照：`WorldState` + `History` 摘要 + `schemaVersion` + `contentVersion`。
-- 槽位：自动存档 3 个（滚动）+ 手动 3 个；导入导出为 `.tg.json`。
-- 迁移：`Migration.ts` 维护 `vN → vN+1` 函数链，加载时逐级升级；迁移必须有测试夹具（旧版本样本存档）。
-- 回放：`seed + 命令日志` 可重建世界，用于 bug 复现与平衡对照；回放校验用状态哈希。
+**已实现（v0.2，代码见 `src/storage/`）**
+
+- 信封：`SaveEnvelope = { format: 'throne-and-gold-save', formatVersion, schemaVersion, contentVersion, savedAt, seed, day, hash, state }`；`formatVersion` 当前为 `1`（`SAVE_FORMAT_VERSION`），与状态自己的 `SCHEMA_VERSION = 1` 分开演进。
+- 写入：`createEnvelope(state, savedAt)` → `serializeSave()`；读入：`parseSave(text)` 依次做 JSON 解析 → `migrateSave()`（拒绝非对象、未知版本、更高版本、缺 `schemaVersion`）→ `validateWorld()` → `hashWorld()` 与信封 `hash` 比对，任何一步失败抛 `SaveError`（`name = 'SaveError'`）。
+- 槽位：IndexedDB `throne-and-gold` / store `saves` / keyPath `slot`；API `writeSlot(slot, state, label, savedAt)`、`readSlot(slot)`、`listSlots()`（按 `savedAt` 倒序）、`deleteSlot(slot)`、`storageAvailable()`。自动存档键名为 `AUTO_SLOT = 'auto'`，**滚动 3 槽尚未实现**（只有 `auto` 约定）。
+- 导入导出：`downloadSave(state, filename = 'throne-and-gold-save.json')` 与 `readSaveFile(file)`；文件名不是计划里的 `.tg.json`。
+- 迁移：`migrateSave(raw, savedAt)` 升级信封，`migrateWorldState(raw)` 升级状态；当前两者都是"版本相等直返"，否则抛「缺少 vN → vM 的迁移步骤」——**没有真实迁移链，也没有旧版本样本夹具**（见 §9.2 R8 补充项）。
+
+**规划中（未实现）**
+
+- 回放：`seed + 命令日志` 重建世界、回放哈希校验。当前只有 `engine.hash()` 与 `pnpm sim --check` 的"同参数复跑比哈希"，没有命令日志落盘。
+- 压缩与分片：存档未压缩；大世界写入耗时未测（§9.3 预算待验证）。
 
 ### 7.10 界面
 
@@ -474,6 +511,36 @@ interface EventDef {
 ## 8. 里程碑与排期
 
 以启动周为 W1，共 16 周。每周 5 个工作日，按 1 人 + AI 结对估算。
+
+### 8.1 当前进度（v0.2 实测）
+
+| 里程碑 | 状态 | 证据（仓库内可核对） |
+|---|---|---|
+| M0 工程基线 | ✅ 完成 | `pnpm build` / `pnpm release` 脚本齐备；`release/index.html` 已入仓，2,730 字节（预算占用 0.17%）；CI 四步全配 |
+| M1 模拟核心 | ✅ 完成 | 8 个 core 模块、14 个 systems 文件、内容装配、存档、`pnpm sim`、34 个用例；100 年模拟实测 1.3 s（预算 2 s），同种子哈希稳定；R8 由内容审计与 `validateWorld` 覆盖；证据见 §8.2 |
+| M2 组织与经济 | 🟡 骨架 | `Finance` / `Organization` / `OrganizationRisk` / `Market` / `Production` / `Trade` 六个文件已有实现并被引擎调用；验收 B、D 未做 |
+| M3 国家与政策 | 🟡 骨架 | `CountrySystem` / `PolicySystem` / `DecisionSystem` 已接入月结；验收 C 未做 |
+| M4 角色与叙事 | 🟡 骨架 | `Character` / `CharacterSystem` / `SkillCheck` 与 14 条事件已有；"商人→从政"路径未验证 |
+| M5 整合与校准 | ⬜ 未开始 | `src/ui/` 只有 `styles/base.css`；`src/main.ts` 是 19 行引导页 |
+| M6 战争与扩展 | ⬜ 占位 | `WarSystem` 仅月度军费结算，无战役与领土变更 |
+
+### 8.2 M1 收尾修复（2026-11-19）
+
+审计（内容只读审计 + 逐月探针）后修掉的问题，按影响排序：
+
+| 问题 | 根因 | 修法 |
+|---|---|---|
+| 100 年模拟 130 s，超预算 65 倍 | `GameEngine.settlePhase` 每个相位都调 `syncCounters()`，而 `Random.countersOf()` 复制全量计数器表 → O(n²) | 只在 `advanceDays`/`advanceTo` 结束与 `dispatch` 失败分支同步；实测降到 1.3 s |
+| 所有组织 2 年内现金归零 | `Finance` 把上月全量成本 `lastMonthCost` 当成"运输成本"再扣一次 | 新增 `Organization.lastMonthTransport`，贸易只登记、财务只扣一次 |
+| 只要有一个月结余，粮价永久钉在下限 | 市场用 `stock + production` 作为当月供给参与竞价 | 供给 = 当月 `production`，`stock` 仅作缓冲库存 |
+| 组织"卖出"超过市场需求的货，现金与国库无限膨胀 | 收入 = 产量 × 价格，与需求无关 | 同地区同行业按产量份额瓜分当月需求（`sellableUnits`）；留存现金超 12 个月工资转资产 |
+| 国库长期盈余无限膨胀 | 只有税收流入，没有泄压阀 | 超 6 个月刚性开支的部分，一半用于公共工程（可选支出，不计入赤字判定） |
+| 角色类事件永不触发 | `computeTiers` 不给人物分层，`?? 3` 被 `maxTier=2` 过滤 | 人物按"所在地区 / 所属组织"继承层级；新增回归用例 |
+| 同盟地区与组织在第 90 天后整体冻结 | 跨国地区需分数达标才升 L2，同盟地区恒 L3 | 2 跳内地区一律 L2，L1/L2 地区内的组织一律 L2 |
+| 政变 / 分裂 / 战争恐慌事件永不触发 | 阈值高于内容初值，且无增长机制 | 政变 `conflict>0.3`、分裂 `>0.45`；战争恐慌改用 `debtRatio`（国家口径 = 债务/(国库+债务)） |
+| `ev_country_aftermath` 脱离前置事件独立触发 | 无前置约束、λ0 过低 | 加 `stability<0.6` 条件、λ0 提至 0.01、效果改为扣国库 |
+
+> 结论：**M1 之后进入"测试与性能收尾"，而不是直接宣布 M2–M4 完成**。M2–M4 的代码骨架先行为的是让 100 年模拟有足够多的耦合面，退出标准仍按下表执行。
 
 | 里程碑 | 周期 | 目标 | 退出标准 |
 |---|---|---|---|
@@ -591,34 +658,46 @@ interface EventDef {
 
 ### 9.2 必须长期存在的回归用例
 
-| 编号 | 内容 | 文件 |
-|---|---|---|
-| R1 | 同种子 100 年状态哈希稳定 | `tests/simulation.test.ts` |
-| R2 | 逐月 ×1200 与一次快进 1200 天结果一致 | `tests/fastforward.test.ts` |
-| R3 | 存档 → 读档 → 续跑 = 不中断续跑 | `tests/simulation.test.ts` |
-| R4 | 组织破产流程不产生负资产残留 | `tests/organization.test.ts` |
-| R5 | 政策变更不违反政体约束 | `tests/country.test.ts` |
-| R6 | 事件互斥组不会同点双发 | `tests/events.test.ts` |
-| R7 | 人物死亡不产生资产/职位重复 | `tests/organization.test.ts` |
-| R8 | 内容 JSON 全部通过 schema 与引用校验 | `tests/events.test.ts` |
+**实测映射（v0.2）**：5 个测试文件、33 个用例，`pnpm test` = `vitest run`。状态列区分「有专用断言」与「仅间接覆盖」。
+
+| 编号 | 内容 | 文件 | 现状（v0.2） |
+|---|---|---|---|
+| R1 | 同种子 100 年状态哈希稳定 | `tests/simulation.test.ts` | ✅ 已覆盖：同种子两次快进哈希一致；不同种子哈希不同 |
+| R2 | 逐月 ×1200 与一次快进 1200 天结果一致 | `tests/fastforward.test.ts` | ✅ 已覆盖（4 例） |
+| R3 | 存档 → 读档 → 续跑 = 不中断续跑 | `tests/fastforward.test.ts` | ✅ 已覆盖：序列化往返、哈希校验、**损坏的存档会被拒绝** |
+| R4 | 组织破产流程不产生负资产残留 | `tests/organization.test.ts` | ⚠️ 部分：有会计恒等式与财务断言，破产全流程未单独覆盖 |
+| R5 | 政策变更不违反政体约束 | `tests/country.test.ts` | ⚠️ 部分：政策三阶段与预算恒等式已测，政体约束迁移未测 |
+| R6 | 事件互斥组不会同点双发 | `tests/events.test.ts` | ✅ 已覆盖：互斥竞速、冷却、效果夹取、`schedule` 后续事件 |
+| R7 | 人物死亡不产生资产/职位重复 | `tests/organization.test.ts` | ⚠️ 部分：领袖与统治者继承有断言，资产/职位全量去重未测 |
+| R8 | 内容 JSON 全部通过 schema 与引用校验 | `tests/events.test.ts` | ❌ 缺独立用例：仅 `simulation.test.ts` 的「世界内容包含 MVP 规模的实体」间接约束（地区≥4、组织=10、人物=20、事件≥9），且无 schema 校验器 |
+
+> 补测优先级：R8（内容校验器 + 引用完整性）> R3 的跨版本迁移用例（当前 `SAVE_FORMAT_VERSION = 1`，无 v0→v1 真实迁移路径）> R4/R5/R7 的完整流程断言。
 
 ### 9.3 性能预算
+
+预算未变，**达成状态待验证**：性能用例尚未按预算收紧（`tests/simulation.test.ts` 的性能断言当前为 `< 5000 ms`、超时 30 s，与下表 2 s 预算不一致）。v0.2 修订只做代码级核对，未执行测试与 `pnpm sim`，下表的实测数据待 CI 或本地跑通后回填。
 
 | 场景 | 预算 | 超限处理 |
 |---|---|---|
 | 快进 100 年（MVP 规模） | < 2 s | 降层、事件批采样、减少月结实体 |
 | 单次 UI 更新 | < 16 ms | 增量渲染、虚拟列表 |
 | 存档写入 | < 100 ms | 压缩、分片 |
-| 构建产物 | ≤ 1.5 MB | 拆分内容、压缩图片、移除未用代码 |
+| 构建产物 | ≤ 1.5 MB（1,572,864 字节） | 拆分内容、压缩图片、移除未用代码 |
 
 ### 9.4 CI
 
+实际顺序（`.github/workflows/ci.yml`）：
+
 ```
-install → typecheck → lint → unit/integration → golden/determinism
-        → content validate → build → size check → (可选) batch sim smoke
+checkout → pnpm/action-setup → setup-node 22 → pnpm install --frozen-lockfile
+         → typecheck → lint → test → build → node scripts/release.mjs
+         → git diff --exit-code -- release/index.html → upload-artifact release/index.html
 ```
 
-PR 必须全绿；`main` 分支保护，禁止直接推送。
+- 体积校验由 `scripts/release.mjs` 的 `statSync` 完成（阈值 1,572,864 字节），工作流里**没有**单独的 `stat -c%s` 步骤。
+- `git diff --exit-code -- release/index.html` 保证「提交的成品 == 当前源码构建结果」，防止忘记提交产物。
+- 无 golden 文件、无批量模拟 smoke、无 JSON Schema 校验步骤（见 §9.2 R8）。
+- PR 必须全绿；`main` 分支保护，禁止直接推送。
 
 ---
 
@@ -691,16 +770,18 @@ PR 必须全绿；`main` 分支保护，禁止直接推送。
 
 ## 13. 验收清单（GDD 18.6）
 
-| 场景 | 验收内容 | 判定方式 |
-|---|---|---|
-| A 无人干预 | 100 年模拟，国家/组织/市场出现合理变化 | 指标分布 + 人工审阅历史摘要 |
-| B 商业干预 | 玩家建商会控制某商品，其他组织能竞争，政府可能调政策 | 脚本化玩家命令回放 + 指标对比 |
-| C 政策干预 | 玩家推动降关税，商路/价格/利润变化 | 对照实验（同种子） |
-| D 财务危机 | 长期亏损组织进入融资/重组/出售/破产 | 单元 + 集成断言 |
-| E 人物死亡 | 组织按规则选出新领导，无资产重复/职位错继承 | 单元 + 集成断言 |
-| F 快进一致性 | 同种子同命令，逐月与快进结果一致 | 哈希相等 |
+**状态口径（v0.2）**：只有「代码里能跑出断言」或「CI 里能读到」才算 ✅；依赖 UI、人工审阅或尚未执行的，一律写待验证/部分达成。当前**没有任何一项 F 以外的场景被端到端验证过**。
 
-**发布前人工检查**：离线双击可玩、无控制台报错、存档往返正常、事件文本无占位符、四种地图图层可用。
+| 场景 | 验收内容 | 判定方式 | 状态（v0.2） |
+|---|---|---|---|
+| A 无人干预 | 100 年模拟，国家/组织/市场出现合理变化 | 指标分布 + 人工审阅历史摘要 | ⬜ 待验证：`pnpm sim --years 100` 可跑，但指标分布未归档、无人审阅 |
+| B 商业干预 | 玩家建商会控制某商品，其他组织能竞争，政府可能调政策 | 脚本化玩家命令回放 + 指标对比 | ⬜ 待验证：`invest` / `buy_asset` / `open_route` 已有，但缺回放对比脚本；建商会命令未实现 |
+| C 政策干预 | 玩家推动降关税，商路/价格/利润变化 | 对照实验（同种子） | 🟡 部分达成：`lobby` 命令 + `PolicySystem` 三阶段有单测；降关税传导链未做对照实验 |
+| D 财务危机 | 长期亏损组织进入融资/重组/出售/破产 | 单元 + 集成断言 | 🟡 部分达成：会计恒等式与投资/权限有断言；破产全流程未覆盖（见 §9.2 R4） |
+| E 人物死亡 | 组织按规则选出新领导，无资产重复/职位错继承 | 单元 + 集成断言 | 🟡 部分达成：继承顺序有断言，资产/职位全量去重未测（见 §9.2 R7） |
+| F 快进一致性 | 同种子同命令，逐月与快进结果一致 | 哈希相等 | ✅ 已达成：`tests/fastforward.test.ts` 覆盖，`pnpm sim --check` 复跑比哈希 |
+
+**发布前人工检查**：离线双击可玩、无控制台报错、存档往返正常、事件文本无占位符、四种地图图层可用。**当前均不适用**——UI 未接入（`src/main.ts` 仍是引导页），地图图层未实现。
 
 ---
 
@@ -728,11 +809,15 @@ PR 必须全绿；`main` 分支保护，禁止直接推送。
 3. **存档位置**：是否需要"云同步"或"文件夹导出"？当前按浏览器本地存储 + 文件导入导出设计。
 4. **输入方式**：是否支持键盘快捷键与移动端？当前按桌面鼠标设计。
 5. **首发渠道**：itch.io 单文件、Steam（需 Electron 包装）还是仅自用？影响 M5 的发布工程。
-6. **GDD 中"现有 HTML Demo"**：是否有可参考的原型代码？若有，M1 可复用其内容数据，节省 2–3 人日。
+6. **GDD 中"现有 HTML Demo"**：是否有可参考的原型代码？若有，M1 可复用其内容数据，节省 2–3 人日。**（v0.2 注：此项已被实现现状取代——仓库内已有可运行的 M1 核心，不再依赖原型。）**
+7. **M1 收尾口径**（v0.2 新增）：性能预算是按 2 s 收紧并补性能基准，还是先放宽到 5 s 待 M5 再优化？当前用例断言是 5 s。
+8. **内容校验强度**（v0.2 新增）：是否引入 JSON Schema 校验器（新增 devDependency），还是把 `validateWorld()` 的引用检查补成独立测试即算 R8 达成？
 
 ---
 
 ## 附：周计划总表
+
+> v0.2 说明：下表是**原始排期**，M0/M1 已实际完成（见 §8.1），M2–M4 的代码骨架超前于排期但验收未完成。保留原表用于对照，不再作为当前进度依据。
 
 | 周 | 里程碑 | 交付物 | 演示 |
 |---|---|---|---|
@@ -755,4 +840,4 @@ PR 必须全绿；`main` 分支保护，禁止直接推送。
 
 ---
 
-**下一步**：确认 §15 的 6 个问题后，进入 M0，用 `pnpm` 初始化工程并按 §5 建立目录骨架。
+**下一步（v0.2 实际）**：M0/M1 已完成，当前处于「测试与性能收尾」——优先补 R8 内容校验用例、把性能断言收紧到预算值、回填 §9.3 实测耗时；随后按 §8.1 顺序推进 M2 验收 B/D。§15 的第 1–5 项仍需产品决策，第 7–8 项是 M1 收尾前必须拍板的两个口径。

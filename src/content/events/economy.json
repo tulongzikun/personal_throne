@@ -1,0 +1,57 @@
+[
+  {
+    "id": "ev_econ_famine",
+    "domain": "economy",
+    "scope": "region",
+    "conditions": { "any": [{ "path": "market.grain.price", "op": ">", "value": 13 }] },
+    "risk": {
+      "lambda0": 0.04,
+      "terms": [{ "path": "priceRatio", "coef": 2.5 }]
+    },
+    "cooldownDays": 120,
+    "effects": [
+      { "kind": "add", "path": "market.grain.price", "value": 2 },
+      { "kind": "add", "path": "market.grain.stock", "value": -40 }
+    ],
+    "text": {
+      "title": "粮价飞涨",
+      "body": "外地商队没有如期抵达，粮铺门前排起长队，价格一日三变。"
+    }
+  },
+  {
+    "id": "ev_econ_glut",
+    "domain": "economy",
+    "scope": "region",
+    "risk": {
+      "lambda0": 0.03,
+      "terms": [{ "path": "priceRatio", "coef": -2.0 }]
+    },
+    "cooldownDays": 120,
+    "effects": [
+      { "kind": "add", "path": "market.grain.price", "value": -2 },
+      { "kind": "add", "path": "market.grain.stock", "value": 60 }
+    ],
+    "text": {
+      "title": "谷贱伤农",
+      "body": "连着几支运粮车队进港，仓里堆满麻袋，粮价应声而落。"
+    }
+  },
+  {
+    "id": "ev_econ_forge_fire",
+    "domain": "economy",
+    "scope": "region",
+    "risk": {
+      "lambda0": 0.02,
+      "terms": [{ "path": "market.iron.stock", "coef": -0.001 }]
+    },
+    "cooldownDays": 180,
+    "effects": [
+      { "kind": "add", "path": "market.iron.price", "value": 3 },
+      { "kind": "add", "path": "market.weapons.price", "value": 4 }
+    ],
+    "text": {
+      "title": "炉火不熄",
+      "body": "铁匠行会接下大单，铁矿与兵器的行情一起走高。"
+    }
+  }
+]

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "c_kingdom",
+    "name": "银月王国",
+    "polity": "monarchy",
+    "population": 83000,
+    "treasury": 18000,
+    "monthlyRevenue": 2400,
+    "monthlyExpense": 2600,
+    "debt": 4200,
+    "military": 1400,
+    "legitimacy": 0.68,
+    "stability": 0.72,
+    "rulerId": "c_king_aerik",
+    "policies": {
+      "taxRate": 0.18,
+      "tariffRate": 0.2,
+      "militaryShare": 0.22,
+      "tradeFreedom": 0.45,
+      "regulation": 0.55
+    }
+  },
+  {
+    "id": "c_league",
+    "name": "港口自由同盟",
+    "polity": "republic",
+    "population": 59000,
+    "treasury": 26000,
+    "monthlyRevenue": 3200,
+    "monthlyExpense": 2900,
+    "debt": 800,
+    "military": 900,
+    "legitimacy": 0.62,
+    "stability": 0.76,
+    "rulerId": "c_consul_mira",
+    "policies": {
+      "taxRate": 0.1,
+      "tariffRate": 0.06,
+      "militaryShare": 0.12,
+      "tradeFreedom": 0.75,
+      "regulation": 0.3
+    }
+  }
+]

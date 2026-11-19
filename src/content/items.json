@@ -1,0 +1,34 @@
+{
+  "grain_sack": {
+    "id": "grain_sack",
+    "name": "粮袋",
+    "category": "trade_good",
+    "goodId": "grain",
+    "unit": 1,
+    "basePrice": 10
+  },
+  "iron_ingot": {
+    "id": "iron_ingot",
+    "name": "铁锭",
+    "category": "trade_good",
+    "goodId": "iron",
+    "unit": 1,
+    "basePrice": 25
+  },
+  "steel_blade": {
+    "id": "steel_blade",
+    "name": "精钢长剑",
+    "category": "trade_good",
+    "goodId": "weapons",
+    "unit": 1,
+    "basePrice": 60
+  },
+  "silk_bolt": {
+    "id": "silk_bolt",
+    "name": "锦缎",
+    "category": "trade_good",
+    "goodId": "luxury",
+    "unit": 1,
+    "basePrice": 150
+  }
+}

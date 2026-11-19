@@ -1,0 +1,27 @@
+{
+  "economy": {
+    "consumptionPerCapitaScale": 1.0,
+    "productionPerWorker": 8,
+    "stockMonthsTarget": 1.5,
+    "priceAdjustFloor": 0.05,
+    "priceAdjustCeiling": 0.5
+  },
+  "finance": {
+    "interestRateMonthly": 0.01,
+    "profitTaxRate": 0.15,
+    "adminRateOfRevenue": 0.08,
+    "payrollPerMember": 6
+  },
+  "events": {
+    "samplingDays": 30,
+    "defaultCooldownDays": 90
+  },
+  "tiers": {
+    "promoteThreshold": 0.55,
+    "demoteThreshold": 0.45,
+    "distanceWeight": 0.4,
+    "relationWeight": 0.35,
+    "scaleWeight": 0.2,
+    "focusWeight": 0.3
+  }
+}

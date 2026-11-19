@@ -1,0 +1,20 @@
+{
+  "merchant": {
+    "id": "merchant",
+    "name": "商人",
+    "primary": ["trade", "negotiation", "appraisal"],
+    "startWealth": 1200
+  },
+  "mercenary": {
+    "id": "mercenary",
+    "name": "佣兵",
+    "primary": ["melee", "tactics", "intimidation"],
+    "startWealth": 400
+  },
+  "politician": {
+    "id": "politician",
+    "name": "政治人物",
+    "primary": ["persuasion", "law", "insight"],
+    "startWealth": 900
+  }
+}

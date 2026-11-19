@@ -1,0 +1,42 @@
+[
+  {
+    "id": "grain",
+    "name": "粮食",
+    "basePrice": 10,
+    "alpha": 0.3,
+    "floorRatio": 0.4,
+    "ceilingRatio": 3,
+    "consumptionPerCapita": 0.012,
+    "subsistenceShare": 0.85
+  },
+  {
+    "id": "iron",
+    "name": "铁矿",
+    "basePrice": 25,
+    "alpha": 0.25,
+    "floorRatio": 0.45,
+    "ceilingRatio": 2.6,
+    "consumptionPerCapita": 0.004,
+    "subsistenceShare": 0.5
+  },
+  {
+    "id": "weapons",
+    "name": "武器",
+    "basePrice": 60,
+    "alpha": 0.22,
+    "floorRatio": 0.5,
+    "ceilingRatio": 2.4,
+    "consumptionPerCapita": 0.001,
+    "subsistenceShare": 0.05
+  },
+  {
+    "id": "luxury",
+    "name": "奢侈品",
+    "basePrice": 150,
+    "alpha": 0.18,
+    "floorRatio": 0.5,
+    "ceilingRatio": 2.2,
+    "consumptionPerCapita": 0.0006,
+    "subsistenceShare": 0.05
+  }
+]

@@ -1,0 +1,157 @@
+[
+  {
+    "id": "ev_country_unrest",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "any": [
+        {
+          "path": "stability",
+          "op": "<",
+          "value": 0.5
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.04,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -1.5
+        },
+        {
+          "path": "legitimacy",
+          "coef": -0.8
+        }
+      ]
+    },
+    "cooldownDays": 60,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.04
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.03
+      }
+    ],
+    "text": {
+      "title": "街市骚动",
+      "body": "粮价与税负的传言在码头扩散，人群聚集，卫兵被调上街头。"
+    }
+  },
+  {
+    "id": "ev_country_bumper",
+    "domain": "country",
+    "scope": "country",
+    "risk": {
+      "lambda0": 0.03,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": 1.2
+        }
+      ]
+    },
+    "cooldownDays": 120,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 220
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.02
+      }
+    ],
+    "text": {
+      "title": "丰年",
+      "body": "风调雨顺，秋税收得比账簿上的预期更厚，国库稍稍宽裕。"
+    }
+  },
+  {
+    "id": "ev_country_war_scare",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "any": [
+        {
+          "path": "debtRatio",
+          "op": ">",
+          "value": 0.12
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": [
+        {
+          "path": "debtRatio",
+          "coef": 6
+        }
+      ]
+    },
+    "cooldownDays": 200,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "policies.militaryShare",
+        "value": 0.05
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -300
+      },
+      {
+        "kind": "schedule",
+        "eventId": "ev_country_aftermath",
+        "inDays": 90
+      }
+    ],
+    "text": {
+      "title": "边境告急",
+      "body": "邻国的骑兵在界碑附近游弋，议会紧急追加军费，商路随之紧张。"
+    }
+  },
+  {
+    "id": "ev_country_aftermath",
+    "domain": "country",
+    "scope": "country",
+    "risk": {
+      "lambda0": 0.01,
+      "terms": []
+    },
+    "cooldownDays": 30,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -400
+      }
+    ],
+    "text": {
+      "title": "战后余波",
+      "body": "对峙没有变成战争，但增税与征兵的账单留了下来。"
+    },
+    "conditions": {
+      "all": [
+        {
+          "path": "stability",
+          "op": "<",
+          "value": 0.6
+        }
+      ]
+    }
+  }
+]

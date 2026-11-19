@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+release/
 pnpm-lock.yaml
 
 # 长篇文档保留原文排版
