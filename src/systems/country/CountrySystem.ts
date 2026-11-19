@@ -2,7 +2,7 @@
  * 国家系统：月度预算与合法性/稳定性的缓慢演化。
  *
  * 预算（整数铜币，唯一权威在 `Country.treasury`）：
- *   收入 = 组织利润税（Finance 已直接入库）+ 关税 + 人头税
+ *   收入 = 人头税（关税与利润税由贸易/财务系统直接入库，不在这里重复计入）
  *   支出 = 军费（militaryShare）+ 行政 + 债务利息
  *   赤字 → 债务，盈余 → 先还债再入国库。
  * 政体变更不在此处——M3 起由"政权更迭"事件链处理。
@@ -45,10 +45,9 @@ export function settleMonthlyCountry(
     country.population = population;
 
     const headTax = Math.round(population * HEAD_TAX_PER_CAPITA * country.policies.taxRate);
-    // 关税税基随贸易开放度变化：开放度越高，过境贸易与报关越充分。
-    const tariffBase = 0.03 + 0.02 * country.policies.tradeFreedom;
-    const tariff = Math.round(population * country.policies.tariffRate * tariffBase);
-    const revenue = headTax + tariff;
+    // 关税不再在这里按人口抽象估算：TradeSystem 按到港货值实收并直接进国库，
+    // 两套口径并存会导致"同一笔贸易被征两次税"，账目无法对平。
+    const revenue = headTax;
 
     const military = Math.round(country.policies.militaryShare * (revenue + 100));
     // 管制越重，行政成本越高（审批、稽查、价格管制）。

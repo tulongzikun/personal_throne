@@ -79,8 +79,11 @@ describe('政策三阶段', () => {
     const country = world.countries['c_kingdom'];
     expect(country).toBeDefined();
     if (!country) return;
-    country.debt = 40000;
-    country.legitimacy = 0.9;
+    // 战争级的财政崩溃：债务远超年收入，才够 0.7 的压力门槛。
+    country.debt = 200000;
+    country.treasury = 0;
+    country.legitimacy = 0.45;
+    country.stability = 0.4;
 
     const proposals = runPolicyRound(world, context(90, new Random('policy')), 90);
     expect(proposals.length).toBeGreaterThan(0);

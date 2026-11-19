@@ -140,6 +140,25 @@ export class CountryPanel {
       );
       card.append(stats);
 
+      if (country.offices.length > 0) {
+        const seats = el('p', 'panel__note', '公职');
+        const list = el('ul', 'plain-list');
+        for (const office of country.offices) {
+          const holder = state.characters[office.holderId];
+          const item = el('li');
+          item.append(
+            el('span', 'plain-list__term', office.title),
+            el(
+              'span',
+              'plain-list__value',
+              `${holder?.name ?? '空缺'} · 影响力 ${fmtPct(office.influence)}`,
+            ),
+          );
+          list.append(item);
+        }
+        card.append(seats, list);
+      }
+
       const policyTitle = el('h3', 'section-title', '政策刻度');
       card.append(policyTitle);
       for (const key of POLICY_KEYS) {

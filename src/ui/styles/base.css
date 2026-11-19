@@ -2311,3 +2311,30 @@ select.input {
     padding: var(--space-3);
   }
 }
+
+/* 公职列表（国家面板） */
+.plain-list {
+  list-style: none;
+  margin: 6px 0 2px;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 0.86rem;
+}
+
+.plain-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.plain-list__term {
+  color: var(--gold);
+}
+
+.plain-list__value {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}

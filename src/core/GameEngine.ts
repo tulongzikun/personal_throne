@@ -52,6 +52,7 @@ import {
   type CharacterCreationResult,
 } from '../systems/character/CharacterCreator';
 import { settleMonthlyCountry } from '../systems/country/CountrySystem';
+import { assignOffices, influenceOf, syncOffices } from '../systems/country/Offices';
 import { runPolicyRound } from '../systems/country/PolicySystem';
 import {
   settleMonthlyDiplomacy,
@@ -74,6 +75,10 @@ export class GameEngine {
     this.rng = Random.fromSnapshot({ seed: state.meta.seed, counters: state.rngCounters });
     this.history = new History(state.history);
     this.stopAtChoices = options.stopAtChoices ?? false;
+    // 开局补齐公职：技能最高者出任首相/元帅/财务大臣，玩家影响力由此计算。
+    if (Object.values(state.countries).every((country) => country.offices.length === 0)) {
+      assignOffices(state);
+    }
   }
 
   /** 等待玩家抉择的事件（UI 用）。 */
@@ -83,6 +88,14 @@ export class GameEngine {
 
   get day(): number {
     return this.state.clock.day;
+  }
+
+  /** 玩家在当前所在国的公职影响力（0–1），政策支持度与命令权限共用。 */
+  playerInfluence(): number {
+    const player = this.state.characters[this.state.playerId];
+    if (!player) return 0;
+    const region = this.state.regions[player.location.regionId];
+    return influenceOf(this.state, player.id, region?.countryId ?? '');
   }
 
   /** 状态指纹：确定性回归与存档校验用。 */
@@ -292,7 +305,18 @@ export class GameEngine {
 
     // 政策压力季度检查（3/6/9/12 月末），带成本、冷却与政体决策。
     if (isQuarterEnd(ctx.day)) {
-      const round = runPolicyRound(this.state, ctx, ctx.day, this.content.balance.policy);
+      for (const note of syncOffices(this.state)) {
+        this.record('policy', `${formatDate(ctx.day)} ${note.text}`, [
+          { kind: 'country', id: note.countryId },
+        ]);
+      }
+      const round = runPolicyRound(
+        this.state,
+        ctx,
+        ctx.day,
+        this.content.balance.policy,
+        this.playerInfluence(),
+      );
       for (const proposal of round) {
         this.record('policy', `${formatDate(ctx.day)} ${proposal.reason}`, [
           { kind: 'country', id: proposal.countryId },
