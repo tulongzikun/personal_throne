@@ -17,6 +17,7 @@ import type {
   Effect,
   EntityId,
   EventDef,
+  ChoiceDef,
   Expr,
   Market,
   WorldContent,
@@ -28,6 +29,8 @@ import { marketKeyOf, sortedIds } from './WorldState';
 export const EVENT_WINDOW_DAYS = 30;
 /** 历史特征的回溯窗口（一年）。 */
 export const HISTORY_WINDOW_DAYS = 360;
+/** 玩家抉择的等待窗口（天），超时自动按效用择优。 */
+export const CHOICE_WINDOW_DAYS = 45;
 
 /**
  * 事件触发概率。
@@ -455,6 +458,15 @@ export function applyEvent(
     changes.push(...applyEffect(state, content, target, effect, def.id));
   }
 
+  // 有选项的事件：不拦玩家时按效用自动择优（确定性，无 rng 也稳定）。
+  if (def.choices && def.choices.length > 0) {
+    const choice = pickChoice(state, target, def.choices);
+    if (choice) {
+      changes.push(...resolveChoice(state, content, def, target, choice, rng));
+      changes.push(`抉择：${choice.label}`);
+    }
+  }
+
   if (rng) {
     changes.push(...scheduleFollowUps(state, def, target, rng));
   }
@@ -652,4 +664,84 @@ export function labelOf(state: WorldState, target: EventTarget): string {
     case 'character':
       return state.characters[target.entityId]?.name ?? target.entityId;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* 抉择                                                                 */
+/* ------------------------------------------------------------------ */
+
+/** 应用事件自身的效果（有 choices 时，基础效果在"做出抉择"时一并结算）。 */
+export function applyBaseEffects(
+  state: WorldState,
+  content: WorldContent,
+  def: EventDef,
+  target: EventTarget,
+): string[] {
+  const changes: string[] = [];
+  for (const effect of def.effects) {
+    changes.push(...applyEffect(state, content, target, effect, def.id));
+  }
+  return changes;
+}
+
+/** 选项效用：把效果折算成同一量纲，供 NPC 自动择优。 */
+export function choiceUtility(choice: ChoiceDef): number {
+  let score = 0;
+  for (const effect of choice.effects) {
+    if (effect.kind === 'schedule' || effect.kind === 'merge') {
+      score += 20;
+      continue;
+    }
+    if (effect.kind === 'stat') {
+      score += Math.abs(effect.value) * 10;
+      continue;
+    }
+    const magnitude = Math.abs(effect.value);
+    if (effect.path === 'legitimacy' || effect.path === 'stability') score += magnitude * 500;
+    else if (effect.path === 'conflict') score -= magnitude * 400;
+    else if (effect.path === 'wealth' || effect.path === 'cash') score += effect.value;
+    else if (effect.path === 'treasury') score += effect.value * 0.5;
+    else score += effect.value;
+  }
+  return score;
+}
+
+/** 可用选项（满足条件）里选效用最高者；同分按 id 稳定排序。 */
+export function pickChoice(
+  state: WorldState,
+  target: EventTarget,
+  choices: readonly ChoiceDef[],
+): ChoiceDef | null {
+  const resolver = (path: string): number => readFeature(state, target, path);
+  const available = choices
+    .filter((choice) => !choice.conditions || evaluate(choice.conditions, resolver))
+    .slice()
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  let best: ChoiceDef | null = null;
+  let bestScore = Number.NEGATIVE_INFINITY;
+  for (const choice of available) {
+    const score = choiceUtility(choice);
+    if (score > bestScore) {
+      best = choice;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+/** 应用某个选项并返回变化说明；调用方负责把 pending 从状态里移除。 */
+export function resolveChoice(
+  state: WorldState,
+  content: WorldContent,
+  def: EventDef,
+  target: EventTarget,
+  choice: ChoiceDef,
+  rng: Random | null = null,
+): string[] {
+  const changes: string[] = [];
+  for (const effect of choice.effects) {
+    changes.push(...applyEffect(state, content, target, effect, def.id));
+  }
+  if (rng) changes.push(...scheduleFollowUps(state, def, target, rng));
+  return changes;
 }

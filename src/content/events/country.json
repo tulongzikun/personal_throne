@@ -277,7 +277,41 @@
     "text": {
       "title": "关税争端",
       "body": "对岸的商团抗议重税，扣押了本国商船；谈判以小幅降税与赔款收场。"
-    }
+    },
+    "choices": [
+      {
+        "id": "hike",
+        "label": "提高关税，护住本地行会",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "policies.tariff",
+            "value": 0.05
+          },
+          {
+            "kind": "add",
+            "path": "legitimacy",
+            "value": 0.02
+          }
+        ]
+      },
+      {
+        "id": "cut",
+        "label": "下调关税，换取商路",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "policies.tariff",
+            "value": -0.05
+          },
+          {
+            "kind": "add",
+            "path": "treasury",
+            "value": -200
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "ev_country_plague",

@@ -12,7 +12,18 @@
  */
 
 import { applyCommand, type Command, type CommandResult } from './CommandBus';
-import { applyEvent, collectCandidates, selectTriggered } from './EventEngine';
+import {
+  applyBaseEffects,
+  applyEvent,
+  evaluate,
+  readFeature,
+  CHOICE_WINDOW_DAYS,
+  collectCandidates,
+  pickChoice,
+  resolveChoice,
+  selectTriggered,
+  type EventTarget,
+} from './EventEngine';
 import { formatDate, GameClock, Phase, settlementPoints, type SettlementPoint } from './GameClock';
 import { History } from './History';
 import { Random } from './Random';
@@ -20,6 +31,7 @@ import { applyTiers, computeTiers } from './SimulationTier';
 import {
   hashWorld,
   monthKeyOf,
+  type EventDef,
   type SettleContext,
   type WorldContent,
   type WorldState,
@@ -49,13 +61,20 @@ export class GameEngine {
   private readonly clock: GameClock;
   private rng: Random;
   private readonly history: History;
+  private readonly stopAtChoices: boolean;
 
-  constructor(state: WorldState, content: WorldContent) {
+  constructor(state: WorldState, content: WorldContent, options: { stopAtChoices?: boolean } = {}) {
     this.state = state;
     this.content = content;
     this.clock = new GameClock(state.clock);
     this.rng = Random.fromSnapshot({ seed: state.meta.seed, counters: state.rngCounters });
     this.history = new History(state.history);
+    this.stopAtChoices = options.stopAtChoices ?? false;
+  }
+
+  /** 等待玩家抉择的事件（UI 用）。 */
+  get pendingChoices() {
+    return this.state.pendingChoices;
   }
 
   get day(): number {
@@ -69,6 +88,18 @@ export class GameEngine {
 
   /** 唯一写入口。 */
   dispatch(command: Command): CommandResult {
+    if (command.kind === 'choose') {
+      const result = this.choose(command.choiceId);
+      if (result.ok) {
+        this.record(
+          'command',
+          `${formatDate(this.day)} ${result.summary ?? '做出抉择'}`,
+          result.refs ?? [],
+        );
+      }
+      this.syncCounters();
+      return result;
+    }
     const result = applyCommand(this.state, command, this.content);
     if (result.ok) {
       const summary = result.summary ?? command.kind;
@@ -118,6 +149,7 @@ export class GameEngine {
   /* ---------------------------------------------------------------- */
 
   private settleDay(day: number): void {
+    this.expireChoices(day);
     this.fireDueEvents(day);
     for (const point of settlementPoints(day)) {
       this.settlePhase(point);
@@ -279,13 +311,7 @@ export class GameEngine {
     );
 
     for (const trigger of triggered) {
-      const outcome = applyEvent(this.state, this.content, trigger, this.rng);
-      this.record(
-        'event',
-        `${formatDate(ctx.day)} ${outcome.summary}`,
-        [{ kind: trigger.target.scope, id: trigger.target.entityId }],
-        trigger.def.id,
-      );
+      this.applyTrigger(trigger.def, trigger.target, ctx.day);
     }
   }
 
@@ -354,6 +380,101 @@ export class GameEngine {
 
   /* ---------------------------------------------------------------- */
 
+  /** 玩家做出抉择：结算选项效果并清掉挂起记录。 */
+  choose(choiceId?: string): CommandResult {
+    const pending = this.state.pendingChoices.find(
+      (item) => item.scope === 'character' && item.entityId === this.state.playerId,
+    );
+    if (!pending) return { ok: false, error: '当前没有等待你决定的事件' };
+
+    const def = this.content.events.find((event) => event.id === pending.eventId);
+    if (!def?.choices || def.choices.length === 0) {
+      this.state.pendingChoices = this.state.pendingChoices.filter((item) => item !== pending);
+      return { ok: false, error: '该事件没有可选项' };
+    }
+    const options = def.choices.filter((choice) => {
+      if (!choice.conditions) return true;
+      const target = { scope: pending.scope, entityId: pending.entityId };
+      const resolver = (path: string): number => readFeature(this.state, target, path);
+      return evaluate(choice.conditions, resolver);
+    });
+    const picked =
+      (choiceId ? options.find((choice) => choice.id === choiceId) : undefined) ??
+      (choiceId
+        ? null
+        : pickChoice(this.state, { scope: pending.scope, entityId: pending.entityId }, options));
+    if (!picked)
+      return { ok: false, error: choiceId ? `没有可用选项 ${choiceId}` : '没有满足条件的选项' };
+
+    const target = { scope: pending.scope, entityId: pending.entityId };
+    const changes = [
+      ...applyBaseEffects(this.state, this.content, def, target),
+      ...resolveChoice(this.state, this.content, def, target, picked, this.rng),
+    ];
+    this.state.pendingChoices = this.state.pendingChoices.filter((item) => item !== pending);
+    return {
+      ok: true,
+      summary: `抉择「${picked.label}」${changes.length > 0 ? `：${changes.join('；')}` : ''}`,
+      refs: [{ kind: pending.scope, id: pending.entityId }],
+    };
+  }
+
+  /** 超时未决：按效用自动选一个，写进历史。 */
+  private expireChoices(day: number): void {
+    const due = this.state.pendingChoices.filter((item) => item.expiresDay <= day);
+    if (due.length === 0) return;
+    this.state.pendingChoices = this.state.pendingChoices.filter((item) => !due.includes(item));
+
+    for (const pending of due) {
+      const def = this.content.events.find((event) => event.id === pending.eventId);
+      if (!def?.choices || def.choices.length === 0) continue;
+      const target = { scope: pending.scope, entityId: pending.entityId };
+      const choice = pickChoice(this.state, target, def.choices);
+      if (!choice) continue;
+      applyBaseEffects(this.state, this.content, def, target);
+      resolveChoice(this.state, this.content, def, target, choice, this.rng);
+      this.record(
+        'event',
+        `${formatDate(day)} ${def.text.title}：超时未决，按「${choice.label}」处理`,
+        [{ kind: pending.scope, id: pending.entityId }],
+        def.id,
+      );
+    }
+  }
+
+  /** 统一的"事件结算"入口：玩家抉择会被挂起，其余按效用自动选。 */
+  applyTrigger(def: EventDef, target: EventTarget, day: number): void {
+    const isPlayer = target.scope === 'character' && target.entityId === this.state.playerId;
+    if (def.choices && def.choices.length > 0 && isPlayer && this.stopAtChoices) {
+      this.state.pendingChoices.push({
+        id: `${def.id}@${target.entityId}@${day}`,
+        eventId: def.id,
+        scope: target.scope,
+        entityId: target.entityId,
+        day,
+        expiresDay: day + CHOICE_WINDOW_DAYS,
+      });
+      const cooldown =
+        def.cooldownDays > 0 ? def.cooldownDays : this.content.balance.events.defaultCooldownDays;
+      this.state.cooldowns[`${def.id}@${target.entityId}`] = day + cooldown;
+      this.record(
+        'event',
+        `${formatDate(day)} ${def.text.title}：等待你的决定`,
+        [{ kind: target.scope, id: target.entityId }],
+        def.id,
+      );
+      return;
+    }
+
+    const outcome = applyEvent(this.state, this.content, { def, target }, this.rng);
+    this.record(
+      'event',
+      `${formatDate(day)} ${outcome.summary}`,
+      [{ kind: target.scope, id: target.entityId }],
+      def.id,
+    );
+  }
+
   private fireDueEvents(day: number): void {
     const due = this.state.pendingEvents
       .filter((event) => event.day <= day && event.kind === 'event')
@@ -366,15 +487,9 @@ export class GameEngine {
       if (!def) continue;
       if (!scheduled.targetScope || !scheduled.targetEntityId) continue;
       const target = { scope: scheduled.targetScope, entityId: scheduled.targetEntityId };
-      // 链条步序必须与内容声明一致，避免存档里残留的旧排程跳步执。
+      // 链条步序必须与内容声明一致，避免存档里残留的旧排程跳步执行。
       if (scheduled.chainStep !== undefined && def.chain?.step !== scheduled.chainStep) continue;
-      const outcome = applyEvent(this.state, this.content, { def, target }, this.rng);
-      this.record(
-        'event',
-        `${formatDate(day)} ${outcome.summary}`,
-        [{ kind: target.scope, id: target.entityId }],
-        def.id,
-      );
+      this.applyTrigger(def, target, day);
     }
   }
 

@@ -22,7 +22,7 @@ export type ContractId = string;
 export type ArmyId = string;
 export type EntityId = string;
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 /* ------------------------------------------------------------------ */
 /* 人物档案（schema，M4）                                               */
@@ -388,6 +388,25 @@ export interface EventDef {
   readonly chain?: EventChainRef;
   /** 事件发生后按延迟排定的后续事件（可带概率与条件）。 */
   readonly followUps?: readonly FollowUpDef[];
+  /** 需要玩家/当事人二选一的选项；有 choices 时 effects 不再自动应用。 */
+  readonly choices?: readonly ChoiceDef[];
+}
+
+export interface ChoiceDef {
+  readonly id: string;
+  readonly label: string;
+  readonly hint?: string;
+  readonly effects: readonly Effect[];
+  readonly conditions?: Expr;
+}
+
+export interface PendingChoice {
+  readonly id: string;
+  readonly eventId: string;
+  readonly scope: EventDef['scope'];
+  readonly entityId: EntityId;
+  readonly day: number;
+  readonly expiresDay: number;
 }
 
 export interface EventChainRef {
@@ -760,6 +779,8 @@ export interface WorldState {
   armies: Record<ArmyId, Army>;
   tiers: Record<EntityId, 1 | 2 | 3>;
   pendingEvents: ScheduledEvent[];
+  /** 等待抉择的事件（玩家点击或到期自动选）。 */
+  pendingChoices: PendingChoice[];
   rngCounters: Record<string, number>;
   /** 事件冷却：`${eventId}@${entityId}` → 解禁日。 */
   cooldowns: Record<string, number>;
@@ -1020,6 +1041,7 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
     armies: {},
     tiers,
     pendingEvents: [],
+    pendingChoices: [],
     rngCounters: {},
     cooldowns: {},
     history: [],

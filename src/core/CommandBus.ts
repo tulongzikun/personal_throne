@@ -76,7 +76,9 @@ export type Command =
       kind: 'change_career';
       characterId: CharacterId;
       classId: 'merchant' | 'mercenary' | 'politician';
-    });
+    })
+  /** 对挂起的玩家事件做出抉择；不传 choiceId 表示按效用择优。 */
+  | (CommandBase & { kind: 'choose'; choiceId?: string });
 
 export type CommandKind = Command['kind'];
 
@@ -498,6 +500,11 @@ export function applyCommand(
       };
     }
 
+    case 'choose': {
+      // 抉择由 GameEngine 结算（需要 rng 与历史记录），这里只做占位以防漏接。
+      return fail('抉择请通过 GameEngine.dispatch 提交');
+    }
+
     default: {
       const exhaustive: never = command;
       return fail(`未知命令 ${(exhaustive as { kind?: string }).kind ?? '?'}`);
@@ -558,5 +565,7 @@ export function describeCommand(command: Command): string {
       return `出售资产 ${command.amount}`;
     case 'change_career':
       return `转行为 ${command.classId}`;
+    case 'choose':
+      return command.choiceId ? `抉择 ${command.choiceId}` : '做出抉择';
   }
 }

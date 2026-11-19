@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { SCHEMA_VERSION, validateWorld } from '../src/core/WorldState';
+import { GameEngine } from '../src/core/GameEngine';
 import {
   SAVE_FORMAT,
   SAVE_FORMAT_VERSION,
@@ -109,6 +110,34 @@ describe('存档迁移', () => {
     const envelope = parseSave(text);
     expect(envelope.hash).toBe('');
     expect(validateWorld(envelope.state)).toEqual([]);
+  });
+
+  it('v5 存档迁移到 v6 时补齐抉择队列', () => {
+    const state = makeWorld();
+    const legacy = JSON.parse(JSON.stringify(state));
+    legacy.meta.schemaVersion = 5;
+    delete legacy.pendingChoices;
+
+    const migrated = migrateWorldState(legacy);
+    expect(migrated.meta.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(migrated.pendingChoices).toEqual([]);
+    expect(validateWorld(migrated)).toEqual([]);
+  });
+
+  it('v1 存档可以一路迁到当前版本', () => {
+    const migrated = migrateWorldState(asLegacyV1());
+    expect(migrated.meta.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(validateWorld(migrated)).toEqual([]);
+    expect(Array.isArray(migrated.pendingChoices)).toBe(true);
+  });
+
+  it('旧存档迁移后能继续模拟 10 年', () => {
+    const migrated = migrateWorldState(asLegacyV1());
+    const startDay = migrated.clock.day;
+    const engine = new GameEngine(migrated, content);
+    engine.advanceDays(3600);
+    expect(validateWorld(engine.state)).toEqual([]);
+    expect(engine.state.clock.day).toBe(startDay + 3600);
   });
 
   it('更高的 formatVersion 会被拒绝', () => {

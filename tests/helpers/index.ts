@@ -9,6 +9,9 @@ export function makeWorld(seed = 'test-seed'): WorldState {
   return createWorld(content, { seed, createdAt: 0 });
 }
 
-export function makeEngine(seed = 'test-seed'): GameEngine {
-  return new GameEngine(makeWorld(seed), content);
+export function makeEngine(
+  seed = 'test-seed',
+  options: { stopAtChoices?: boolean } = {},
+): GameEngine {
+  return new GameEngine(makeWorld(seed), content, options);
 }

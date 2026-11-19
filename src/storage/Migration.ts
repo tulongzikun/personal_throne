@@ -20,7 +20,7 @@ export class SaveError extends Error {
 }
 
 /** 当前信封结构版本。 */
-export const SAVE_FORMAT_VERSION = 2;
+export const SAVE_FORMAT_VERSION = 6;
 export const SAVE_FORMAT = 'throne-and-gold-save';
 
 interface LegacyState extends Record<string, unknown> {
@@ -233,6 +233,12 @@ function migrateV3toV4(raw: Record<string, unknown>): void {
 }
 
 /** v4 → v5：补生涯阶梯字段（关系网不需要新字段，复用现有 relations）。 */
+function migrateV5toV6(raw: Record<string, unknown>): void {
+  // v6 引入「抉择挂起」队列：旧存档没有待决事件。
+  if (!Array.isArray(raw['pendingChoices'])) raw['pendingChoices'] = [];
+  raw['meta'] = raw['meta'] ?? {};
+}
+
 function migrateV4toV5(raw: Record<string, unknown>): void {
   const characters = (raw['characters'] ?? {}) as Record<string, Record<string, unknown>>;
   for (const character of Object.values(characters)) {
@@ -274,6 +280,11 @@ export function migrateWorldState(raw: unknown): WorldState {
     if (version === 4) {
       migrateV4toV5(state);
       version = 5;
+      continue;
+    }
+    if (version === 5) {
+      migrateV5toV6(state);
+      version = 6;
       continue;
     }
     throw new SaveError(`缺少 v${version} → v${SCHEMA_VERSION} 的迁移步骤`);

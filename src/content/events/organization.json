@@ -331,7 +331,48 @@
     "text": {
       "title": "罢工",
       "body": "欠薪传开以后，工坊的炉子冷了三天，管事只能拿现钱安抚。"
-    }
+    },
+    "choices": [
+      {
+        "id": "raise",
+        "label": "答应加薪，平息众怒",
+        "hint": "现金 −180，冲突下降",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "cash",
+            "value": -180
+          },
+          {
+            "kind": "add",
+            "path": "conflict",
+            "value": -0.08
+          },
+          {
+            "kind": "add",
+            "path": "leadership.legitimacy",
+            "value": 0.03
+          }
+        ]
+      },
+      {
+        "id": "refuse",
+        "label": "拒绝，若停工就清场",
+        "hint": "冲突上升，效率下降",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "conflict",
+            "value": 0.07
+          },
+          {
+            "kind": "add",
+            "path": "efficiency",
+            "value": -0.05
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "ev_org_merger",

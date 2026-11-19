@@ -1793,3 +1793,27 @@ select.input {
     grid-template-columns: 1fr;
   }
 }
+
+/* 抉择：事件对话框里的选项按钮 */
+.modal__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.modal__choices[hidden] {
+  display: none;
+}
+
+.modal__choice {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+}
+
+.modal__badge--choice {
+  background: color-mix(in srgb, var(--gold) 24%, transparent);
+  color: var(--gold);
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+}

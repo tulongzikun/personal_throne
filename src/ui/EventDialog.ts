@@ -2,11 +2,19 @@
 
 import { el } from './dom';
 
+export interface ChoiceOption {
+  readonly id: string;
+  readonly label: string;
+  readonly hint?: string;
+}
+
 export interface WorldSignal {
   readonly title: string;
   readonly body: string;
   readonly meta: string;
-  readonly tone: 'event' | 'omen';
+  readonly tone: 'event' | 'omen' | 'choice';
+  readonly options?: readonly ChoiceOption[];
+  readonly onPick?: (optionId: string) => void;
 }
 
 export class EventDialog {
@@ -16,6 +24,7 @@ export class EventDialog {
   private readonly metaEl: HTMLElement;
   private readonly bodyEl: HTMLElement;
   private readonly badgeEl: HTMLElement;
+  private readonly choicesEl: HTMLElement;
   private readonly queue: WorldSignal[] = [];
   private visible = false;
 
@@ -37,11 +46,12 @@ export class EventDialog {
 
     this.metaEl = el('p', 'modal__meta');
     this.bodyEl = el('p', 'modal__body');
+    this.choicesEl = el('div', 'modal__choices');
     const close = el('button', 'btn btn--gold modal__close', '关闭');
     close.type = 'button';
     close.addEventListener('click', () => this.dismiss());
 
-    this.card.append(head, this.metaEl, this.bodyEl, close);
+    this.card.append(head, this.metaEl, this.bodyEl, this.choicesEl, close);
     this.root.append(this.card);
     this.root.addEventListener('click', (event) => {
       if (event.target === this.root) this.dismiss();
@@ -74,11 +84,27 @@ export class EventDialog {
   private next(): void {
     const signal = this.queue.shift();
     if (!signal) return;
-    this.badgeEl.textContent = signal.tone === 'omen' ? '预兆' : '世界事件';
+    this.badgeEl.textContent =
+      signal.tone === 'omen' ? '预兆' : signal.tone === 'choice' ? '你的抉择' : '世界事件';
     this.badgeEl.className = `modal__badge modal__badge--${signal.tone}`;
     this.titleEl.textContent = signal.title;
     this.metaEl.textContent = signal.meta;
     this.bodyEl.textContent = signal.body;
+
+    this.choicesEl.replaceChildren();
+    for (const option of signal.options ?? []) {
+      const button = el('button', 'btn btn--gold modal__choice', option.label);
+      button.type = 'button';
+      if (option.hint) button.title = option.hint;
+      button.addEventListener('click', () => {
+        const handler = signal.onPick;
+        this.dismiss();
+        handler?.(option.id);
+      });
+      this.choicesEl.append(button);
+    }
+    this.choicesEl.hidden = (signal.options ?? []).length === 0;
+
     this.root.hidden = false;
     this.root.setAttribute('aria-hidden', 'false');
     this.visible = true;

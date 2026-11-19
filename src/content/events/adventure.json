@@ -30,6 +30,30 @@
         "delayDays": 10,
         "chance": 0.5
       }
+    ],
+    "choices": [
+      {
+        "id": "take",
+        "label": "接下这趟活",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": 90
+          }
+        ]
+      },
+      {
+        "id": "pass",
+        "label": "留在城里，稳妥些",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "skills.insight",
+            "value": 1
+          }
+        ]
+      }
     ]
   },
   {

@@ -22,6 +22,7 @@ import type { NoticeTone, UiDeps } from './context';
 import { CountryPanel } from './CountryPanel';
 import { CreateCharacterDialog, creationErrorText } from './CreateCharacterDialog';
 import { EventDialog, type WorldSignal } from './EventDialog';
+import { CHOICE_WINDOW_DAYS } from '../core/EventEngine';
 import { HistoryPanel } from './HistoryPanel';
 import { MapView, countryPalette } from './MapView';
 import { OrganizationPanel } from './OrganizationPanel';
@@ -91,6 +92,7 @@ export class App {
   private toastTimer: number | null = null;
   private lastHistoryId = 0;
   private seenPending = new Set<string>();
+  private shownChoices = new Set<string>();
   private lastHashDay = 0;
 
   constructor(root: HTMLElement, engine: GameEngine) {
@@ -186,6 +188,7 @@ export class App {
 
     this.lastHistoryId = state.history.at(-1)?.id ?? 0;
     this.seenPending = new Set(state.pendingEvents.map(signalKey));
+    this.shownChoices = new Set();
     this.lastHashDay = 0;
 
     this.switchTab('region');
@@ -420,6 +423,7 @@ export class App {
     }
     this.refresh();
     this.drainSignals();
+    this.pumpChoices();
   }
 
   private advanceToDay(day: number): void {
@@ -432,6 +436,7 @@ export class App {
     }
     this.refresh();
     this.drainSignals();
+    this.pumpChoices();
   }
 
   private jumpToNextEvent(): void {
@@ -463,6 +468,38 @@ export class App {
       this.notify(result.error ?? '命令失败', 'error');
     }
     return result;
+  }
+
+  /** 把等待中的玩家抉择弹出来；同一条只弹一次。 */
+  private pumpChoices(): void {
+    const state = this.engine.state;
+    const pending = state.pendingChoices.find((item) => !this.shownChoices.has(item.id));
+    if (!pending) return;
+    this.shownChoices.add(pending.id);
+    const def = this.engine.content.events.find((event) => event.id === pending.eventId);
+    if (!def?.choices) return;
+
+    this.eventDialog.pushMany([
+      {
+        title: def.text.title,
+        body: def.text.body,
+        meta: `${formatDate(pending.day)} · 这一步由你决定（${CHOICE_WINDOW_DAYS} 天内有效）`,
+        tone: 'choice',
+        options: def.choices.map((choice) => ({
+          id: choice.id,
+          label: choice.label,
+          ...(choice.hint ? { hint: choice.hint } : {}),
+        })),
+        onPick: (choiceId) => {
+          const result = this.engine.dispatch({ kind: 'choose', choiceId });
+          this.refresh(true);
+          this.notify(
+            result.ok ? (result.summary ?? '已做出抉择') : (result.error ?? '抉择失败'),
+            result.ok ? 'ok' : 'error',
+          );
+        },
+      },
+    ]);
   }
 
   private drainSignals(): void {
@@ -569,7 +606,7 @@ export class App {
 
   private adopt(state: WorldState, message: string): void {
     this.setSpeed(0);
-    this.engine = new GameEngine(state, this.engine.content);
+    this.engine = new GameEngine(state, this.engine.content, { stopAtChoices: true });
     const player = state.characters[state.playerId];
     this.selectedRegionId = player?.regionId ?? Object.keys(state.regions).sort()[0] ?? null;
     if (this.selectedRegionId) {
