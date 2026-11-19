@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 类型检查
+        run: pnpm typecheck
+
+      - name: 静态检查
+        run: pnpm lint
+
+      - name: 单元测试
+        run: pnpm test
+
+      - name: 构建单文件
+        run: pnpm build
+
+      - name: 校验单文件产物
+        run: |
+          test -f dist/index.html
+          size=$(stat -c%s dist/index.html)
+          echo "dist/index.html = ${size} bytes"
+          # 发布包体积预算：1.5 MiB
+          test "${size}" -lt 1572864
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: throne-and-gold
+          path: dist/index.html

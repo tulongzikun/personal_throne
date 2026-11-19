@@ -3,6 +3,9 @@ node_modules/
 
 # build output (dist/index.html is a release artifact, rebuilt by `pnpm build`)
 dist/
+coverage/
+.vite/
+*.tsbuildinfo
 
 # local tooling / scratch
 .tmp/
