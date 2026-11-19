@@ -143,4 +143,84 @@ describe('开局人物创建', () => {
     expect(new Set(TALENT_TAGS.map((tag) => tag.attribute)).size).toBe(6);
     expect(new Set(TALENT_TAGS.map((tag) => tag.id)).size).toBe(6);
   });
+
+  it('可选国家、地区与组织，入场是白身（无股份、非领袖、生涯 0 级）', () => {
+    const world = makeWorld();
+    const { character } = createPlayerCharacter(world, content, {
+      backgroundId: background.id,
+      talents: picks,
+      countryId: 'c_league',
+      regionId: 'r_tidemarket',
+      organizationId: 'o_bluewave',
+    });
+
+    expect(character.location.regionId).toBe('r_tidemarket');
+    expect(character.homeRegionId).toBe('r_tidemarket');
+    expect(character.organizationId).toBe('o_bluewave');
+    expect(character.careerRank).toBe(0);
+    expect(character.offices).toEqual([]);
+    const org = world.organizations['o_bluewave'];
+    expect(org?.leadership.leaderId).not.toBe(character.id);
+    expect(org?.shares.some((share) => share.characterId === character.id)).toBe(false);
+    expect(validateWorld(world)).toEqual([]);
+  });
+
+  it('不选组织时 organizationId 为 null', () => {
+    const world = makeWorld();
+    const { character } = createPlayerCharacter(world, content, {
+      backgroundId: background.id,
+      talents: picks,
+      organizationId: null,
+    });
+    expect(character.organizationId).toBeNull();
+  });
+
+  it('地区必须属于所选国家，未知国家/组织直接拒绝', () => {
+    const world = makeWorld();
+    expect(() =>
+      createPlayerCharacter(world, content, {
+        backgroundId: background.id,
+        talents: picks,
+        countryId: 'c_kingdom',
+        regionId: 'r_portlumen',
+      }),
+    ).toThrow(CharacterCreationError);
+    expect(() =>
+      createPlayerCharacter(world, content, {
+        backgroundId: background.id,
+        talents: picks,
+        countryId: 'c_missing',
+      }),
+    ).toThrow(CharacterCreationError);
+    expect(() =>
+      createPlayerCharacter(world, content, {
+        backgroundId: background.id,
+        talents: picks,
+        organizationId: 'o_missing',
+      }),
+    ).toThrow(CharacterCreationError);
+  });
+
+  it('替换默认主角时，旧股份与领袖位被移交，新主角不再是金穗行领袖', () => {
+    const world = makeWorld();
+    const org = world.organizations['o_grainwheel'];
+    if (!org) throw new Error('测试夹具缺少 o_grainwheel');
+    const sharesBefore = org.shares.reduce((sum, share) => sum + share.share, 0);
+    expect(org.leadership.leaderId).toBe('c_player');
+
+    const { character, retired } = createPlayerCharacter(world, content, {
+      backgroundId: background.id,
+      talents: picks,
+      organizationId: null,
+    });
+
+    expect(retired?.sharesRemoved).toBe(1);
+    expect(retired?.leadershipsHanded).toBe(1);
+    const sharesAfter = org.shares.reduce((sum, share) => sum + share.share, 0);
+    expect(sharesAfter).toBeCloseTo(sharesBefore, 6);
+    expect(org.shares.some((share) => share.characterId === character.id)).toBe(false);
+    expect(org.leadership.leaderId).not.toBe(character.id);
+    expect(character.organizationId).toBeNull();
+    expect(validateWorld(world)).toEqual([]);
+  });
 });

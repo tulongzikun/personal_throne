@@ -25,6 +25,9 @@ export class CreateCharacterDialog {
   private readonly nameInput: HTMLInputElement;
   private readonly sexSelect: HTMLSelectElement;
   private readonly faithSelect: HTMLSelectElement;
+  private readonly countrySelect: HTMLSelectElement;
+  private readonly regionSelect: HTMLSelectElement;
+  private readonly orgSelect: HTMLSelectElement;
   private readonly startButton: HTMLButtonElement;
   private readonly errorEl: HTMLElement;
 
@@ -51,7 +54,7 @@ export class CreateCharacterDialog {
     const intro = el(
       'p',
       'modal__body',
-      '先选一个出身，再从六个天赋标签里挑三个（可以重复），每个 +2、单维上限 16。姓名留空会按文化随机生成。',
+      '先选一个出身，再从六个天赋标签里挑三个（可以重复），每个 +2、单维上限 16。国家、地区与组织决定你从哪里起步——组织可以是「无组织」，你也可以加入别人的字号，但不会凭空继承股份或领袖位。',
     );
 
     this.listEl = el('div', 'create-backgrounds');
@@ -73,6 +76,16 @@ export class CreateCharacterDialog {
     this.sexSelect.setAttribute('aria-label', '性别');
     this.faithSelect = el('select', 'input');
     this.faithSelect.setAttribute('aria-label', '信仰');
+    this.countrySelect = el('select', 'input');
+    this.countrySelect.setAttribute('aria-label', '国家');
+    this.regionSelect = el('select', 'input');
+    this.regionSelect.setAttribute('aria-label', '地区');
+    this.orgSelect = el('select', 'input');
+    this.orgSelect.setAttribute('aria-label', '组织');
+    this.countrySelect.addEventListener('change', () => {
+      this.renderRegions();
+      this.renderOrganizations();
+    });
 
     const fields = el('div', 'create-fields');
     const nameField = el('label', 'field');
@@ -81,7 +94,13 @@ export class CreateCharacterDialog {
     sexField.append(el('span', 'field__label', '性别'), this.sexSelect);
     const faithField = el('label', 'field');
     faithField.append(el('span', 'field__label', '信仰'), this.faithSelect);
-    fields.append(nameField, sexField, faithField);
+    const countryField = el('label', 'field');
+    countryField.append(el('span', 'field__label', '国家'), this.countrySelect);
+    const regionField = el('label', 'field');
+    regionField.append(el('span', 'field__label', '地区'), this.regionSelect);
+    const orgField = el('label', 'field');
+    orgField.append(el('span', 'field__label', '组织'), this.orgSelect);
+    fields.append(nameField, sexField, faithField, countryField, regionField, orgField);
 
     this.errorEl = el('p', 'create-error');
     this.errorEl.hidden = true;
@@ -131,6 +150,9 @@ export class CreateCharacterDialog {
     this.renderBackgrounds();
     this.renderTalents();
     this.renderFaiths();
+    this.renderCountries();
+    this.renderRegions();
+    this.renderOrganizations();
     this.renderCounter();
     this.root.hidden = false;
     this.root.setAttribute('aria-hidden', 'false');
@@ -172,6 +194,10 @@ export class CreateCharacterDialog {
       node.addEventListener('click', () => {
         this.backgroundId = background.id;
         this.renderBackgrounds();
+        this.renderFaiths();
+        this.renderCountries();
+        this.renderRegions(background.regionId);
+        this.renderOrganizations();
         this.updateStart();
       });
       this.listEl.append(node);
@@ -227,6 +253,68 @@ export class CreateCharacterDialog {
     this.faithSelect.append(none);
   }
 
+  private countryOfRegion(regionId: string | undefined): string | undefined {
+    if (!regionId) return undefined;
+    return this.content?.world.regions.find((region) => region.id === regionId)?.countryId;
+  }
+
+  private renderCountries(): void {
+    const content = this.content;
+    const previous = this.countrySelect.value;
+    this.countrySelect.replaceChildren();
+    for (const country of content?.countries ?? []) {
+      const option = el('option', '', country.name);
+      option.value = country.id;
+      this.countrySelect.append(option);
+    }
+    const background = content?.backgrounds?.find((entry) => entry.id === this.backgroundId);
+    const preferred = this.countryOfRegion(background?.regionId);
+    const fallback = content?.countries?.[0]?.id ?? '';
+    const wanted = preferred ?? previous ?? fallback;
+    this.countrySelect.value =
+      content?.countries.some((country) => country.id === wanted) === true ? wanted : fallback;
+  }
+
+  private renderRegions(preferredRegionId?: string): void {
+    const content = this.content;
+    const countryId = this.countrySelect.value;
+    const previous = this.regionSelect.value;
+    this.regionSelect.replaceChildren();
+    const regions = (content?.world.regions ?? [])
+      .filter((region) => region.countryId === countryId)
+      .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    for (const region of regions) {
+      const option = el('option', '', region.name);
+      option.value = region.id;
+      this.regionSelect.append(option);
+    }
+    const wanted = [preferredRegionId, previous].find(
+      (id): id is string => typeof id === 'string' && regions.some((region) => region.id === id),
+    );
+    this.regionSelect.value = wanted ?? regions[0]?.id ?? '';
+  }
+
+  private renderOrganizations(): void {
+    const content = this.content;
+    const countryId = this.countrySelect.value;
+    const previous = this.orgSelect.value;
+    this.orgSelect.replaceChildren();
+    const none = el('option', '', '无组织（自由身）');
+    none.value = '__none__';
+    this.orgSelect.append(none);
+    const regions = content?.world.regions ?? [];
+    const orgs = (content?.organizations ?? []).filter((org) => {
+      const seat = regions.find((region) => region.id === org.homeRegionId);
+      return !seat || seat.countryId === countryId;
+    });
+    for (const org of orgs) {
+      const option = el('option', '', `${org.name}（${org.type}）`);
+      option.value = org.id;
+      this.orgSelect.append(option);
+    }
+    if (orgs.some((org) => org.id === previous)) this.orgSelect.value = previous;
+  }
+
   private renderCounter(): void {
     const total = this.picks.length;
     if (total < TALENT_PICKS) {
@@ -268,6 +356,9 @@ export class CreateCharacterDialog {
       backgroundId: this.backgroundId,
       talents: [...this.picks],
       sex: this.sexSelect.value as Sex,
+      countryId: this.countrySelect.value,
+      regionId: this.regionSelect.value,
+      organizationId: this.orgSelect.value === '__none__' ? null : this.orgSelect.value,
       ...(name ? { name } : {}),
       ...(faithValue === '' ? {} : { faithId: faithValue === '__none__' ? null : faithValue }),
     };

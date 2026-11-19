@@ -21,6 +21,8 @@ import type {
 import { ATTRIBUTE_KEYS, buildCharacter, neutralAttributes } from '../../core/WorldState';
 import type { Random } from '../../core/Random';
 import { clampAlignment } from './Profile';
+import { retireCharacter } from './Retire';
+import type { RetireReport } from './Retire';
 
 /** 天赋标签：每个 +2 指定属性（可重复选取，单维最终不超过 16）。 */
 export interface TalentTag {
@@ -83,6 +85,12 @@ export interface CharacterCreationChoice {
   /** 覆盖背景信仰；`null` 表示无信仰。 */
   readonly faithId?: string | null;
   readonly alignment?: Partial<Alignment>;
+  /** 所在国家；默认取背景地区所属国家。 */
+  readonly countryId?: string;
+  /** 所在地区；必须属于所选国家。 */
+  readonly regionId?: string;
+  /** 加入的组织；省略或 `null` 表示无组织。 */
+  readonly organizationId?: string | null;
   /** 默认 `c_player`。 */
   readonly id?: string;
 }
@@ -90,6 +98,8 @@ export interface CharacterCreationChoice {
 export interface CharacterCreationResult {
   readonly character: Character;
   readonly warnings: readonly string[];
+  /** 替换旧人物时移交出去的资产与职位；新建时为 `null`。 */
+  readonly retired: RetireReport | null;
 }
 
 export class CharacterCreationError extends Error {
@@ -118,7 +128,94 @@ function talentCounts(talents: readonly string[]): Map<AttributeKey, number> {
   return counts;
 }
 
-/** 文化名池；缺失时退回第一个文化。 */
+/** 国家 → 默认文化（决定姓名池）；未知国家退回第一个文化。 */
+const COUNTRY_CULTURE: Readonly<Record<string, string>> = {
+  c_kingdom: 'silvermoon',
+  c_league: 'league',
+  c_highvale: 'silvermoon',
+  c_covenant: 'silvermoon',
+  c_clans: 'vale',
+  c_merchants: 'league',
+  c_steppe: 'steppe',
+};
+
+export function cultureForCountry(countryId: string, content: WorldContent): string {
+  const cultures = content.names?.cultures ?? {};
+  const preferred = COUNTRY_CULTURE[countryId];
+  if (preferred && cultures[preferred]) return preferred;
+  return Object.keys(cultures)[0] ?? 'silvermoon';
+}
+
+export interface HomePlacement {
+  readonly countryId: string;
+  readonly regionId: string;
+  readonly organizationId: string | null;
+}
+
+/**
+ * 把「国家 / 地区 / 组织」三选一解析成确定的地点与归属。
+ *
+ * 优先级：显式选地区 → 显式选国家（取背景地区或人口最多地区）→ 背景地区所属国家。
+ * 地区必须属于所选国家；组织只校验存在性（跨国组织允许，但会给一条警告）。
+ */
+export function resolveHome(
+  state: WorldState,
+  content: WorldContent,
+  choice: CharacterCreationChoice,
+  backgroundRegionId: string,
+): HomePlacement {
+  const wantedRegion = choice.regionId ? state.regions[choice.regionId] : undefined;
+  if (choice.regionId && !wantedRegion) {
+    throw new CharacterCreationError(`未知地区：${choice.regionId}`);
+  }
+
+  let countryId: string;
+  if (choice.countryId) {
+    if (!state.countries[choice.countryId]) {
+      throw new CharacterCreationError(`未知国家：${choice.countryId}`);
+    }
+    countryId = choice.countryId;
+  } else if (wantedRegion) {
+    countryId = wantedRegion.countryId;
+  } else {
+    const backgroundRegion = state.regions[backgroundRegionId];
+    countryId = backgroundRegion?.countryId ?? Object.keys(state.countries)[0] ?? '';
+  }
+  if (!countryId) throw new CharacterCreationError('世界里没有可用的国家');
+  if (content.countries.every((country) => country.id !== countryId)) {
+    throw new CharacterCreationError(`国家不在内容中：${countryId}`);
+  }
+
+  let regionId: string;
+  if (wantedRegion) {
+    if (wantedRegion.countryId !== countryId) {
+      throw new CharacterCreationError(`地区 ${wantedRegion.id} 不属于国家 ${countryId}`);
+    }
+    regionId = wantedRegion.id;
+  } else {
+    const candidates = Object.values(state.regions).filter(
+      (region) => region.countryId === countryId,
+    );
+    const preferred = candidates.find((region) => region.id === backgroundRegionId);
+    const richest = [...candidates].sort(
+      (a, b) => b.population - a.population || (a.id < b.id ? -1 : 1),
+    )[0];
+    const picked = preferred ?? richest;
+    if (!picked) throw new CharacterCreationError(`国家 ${countryId} 没有可用地区`);
+    regionId = picked.id;
+  }
+
+  let organizationId: string | null = null;
+  if (choice.organizationId !== undefined && choice.organizationId !== null) {
+    if (!state.organizations[choice.organizationId]) {
+      throw new CharacterCreationError(`未知组织：${choice.organizationId}`);
+    }
+    organizationId = choice.organizationId;
+  }
+
+  return { countryId, regionId, organizationId };
+}
+
 function namePool(content: WorldContent, culture: string) {
   const cultures = content.names?.cultures ?? {};
   return cultures[culture] ?? Object.values(cultures)[0] ?? null;
@@ -181,12 +278,22 @@ export function createPlayerCharacter(
     }
   }
 
+  const home = resolveHome(state, content, choice, background.regionId);
+  const organization = home.organizationId ? state.organizations[home.organizationId] : undefined;
+  if (organization) {
+    const seat = state.regions[organization.homeRegionId];
+    if (seat && seat.countryId !== home.countryId) {
+      const countryName = state.countries[home.countryId]?.name ?? home.countryId;
+      warnings.push(`「${organization.name}」的据点不在${countryName}，你将以外部成员身份加入`);
+    }
+  }
+
   const id = choice.id ?? 'c_player';
   const existing = state.characters[id];
+  // 旧人物退场：股份、领袖位、公职与王位都要交出去，新人物才能以白身登场。
+  const retired = existing ? retireCharacter(state, id) : null;
   const sex = choice.sex ?? existing?.sex ?? 'male';
-  const culture =
-    choice.culture ??
-    (state.regions[background.regionId]?.countryId === 'c_league' ? 'league' : 'silvermoon');
+  const culture = choice.culture ?? cultureForCountry(home.countryId, content);
   const taken = new Set(
     Object.values(state.characters)
       .filter((character) => character.id !== id)
@@ -209,11 +316,11 @@ export function createPlayerCharacter(
     raceId: existing?.raceId ?? 'human',
     classId: background.classId,
     age: existing?.age ?? 22,
-    regionId: background.regionId,
-    organizationId: existing?.organizationId ?? null,
+    regionId: home.regionId,
+    organizationId: home.organizationId,
     wealth: background.wealth,
     skills: { ...background.skills },
-    traits: existing?.traits ?? {},
+    traits: {},
     sex,
     faithId,
     alignment: clampAlignment({
@@ -225,15 +332,14 @@ export function createPlayerCharacter(
     parentIds: [null, null],
     spouseId: null,
     familyId: null,
+    careerRank: 0,
+    careerSinceDay: state.clock.day,
   };
 
   const character = buildCharacter(def);
   state.characters[id] = character;
   state.playerId = id;
-  if (state.organizations[character.organizationId ?? ''] === undefined) {
-    // 背景不绑定组织；保留现有组织归属（读档重开时不断关系）。
-  }
-  return { character, warnings };
+  return { character, warnings, retired };
 }
 
 /** 把已有存档的玩家按同一套规则重算档案（迁移或调试用）。 */
