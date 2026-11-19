@@ -38,15 +38,22 @@ export function settleMonthlyRisk(
   for (const orgId of sortedIds(state.organizations)) {
     const org = state.organizations[orgId];
     if (!org) continue;
-    if ((state.tiers[org.id] ?? 3) > 2) continue;
     if (org.lifecycle === 'dissolved') continue;
 
     const sizePressure = Math.min(1, org.members / 400);
     const wealthPressure = org.liabilities > org.assets ? 1 : 0;
+    // 债务压力：现实里组织内斗的导火索是"钱不够"，不是性格。
+    const debtPressure = Math.min(1, org.liabilities / Math.max(1, org.assets));
     const profitable = org.lastMonthProfit >= 0;
     const target = {
-      governance: 0.85 - sizePressure * 0.35 - wealthPressure * 0.2,
-      conflict: 0.1 + sizePressure * 0.35 + wealthPressure * 0.25 - org.leadership.legitimacy * 0.2,
+      governance: 0.88 - sizePressure * 0.4 - wealthPressure * 0.25,
+      conflict:
+        0.12 +
+        sizePressure * 0.3 +
+        wealthPressure * 0.22 +
+        debtPressure * 0.25 +
+        (1 - org.efficiency) * 0.15 -
+        org.leadership.legitimacy * 0.18,
       efficiency: 0.45 + org.governance * 0.4 - org.conflict * 0.3,
       legitimacy: 0.5 + (profitable ? 0.15 : -0.1) + org.governance * 0.3 - org.conflict * 0.4,
     };

@@ -53,7 +53,11 @@ import {
 } from '../systems/character/CharacterCreator';
 import { settleMonthlyCountry } from '../systems/country/CountrySystem';
 import { runPolicyRound } from '../systems/country/PolicySystem';
-import { settleMonthlyMilitary } from '../systems/military/WarSystem';
+import {
+  settleMonthlyDiplomacy,
+  settleMonthlyMilitary,
+  settleMonthlyWar,
+} from '../systems/military/WarSystem';
 
 export class GameEngine {
   readonly content: WorldContent;
@@ -260,6 +264,21 @@ export class GameEngine {
   private onCountryPhase(ctx: SettleContext): void {
     const budgets = settleMonthlyCountry(this.state, this.content, ctx);
     settleMonthlyMilitary(this.state, this.content, ctx);
+    for (const declaration of settleMonthlyDiplomacy(this.state, this.content, ctx)) {
+      this.record('war', `${formatDate(ctx.day)} ${declaration.summary ?? '宣战'}`, [], null);
+    }
+    const warOutcomes = settleMonthlyWar(this.state, this.content, ctx);
+    for (const outcome of warOutcomes) {
+      this.record(
+        'war',
+        `${formatDate(ctx.day)} ${outcome.summary}`,
+        [
+          { kind: 'country', id: outcome.attackerId },
+          { kind: 'country', id: outcome.defenderId },
+        ],
+        null,
+      );
+    }
 
     for (const budget of budgets) {
       if (budget.balance < 0) {
@@ -494,7 +513,7 @@ export class GameEngine {
   }
 
   private record(
-    kind: 'event' | 'finance' | 'policy' | 'command' | 'trade' | 'milestone' | 'death',
+    kind: 'event' | 'finance' | 'policy' | 'command' | 'trade' | 'milestone' | 'death' | 'war',
     summary: string,
     refs: readonly { kind: string; id: string }[],
     causeEventId: string | null = null,

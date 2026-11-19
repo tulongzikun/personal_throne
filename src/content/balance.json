@@ -113,17 +113,28 @@
     "tariffEnabled": true
   },
   "policy": {
-    "cooldownMonths": 30,
+    "cooldownMonths": 42,
     "proposalCostBase": 120,
     "proposalCostRate": 0.02,
     "supportThreshold": 0.45,
-    "minPressure": 0.6,
+    "minPressure": 0.66,
     "maxDeltaPerRound": 0.16,
-    "polityChangeMonths": 24,
-    "polityChangeLegitimacy": 0.2,
-    "polityChangeStability": 0.25,
-    "polityChangeDebtRatio": 1.5,
-    "polityChangeCooldownMonths": 240,
-    "polityChangeChance": 0.5
+    "polityChangeMonths": 36,
+    "polityChangeLegitimacy": 0.14,
+    "polityChangeStability": 0.18,
+    "polityChangeDebtRatio": 1.9,
+    "polityChangeCooldownMonths": 480,
+    "polityChangeChance": 0.3
+  },
+  "war": {
+    "levyCostPerSoldier": 14,
+    "upkeepPerSoldier": 0.55,
+    "casualtyMin": 0.1,
+    "casualtyMax": 0.24,
+    "exhaustionPerMonth": 0.018,
+    "occupationMonths": 3,
+    "peaceExhaustion": 0.7,
+    "trainingPerMonth": 0.04,
+    "desertionRate": 0.06
   }
 }

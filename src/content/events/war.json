@@ -1,0 +1,71 @@
+[
+  {
+    "id": "ev_war_storm",
+    "domain": "war",
+    "scope": "country",
+    "conditions": {
+      "any": [{ "path": "warExhaustion", "op": ">", "value": 0.2 }]
+    },
+    "risk": {
+      "lambda0": 0.06,
+      "terms": [{ "path": "warExhaustion", "coef": 2 }]
+    },
+    "exclusivity": "war_mood",
+    "cooldownDays": 120,
+    "effects": [
+      { "kind": "add", "path": "treasury", "value": -260 },
+      { "kind": "add", "path": "stability", "value": -0.03 }
+    ],
+    "text": {
+      "title": "战费吃紧",
+      "body": "前线催要军饷，后方粮价上涨。国库为之一空，街头开始有人议论这场仗值不值。"
+    }
+  },
+  {
+    "id": "ev_war_hero",
+    "domain": "war",
+    "scope": "country",
+    "conditions": {
+      "any": [{ "path": "warExhaustion", "op": ">", "value": 0.1 }]
+    },
+    "risk": {
+      "lambda0": 0.05,
+      "terms": [{ "path": "warExhaustion", "coef": 1.4 }]
+    },
+    "exclusivity": "war_mood",
+    "cooldownDays": 150,
+    "effects": [
+      { "kind": "add", "path": "legitimacy", "value": 0.04 },
+      { "kind": "add", "path": "military", "value": 12 }
+    ],
+    "text": {
+      "title": "边境捷报",
+      "body": "一支小队在边境伏击了敌军辎重，领队的名字一夜之间传遍酒馆。"
+    }
+  },
+  {
+    "id": "ev_war_deserters",
+    "domain": "war",
+    "scope": "country",
+    "conditions": {
+      "all": [
+        { "path": "warExhaustion", "op": ">", "value": 0.3 },
+        { "path": "treasury", "op": "<", "value": 2500 }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.05,
+      "terms": [{ "path": "warExhaustion", "coef": 2.2 }]
+    },
+    "exclusivity": "war_mood",
+    "cooldownDays": 200,
+    "effects": [
+      { "kind": "add", "path": "military", "value": -25 },
+      { "kind": "add", "path": "stability", "value": -0.05 }
+    ],
+    "text": {
+      "title": "营中逃兵",
+      "body": "发了三个月白条之后，夜里有人翻过营栅往山里跑。抓回来的两个被吊在路边，围观的人越来越多。"
+    }
+  }
+]

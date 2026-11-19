@@ -114,7 +114,8 @@ describe('政体不变式', () => {
       );
       const ruler = world.characters[country.rulerId];
       expect(ruler?.alive).toBe(true);
-      expect(world.stats.polityChanges).toBeLessThanOrEqual(1);
+      // M6 引入战争后，战败国会真的崩溃；百年 2 次仍属"极罕见"量级。
+      expect(world.stats.polityChanges).toBeLessThanOrEqual(2);
     }
     expect(validateWorld(world)).toEqual([]);
   });
@@ -138,7 +139,8 @@ describe('百年校准', () => {
     expect(world.stats.policyChanges).toBeGreaterThanOrEqual(8);
     expect(world.stats.policyChanges).toBeLessThanOrEqual(25);
     expect(world.stats.minPolicyIntervalDays).toBeGreaterThanOrEqual(360);
-    expect(world.stats.polityChanges).toBeLessThanOrEqual(1);
+    // M6 引入战争后，战败国真的会崩溃；百年 2 次仍属“极罕见”量级。
+    expect(world.stats.polityChanges).toBeLessThanOrEqual(2);
     for (const country of Object.values(world.countries)) {
       expect(world.characters[country.rulerId]?.alive).toBe(true);
     }

@@ -233,6 +233,29 @@ function migrateV3toV4(raw: Record<string, unknown>): void {
 }
 
 /** v4 → v5：补生涯阶梯字段（关系网不需要新字段，复用现有 relations）。 */
+function migrateV6toV7(raw: Record<string, unknown>): void {
+  // v7 引入战争：国家交战列表/厌战、地区占领与围城、军队训练与统帅。
+  const countries = (raw['countries'] ?? {}) as Record<string, Record<string, unknown>>;
+  for (const country of Object.values(countries)) {
+    if (!Array.isArray(country['atWarWith'])) country['atWarWith'] = [];
+    if (typeof country['warStartDay'] !== 'number') country['warStartDay'] = 0;
+    if (typeof country['warExhaustion'] !== 'number') country['warExhaustion'] = 0;
+  }
+  const regions = (raw['regions'] ?? {}) as Record<string, Record<string, unknown>>;
+  for (const region of Object.values(regions)) {
+    if (region['occupiedBy'] === undefined) region['occupiedBy'] = null;
+    if (typeof region['siegeProgress'] !== 'number') region['siegeProgress'] = 0;
+  }
+  const armies = (raw['armies'] ?? {}) as Record<string, Record<string, unknown>>;
+  for (const army of Object.values(armies)) {
+    if (typeof army['training'] !== 'number') army['training'] = 0.35;
+    if (army['commanderId'] === undefined) army['commanderId'] = null;
+    if (army['stance'] === undefined) army['stance'] = 'defend';
+    if (army['targetRegionId'] === undefined) army['targetRegionId'] = null;
+  }
+  raw['meta'] = raw['meta'] ?? {};
+}
+
 function migrateV5toV6(raw: Record<string, unknown>): void {
   // v6 引入「抉择挂起」队列：旧存档没有待决事件。
   if (!Array.isArray(raw['pendingChoices'])) raw['pendingChoices'] = [];
@@ -285,6 +308,11 @@ export function migrateWorldState(raw: unknown): WorldState {
     if (version === 5) {
       migrateV5toV6(state);
       version = 6;
+      continue;
+    }
+    if (version === 6) {
+      migrateV6toV7(state);
+      version = 7;
       continue;
     }
     throw new SaveError(`缺少 v${version} → v${SCHEMA_VERSION} 的迁移步骤`);

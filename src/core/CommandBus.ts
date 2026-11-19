@@ -32,6 +32,7 @@ import {
 } from '../systems/organization/ContractSystem';
 import { priceOf } from '../systems/economy/MarketSystem';
 import { switchCareer } from '../systems/character/Career';
+import { declareWar, isAtWar, makePeace } from '../systems/military/WarSystem';
 
 export interface CommandBase {
   /** 命令唯一序号，由 GameEngine 分配；用于幂等与审计。 */
@@ -78,7 +79,11 @@ export type Command =
       classId: 'merchant' | 'mercenary' | 'politician';
     })
   /** 对挂起的玩家事件做出抉择；不传 choiceId 表示按效用择优。 */
-  | (CommandBase & { kind: 'choose'; choiceId?: string });
+  | (CommandBase & { kind: 'choose'; choiceId?: string })
+  | (CommandBase & { kind: 'declare_war'; targetCountryId: CountryId })
+  | (CommandBase & { kind: 'offer_peace'; targetCountryId: CountryId })
+  | (CommandBase & { kind: 'levy_army'; units: number })
+  | (CommandBase & { kind: 'march_army'; regionId: RegionId });
 
 export type CommandKind = Command['kind'];
 
@@ -91,6 +96,27 @@ export interface CommandResult {
 
 const POLICY_MIN = 0;
 const POLICY_MAX = 1;
+
+/** 玩家对国家的控制权：本国统治者，或持有本国公职（rank ≥ 2）。 */
+function canCommandCountry(state: WorldState, countryId: CountryId): boolean {
+  const country = state.countries[countryId];
+  if (!country) return false;
+  if (country.rulerId === state.playerId) return true;
+  return country.offices.some(
+    (office) => office.holderId === state.playerId && office.influence >= 0.4,
+  );
+}
+
+/** 玩家所属（效忠）的国家：所在地区所属国，否则按国籍取第一个。 */
+function ownCountryOf(state: WorldState): WorldState['countries'][string] | null {
+  const player = state.characters[state.playerId];
+  const region = player ? state.regions[player.location.regionId] : null;
+  if (region) {
+    const country = state.countries[region.countryId];
+    if (country) return country;
+  }
+  return null;
+}
 
 /** 玩家对组织的控制权：领袖，或持股 ≥ 20%。 */
 function canControl(state: WorldState, orgId: OrgId): boolean {
@@ -504,6 +530,83 @@ export function applyCommand(
       // 抉择由 GameEngine 结算（需要 rng 与历史记录），这里只做占位以防漏接。
       return fail('抉择请通过 GameEngine.dispatch 提交');
     }
+    case 'declare_war': {
+      const target = state.countries[command.targetCountryId];
+      if (!target) return fail(`国家 ${command.targetCountryId} 不存在`);
+      const own = ownCountryOf(state);
+      if (!own) return fail('你还没有效忠的国家');
+      if (own.id === target.id) return fail('不能对自己宣战');
+      if (!canCommandCountry(state, own.id)) return fail('宣战需要统治权或高级公职');
+      const result = declareWar(state, content, own.id, target.id);
+      if (!result.ok) return fail(result.error ?? '宣战失败');
+      return {
+        ok: true,
+        summary: result.summary ?? '已宣战',
+        refs: [
+          { kind: 'country', id: own.id },
+          { kind: 'country', id: target.id },
+        ],
+      };
+    }
+    case 'offer_peace': {
+      const target = state.countries[command.targetCountryId];
+      if (!target) return fail(`国家 ${command.targetCountryId} 不存在`);
+      const own = ownCountryOf(state);
+      if (!own) return fail('你还没有效忠的国家');
+      if (!canCommandCountry(state, own.id)) return fail('议和需要统治权或高级公职');
+      if (!isAtWar(state, own.id, target.id)) return fail('你们并不在交战');
+      const outcome = makePeace(state, own.id, target.id, {
+        day: state.clock.day,
+        periodKey: 'manual',
+        phase: 2,
+        rng: { nextFloat: () => 0.5 } as never,
+      });
+      return {
+        ok: true,
+        summary: outcome.summary,
+        refs: [
+          { kind: 'country', id: own.id },
+          { kind: 'country', id: target.id },
+        ],
+      };
+    }
+    case 'levy_army': {
+      const own = ownCountryOf(state);
+      if (!own) return fail('你还没有效忠的国家');
+      if (!canCommandCountry(state, own.id)) return fail('征兵需要统治权或高级公职');
+      if (!isAmount(command.units)) return fail('征兵人数必须是正整数');
+      const cost = command.units * content.balance.war.levyCostPerSoldier;
+      if (own.treasury < cost) return fail(`国库不足（需要 ${cost} 铜币）`);
+      const army = state.armies[`army:${own.id}`];
+      if (!army) return fail('没有可用的军队建制');
+      if (command.units > own.population * 0.02) return fail('单次征兵超过人口 2%，国力承受不住');
+      own.treasury -= cost;
+      army.size += command.units;
+      return {
+        ok: true,
+        summary: `征召 ${command.units} 人，耗银 ${cost}`,
+        refs: [{ kind: 'country', id: own.id }],
+      };
+    }
+    case 'march_army': {
+      const own = ownCountryOf(state);
+      if (!own) return fail('你还没有效忠的国家');
+      if (!canCommandCountry(state, own.id)) return fail('调兵需要统治权或高级公职');
+      const army = state.armies[`army:${own.id}`];
+      if (!army) return fail('没有可用的军队建制');
+      const region = state.regions[command.regionId];
+      if (!region) return fail(`地区 ${command.regionId} 不存在`);
+      army.targetRegionId = region.id;
+      army.stance = 'march';
+      return {
+        ok: true,
+        summary: `军队开往 ${region.name}`,
+        refs: [
+          { kind: 'country', id: own.id },
+          { kind: 'region', id: region.id },
+        ],
+      };
+    }
 
     default: {
       const exhaustive: never = command;
@@ -567,5 +670,13 @@ export function describeCommand(command: Command): string {
       return `转行为 ${command.classId}`;
     case 'choose':
       return command.choiceId ? `抉择 ${command.choiceId}` : '做出抉择';
+    case 'declare_war':
+      return `向 ${command.targetCountryId} 宣战`;
+    case 'offer_peace':
+      return `与 ${command.targetCountryId} 议和`;
+    case 'levy_army':
+      return `征兵 ${command.units} 人`;
+    case 'march_army':
+      return `军队开往 ${command.regionId}`;
   }
 }

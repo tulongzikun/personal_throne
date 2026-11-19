@@ -119,6 +119,17 @@ function main(): void {
     `政策        提案 ${state.stats.policyProposals} / 变更 ${state.stats.policyChanges} / 支出 ${state.stats.policyCost} / 最小间隔 ${state.stats.minPolicyIntervalDays} 天`,
   );
   console.log(`政体        变更 ${state.stats.polityChanges} 次`);
+
+  const warRecords = state.history.filter((record) => record.kind === 'war');
+  const declarations = warRecords.filter((record) => record.summary.includes('宣战')).length;
+  const battles = warRecords.filter((record) => record.summary.includes('会战')).length;
+  const occupations = warRecords.filter((record) => record.summary.includes('占领')).length;
+  const peaces = warRecords.filter((record) => record.summary.includes('停战')).length;
+  const activeWars =
+    Object.values(state.countries).reduce((sum, country) => sum + country.atWarWith.length, 0) / 2;
+  console.log(
+    `战争        宣战 ${declarations} / 会战 ${battles} / 占领 ${occupations} / 停战 ${peaces} / 当前交战 ${activeWars} 对`,
+  );
   console.log(
     `事件分布    ${[...eventCounts.entries()]
       .sort((a, b) => b[1] - a[1])

@@ -4,7 +4,7 @@
     "domain": "organization",
     "scope": "organization",
     "risk": {
-      "lambda0": 0.02,
+      "lambda0": 0.016,
       "terms": [
         {
           "path": "conflict",
@@ -144,7 +144,7 @@
       ]
     },
     "risk": {
-      "lambda0": 0.006,
+      "lambda0": 0.01,
       "terms": [
         {
           "path": "conflict",
@@ -157,7 +157,7 @@
       ]
     },
     "exclusivity": "org_power",
-    "cooldownDays": 720,
+    "cooldownDays": 900,
     "effects": [
       {
         "kind": "add",

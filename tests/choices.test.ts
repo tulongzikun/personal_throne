@@ -103,7 +103,12 @@ describe('抉择', () => {
     expect(def.choices!.map((choice) => choice.id)).toContain(chosen!.id);
 
     const strict: EventDef['choices'] = [
-      { id: 'b', label: 'B', effects: [{ kind: 'add', path: 'cash', value: -10 }], conditions: { path: 'cash', op: '>', value: 10_000 } },
+      {
+        id: 'b',
+        label: 'B',
+        effects: [{ kind: 'add', path: 'cash', value: -10 }],
+        conditions: { path: 'cash', op: '>', value: 10_000 },
+      },
       { id: 'a', label: 'A', effects: [{ kind: 'add', path: 'cash', value: -10 }] },
     ];
     expect(pickChoice(world, target, strict!)?.id).toBe('a');

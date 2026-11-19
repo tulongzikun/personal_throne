@@ -22,7 +22,7 @@ export type ContractId = string;
 export type ArmyId = string;
 export type EntityId = string;
 
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 /* ------------------------------------------------------------------ */
 /* 人物档案（schema，M4）                                               */
@@ -293,6 +293,18 @@ export interface BalanceConfig {
     /** 在途损耗比例（0–1）。 */
     readonly lossRate: number;
     readonly tariffEnabled: boolean;
+  };
+  /** 战争参数（M6）：征兵成本、维持费、伤亡区间、厌战与围城节奏。 */
+  readonly war: {
+    readonly levyCostPerSoldier: number;
+    readonly upkeepPerSoldier: number;
+    readonly casualtyMin: number;
+    readonly casualtyMax: number;
+    readonly exhaustionPerMonth: number;
+    readonly occupationMonths: number;
+    readonly peaceExhaustion: number;
+    readonly trainingPerMonth: number;
+    readonly desertionRate: number;
   };
   /**
    * 政策三阶段的校准参数（M3）：
@@ -610,6 +622,12 @@ export interface Country {
   succession: SuccessionMode;
   /** 公职列表；M3 允许为空，M4 议会/内阁模型再填充。 */
   offices: CountryOffice[];
+  /** 交战对象（双向写入，排序稳定）。 */
+  atWarWith: CountryId[];
+  /** 最近一次开战日；0 表示从未开战。 */
+  warStartDay: number;
+  /** 厌战度 0–1：随战争月数与伤亡累积，满 1 会被迫议和。 */
+  warExhaustion: number;
 }
 
 export interface Region {
@@ -621,6 +639,10 @@ export interface Region {
   x: number;
   y: number;
   links: RegionLinkDef[];
+  /** 被敌国占领时的占领方；停战协议决定是否割让。 */
+  occupiedBy: CountryId | null;
+  /** 围城进度（月）；达到 `balance.war.occupationMonths` 即占领。 */
+  siegeProgress: number;
 }
 
 export interface Market {
@@ -738,12 +760,21 @@ export interface Relation {
   value: number;
 }
 
+export type ArmyStance = 'defend' | 'march' | 'siege';
+
 export interface Army {
   id: ArmyId;
   countryId: CountryId;
   size: number;
   locationRegionId: RegionId;
   morale: number;
+  /** 训练度 0–1：征兵是 0.35，常备军随年度训练上升。 */
+  training: number;
+  /** 统帅（可为空，空缺时按 0 战术结算）。 */
+  commanderId: CharacterId | null;
+  stance: ArmyStance;
+  /** 行军目标（stance = march 时有效）。 */
+  targetRegionId: RegionId | null;
 }
 
 export type ScheduledKind = 'event' | 'contract' | 'interrupt';
@@ -944,6 +975,8 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
       x: def.x,
       y: def.y,
       links: def.links.map((link) => ({ ...link })),
+      occupiedBy: null,
+      siegeProgress: 0,
     };
   }
 
@@ -975,6 +1008,9 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
       cabinetUtility: 0,
       succession: def.polity === 'monarchy' ? 'primogeniture' : 'elective',
       offices: [],
+      atWarWith: [],
+      warStartDay: 0,
+      warExhaustion: 0,
     };
   }
   // 外交初始值：同政体 20，异政体 -10，自国除外。
@@ -1019,6 +1055,30 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
     tiers[region.id] = 3;
   }
 
+  // 开局就有一支常备军：army:<countryId> 驻扎在人口最多的地区（首都）。
+  const armies: Record<ArmyId, Army> = {};
+  for (const country of Object.values(countries)) {
+    const capital = country.regionIds
+      .map((id) => regions[id])
+      .filter((region): region is Region => Boolean(region))
+      .sort((a, b) => b.population - a.population)[0];
+    if (!capital) continue;
+    armies[`army:${country.id}`] = {
+      id: `army:${country.id}`,
+      countryId: country.id,
+      size: Math.max(
+        50,
+        Math.round(country.population * 0.008 * (0.5 + country.policies.militaryShare * 2)),
+      ),
+      locationRegionId: capital.id,
+      morale: 0.6,
+      training: 0.35,
+      commanderId: null,
+      stance: 'defend',
+      targetRegionId: null,
+    };
+  }
+
   return {
     meta: {
       schemaVersion: SCHEMA_VERSION,
@@ -1038,7 +1098,7 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
     contracts: {},
     shipments: {},
     relations: [],
-    armies: {},
+    armies,
     tiers,
     pendingEvents: [],
     pendingChoices: [],

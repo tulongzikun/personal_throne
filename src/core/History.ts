@@ -6,7 +6,7 @@
 import type { Phase } from './GameClock';
 
 export type HistoryKind =
-  'event' | 'finance' | 'policy' | 'command' | 'trade' | 'milestone' | 'death';
+  'event' | 'finance' | 'policy' | 'command' | 'trade' | 'milestone' | 'death' | 'war';
 
 export interface HistoryRef {
   readonly type: string;
