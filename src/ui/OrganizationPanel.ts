@@ -130,14 +130,49 @@ export class OrganizationPanel {
 
     const stats = el('div', 'stat-grid stat-grid--four');
     stats.append(
-      statCell('现金', fmtMoney(org.cash)),
-      statCell('资产', fmtMoney(org.assets)),
-      statCell('负债', fmtMoney(org.liabilities)),
-      statCell('成员', `${fmtInt(org.members)} 人`),
-      statCell('士气 · 效率', fmtPct(org.efficiency)),
-      statCell('冲突', fmtPct(org.conflict), org.conflict >= 0.5 ? 'bad' : 'neutral'),
-      statCell('合法性', fmtPct(org.leadership.legitimacy)),
-      statCell('治理', fmtPct(org.governance)),
+      statCell(
+        '现金',
+        fmtMoney(org.cash),
+        'neutral',
+        '可立即动用的铜币：发薪、采购与运费都从这里扣',
+      ),
+      statCell(
+        '资产',
+        fmtMoney(org.assets),
+        'neutral',
+        '库存、商队与固定资产的账面价值，不直接等于现金',
+      ),
+      statCell(
+        '负债',
+        fmtMoney(org.liabilities),
+        'neutral',
+        '未偿债务与拖欠工资；过高会推高破产风险',
+      ),
+      statCell(
+        '成员',
+        `${fmtInt(org.members)} 人`,
+        'neutral',
+        '在册雇员：规模影响产出、工资支出与市场份额',
+      ),
+      statCell(
+        '士气 · 效率',
+        fmtPct(org.efficiency),
+        'neutral',
+        '效率 = 实际产出 / 理论产能；受士气、治理与冲突影响',
+      ),
+      statCell(
+        '冲突',
+        fmtPct(org.conflict),
+        org.conflict >= 0.5 ? 'bad' : 'neutral',
+        '内部派系对立程度；超过 50% 容易分裂或逼宫',
+      ),
+      statCell(
+        '合法性',
+        fmtPct(org.leadership.legitimacy),
+        'neutral',
+        '领袖被成员承认的程度；过低会被挑战',
+      ),
+      statCell('治理', fmtPct(org.governance), 'neutral', '制度执行力：影响效率上限与腐败概率'),
     );
     this.host.append(stats);
 

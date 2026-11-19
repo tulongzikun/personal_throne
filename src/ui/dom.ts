@@ -45,13 +45,26 @@ export function fmtSignedPct(value: number): string {
   return `${sign}${Math.round(value * 100)}%`;
 }
 
+/**
+ * 给节点挂一条解释性提示：`title` 保证原生可访问性，
+ * `data-tip` 供样式画出虚线下划线，让「这个数字是什么」可被发现。
+ */
+export function withHint<T extends HTMLElement>(node: T, hint: string): T {
+  node.title = hint;
+  node.dataset.tip = hint;
+  node.classList.add('has-tip');
+  return node;
+}
+
 export function statCell(
   label: string,
   value: string,
   tone: 'neutral' | 'good' | 'bad' = 'neutral',
+  hint?: string,
 ): HTMLElement {
   const cell = el('div', `stat stat--${tone}`);
   cell.append(el('span', 'stat__label', label), el('span', 'stat__value', value));
+  if (hint) withHint(cell, hint);
   return cell;
 }
 
@@ -62,6 +75,7 @@ export function button(
 ): HTMLButtonElement {
   const node = el('button', `btn btn--${variant}`, label);
   node.type = 'button';
+  node.setAttribute('aria-label', label);
   node.addEventListener('click', onClick);
   return node;
 }

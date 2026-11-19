@@ -83,10 +83,25 @@ export class CharacterPanel {
     const org = selected.organizationId ? state.organizations[selected.organizationId] : undefined;
     const stats = el('div', 'stat-grid');
     stats.append(
-      statCell('财富', fmtMoney(selected.wealth)),
-      statCell('年龄', `${selected.age} 岁`),
-      statCell('地区', state.regions[selected.regionId]?.name ?? '—'),
-      statCell('组织职位', this.roleOf(selected, org)),
+      statCell(
+        '财富',
+        fmtMoney(selected.wealth),
+        'neutral',
+        '个人现金：不以铜币计价的资产不在其中',
+      ),
+      statCell('年龄', `${selected.age} 岁`, 'neutral', '年龄影响生涯晋升与死亡风险'),
+      statCell(
+        '地区',
+        state.regions[selected.regionId]?.name ?? '—',
+        'neutral',
+        '当前所在地：市场与商路从这里计算',
+      ),
+      statCell(
+        '组织职位',
+        this.roleOf(selected, org),
+        'neutral',
+        '在所属组织中的层级；层级越高分到的收益越多',
+      ),
     );
     this.host.append(stats);
 

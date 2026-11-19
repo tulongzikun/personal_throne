@@ -3,7 +3,7 @@
 import type { CommandResult } from '../core/CommandBus';
 import type { PolicyVector } from '../core/WorldState';
 import type { UiDeps } from './context';
-import { clear, el, fmtInt, fmtMoney, fmtPct } from './dom';
+import { clear, el, fmtInt, fmtMoney, fmtPct, withHint } from './dom';
 import { POLITY_LABELS, POLICY_LABELS, labelOf } from './labels';
 
 const POLICY_KEYS: readonly (keyof PolicyVector)[] = [
@@ -89,22 +89,54 @@ export class CountryPanel {
 
       const stats = el('div', 'stat-grid stat-grid--four');
       stats.append(
-        this.stat('国库', fmtMoney(country.treasury)),
+        this.stat(
+          '国库',
+          fmtMoney(country.treasury),
+          'neutral',
+          '中央现金储备：军费、赈济与官员俸禄从中支出',
+        ),
         this.stat(
           '债务',
           fmtMoney(country.debt),
           country.debt > country.treasury ? 'bad' : 'neutral',
+          '未偿国债：利息在月度结算中计入支出',
         ),
         this.stat(
           '月结余',
           fmtMoney(country.monthlyRevenue - country.monthlyExpense),
           country.monthlyRevenue - country.monthlyExpense >= 0 ? 'good' : 'bad',
+          '月收入 − 月支出；连续为负会推高债务与不满',
         ),
-        this.stat('军力', fmtInt(country.military)),
-        this.stat('合法性', fmtPct(country.legitimacy)),
-        this.stat('稳定度', fmtPct(country.stability)),
-        this.stat('月收入', fmtMoney(country.monthlyRevenue)),
-        this.stat('月支出', fmtMoney(country.monthlyExpense)),
+        this.stat(
+          '军力',
+          fmtInt(country.military),
+          'neutral',
+          '常备军规模：影响战争结果与军费开支',
+        ),
+        this.stat(
+          '合法性',
+          fmtPct(country.legitimacy),
+          'neutral',
+          '统治被承认的程度；过低会引发政变与割据',
+        ),
+        this.stat(
+          '稳定度',
+          fmtPct(country.stability),
+          'neutral',
+          '社会秩序：受税率、物价与战争影响',
+        ),
+        this.stat(
+          '月收入',
+          fmtMoney(country.monthlyRevenue),
+          'neutral',
+          '月度税收与关税合计，随税率与市场行情波动',
+        ),
+        this.stat(
+          '月支出',
+          fmtMoney(country.monthlyExpense),
+          'neutral',
+          '军费、行政与债务利息的月度合计',
+        ),
       );
       card.append(stats);
 
@@ -236,9 +268,11 @@ export class CountryPanel {
     label: string,
     value: string,
     tone: 'neutral' | 'good' | 'bad' = 'neutral',
+    hint?: string,
   ): HTMLElement {
     const cell = el('div', `stat stat--${tone}`);
     cell.append(el('span', 'stat__label', label), el('span', 'stat__value', value));
+    if (hint) withHint(cell, hint);
     return cell;
   }
 }

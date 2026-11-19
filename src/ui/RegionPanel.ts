@@ -55,11 +55,23 @@ export class RegionPanel {
 
     const stats = el('div', 'stat-grid');
     stats.append(
-      statCell('人口', fmtInt(region.population)),
-      statCell('连接', `${region.links.length} 条商路`),
+      statCell(
+        '人口',
+        fmtInt(region.population),
+        'neutral',
+        '人口决定本地需求与税基；每年结算时变化',
+      ),
+      statCell(
+        '连接',
+        `${region.links.length} 条商路`,
+        'neutral',
+        '可通商方向；每条商路有固定运力与在途日数',
+      ),
       statCell(
         '组织',
         `${Object.values(state.organizations).filter((org) => org.homeRegionId === region.id).length} 家`,
+        'neutral',
+        '以本地区为总部的组织数量：影响就业与市场份额',
       ),
     );
     this.host.append(stats);

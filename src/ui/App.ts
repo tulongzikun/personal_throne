@@ -9,14 +9,7 @@ import { describeCommand, type Command, type CommandResult } from '../core/Comma
 import { formatDate, nextBoundary, Phase, toDateParts } from '../core/GameClock';
 import { GameEngine } from '../core/GameEngine';
 import type { ScheduledEvent, WorldState } from '../core/WorldState';
-import {
-  AUTO_SLOT,
-  downloadSave,
-  readSaveFile,
-  readSlot,
-  storageAvailable,
-  writeSlot,
-} from '../storage/SaveManager';
+import { downloadSave, readSaveFile } from '../storage/SaveManager';
 import { CharacterPanel } from './CharacterPanel';
 import type { NoticeTone, UiDeps } from './context';
 import { CountryPanel } from './CountryPanel';
@@ -28,6 +21,8 @@ import { MapView, countryPalette } from './MapView';
 import { OrganizationPanel } from './OrganizationPanel';
 import { PlayerPanel } from './PlayerPanel';
 import { RegionPanel } from './RegionPanel';
+import { SaveDialog } from './SaveDialog';
+import { Tour } from './Tour';
 import { button, el, fmtMoney, messageOf } from './dom';
 
 type TabId = 'region' | 'character' | 'organization' | 'country' | 'history';
@@ -40,6 +35,11 @@ const TABS: readonly { readonly id: TabId; readonly label: string }[] = [
   { id: 'country', label: '国家' },
   { id: 'history', label: '历史' },
 ];
+
+const SPEED_KEYS: Record<1 | 7 | 30, string> = { 1: '1', 7: '2', 30: '3' };
+
+/** 数字键 1/2/3 对应 1×/7×/30×，4 暂停。 */
+const KEY_SPEEDS: Readonly<Record<string, Speed>> = { '1': 1, '2': 7, '3': 30, '4': 0 };
 
 const SPEED_CONFIG: Record<1 | 7 | 30, { readonly interval: number; readonly days: number }> = {
   1: { interval: 1000, days: 1 },
@@ -81,6 +81,8 @@ export class App {
   private readonly historyPanel: HistoryPanel;
   private readonly eventDialog: EventDialog;
   private readonly createDialog: CreateCharacterDialog;
+  private readonly saveDialog: SaveDialog;
+  private readonly tour: Tour;
   private readonly tabs = new Map<TabId, HTMLButtonElement>();
   private readonly sections = new Map<TabId, HTMLElement>();
   private readonly speedButtons = new Map<Speed, HTMLButtonElement>();
@@ -88,6 +90,8 @@ export class App {
   private activeTab: TabId = 'region';
   private selectedRegionId: string | null = null;
   private speed: Speed = 0;
+  private lastSpeed: Speed = 1;
+  private observing = false;
   private timer: number | null = null;
   private toastTimer: number | null = null;
   private lastHistoryId = 0;
@@ -112,7 +116,11 @@ export class App {
     const mapHead = el('div', 'panel__head');
     mapHead.append(
       el('h2', 'panel__title', '世界地图'),
-      el('p', 'panel__subtitle', '点击地区查看市场，虚线为可通商路线'),
+      el(
+        'p',
+        'panel__subtitle',
+        '悬停看市场摘要，点击进入地区；线条越粗运力越大，箭头指向净进口地区',
+      ),
     );
     const mapHost = el('div', 'map-canvas');
     mapSection.append(mapHead, mapHost);
@@ -169,6 +177,13 @@ export class App {
 
     this.eventDialog = new EventDialog(this.shell);
     this.createDialog = new CreateCharacterDialog(this.shell);
+    this.saveDialog = new SaveDialog(this.shell, {
+      state: () => this.engine.state,
+      onLoad: (state, message) => this.adopt(state, message),
+      notify: (message, tone) => this.notify(message, tone),
+    });
+    this.tour = new Tour(this.shell);
+    document.addEventListener('keydown', this.onKeyDown, true);
     this.root.append(this.shell);
   }
 
@@ -194,6 +209,9 @@ export class App {
     this.switchTab('region');
     this.refresh(true);
     if (message) this.notify(message, 'ok');
+    this.tour.maybeStart();
+    this.labelButtons();
+    this.watchButtons();
   }
 
   /* ------------------------------------------------------------------ */
@@ -231,12 +249,19 @@ export class App {
       if (file) void this.importFile(file);
       importInput.value = '';
     });
+    const saveButton = button('存档', () => this.saveDialog.open(), 'small');
+    saveButton.dataset.tour = 'save';
+    saveButton.title = '存档管理（自动槽 + 三个手动槽）';
+    const helpButton = button('?', () => this.tour.restart(), 'small');
+    helpButton.title = '重新查看新手引导（快捷键 ?）';
+    helpButton.setAttribute('aria-label', '打开新手引导');
+    helpButton.classList.add('topbar__help');
     actions.append(
-      button('保存', () => void this.saveGame(), 'small'),
-      button('读取', () => void this.loadGame(), 'small'),
+      saveButton,
       button('导出', () => this.exportGame(), 'small'),
       button('创建人物', () => this.openCreator(), 'small'),
       button('导入', () => importInput.click(), 'small'),
+      helpButton,
       importInput,
     );
     header.append(actions);
@@ -282,7 +307,7 @@ export class App {
       item.append(dot, el('span', 'legend__label', country.name));
       legend.append(item);
     }
-    legend.append(el('li', 'legend__hint', '虚线 = 商路 · 圆点大小 = 人口'));
+    legend.append(el('li', 'legend__hint', '地区轮廓 = 地形 · 连线粗细 = 运力 · 箭头 = 货流方向'));
     return legend;
   }
 
@@ -291,9 +316,18 @@ export class App {
     const segmented = el('div', 'segmented');
     segmented.setAttribute('role', 'group');
     segmented.setAttribute('aria-label', '时间速度');
+    segmented.dataset.tour = 'speed';
     for (const speed of [0, 1, 7, 30] as const) {
       const node = el('button', 'segmented__btn', speed === 0 ? '暂停' : `${speed}×`);
       node.type = 'button';
+      node.setAttribute(
+        'aria-label',
+        speed === 0 ? '暂停时间（快捷键 4）' : `速度 ${speed}×（快捷键 ${SPEED_KEYS[speed]}）`,
+      );
+      node.title =
+        speed === 0
+          ? '暂停 / 继续（空格，或数字键 4）'
+          : `${speed}× 速度（数字键 ${SPEED_KEYS[speed]}）`;
       if (speed === 0) node.classList.add('is-active');
       node.addEventListener('click', () => this.setSpeed(speed));
       this.speedButtons.set(speed, node);
@@ -304,6 +338,7 @@ export class App {
     jump.classList.add('timebar__jump');
 
     const hint = el('span', 'timebar__hint');
+    hint.title = '空格暂停 / 继续 · 1 2 3 切速度 · 4 暂停 · ? 看引导 · Esc 关闭弹窗';
     const saveHint = el('span', 'timebar__hint timebar__hint--right', '存档仅写入本地浏览器');
     timebar.append(segmented, jump, hint, saveHint);
     shell.append(timebar);
@@ -402,6 +437,7 @@ export class App {
 
   private setSpeed(speed: Speed): void {
     this.speed = speed;
+    if (speed !== 0) this.lastSpeed = speed;
     if (this.timer !== null) {
       window.clearInterval(this.timer);
       this.timer = null;
@@ -412,6 +448,94 @@ export class App {
     }
     this.refresh();
   }
+
+  /** 空格暂停 / 继续；恢复时回到上一次非零速度。 */
+  private togglePause(): void {
+    if (this.speed === 0) {
+      this.setSpeed(this.lastSpeed === 0 ? 1 : this.lastSpeed);
+      return;
+    }
+    this.setSpeed(0);
+  }
+
+  /** 给没有显式 aria-label 的纯文字按钮补上可访问名（面板与对话框会动态重绘）。 */
+  private labelButtons(): void {
+    for (const node of this.shell.querySelectorAll('button:not([aria-label])')) {
+      const text = (node.textContent ?? '').trim();
+      if (text.length > 0) node.setAttribute('aria-label', text);
+    }
+  }
+
+  private watchButtons(): void {
+    if (this.observing) return;
+    this.observing = true;
+    let scheduled = 0;
+    const observer = new MutationObserver(() => {
+      if (scheduled !== 0) return;
+      scheduled = window.requestAnimationFrame(() => {
+        scheduled = 0;
+        this.labelButtons();
+      });
+    });
+    observer.observe(this.shell, { childList: true, subtree: true });
+  }
+
+  /**
+   * 全局快捷键在捕获阶段处理：Esc 优先关存档/引导并截断事件，
+   * 避免和事件弹窗自己的 Esc 监听互相抢焦点。
+   */
+  private readonly onKeyDown = (event: KeyboardEvent): void => {
+    const target = event.target;
+    const element = target instanceof HTMLElement ? target : null;
+    const typing =
+      element !== null &&
+      (element.isContentEditable ||
+        element.tagName === 'INPUT' ||
+        element.tagName === 'TEXTAREA' ||
+        element.tagName === 'SELECT');
+
+    if (event.key === 'Escape') {
+      if (this.saveDialog.isOpen) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.saveDialog.close();
+        return;
+      }
+      if (this.tour.isOpen) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.tour.close();
+      }
+      return;
+    }
+
+    if (event.ctrlKey || event.metaKey || event.altKey || typing) return;
+
+    if (event.key === '?') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.tour.restart();
+      return;
+    }
+
+    if (event.key === ' ' || event.key === 'Spacebar') {
+      const interactive =
+        element !== null &&
+        (element.tagName === 'BUTTON' ||
+          element.tagName === 'A' ||
+          element.getAttribute('role') === 'button');
+      if (interactive) return;
+      event.preventDefault();
+      this.togglePause();
+      return;
+    }
+
+    const shortcut = KEY_SPEEDS[event.key];
+    if (shortcut !== undefined) {
+      event.preventDefault();
+      this.setSpeed(shortcut);
+    }
+  };
 
   private tick(days: number): void {
     try {
@@ -553,36 +677,6 @@ export class App {
         return state.regions[entityId]?.name ?? entityId;
       default:
         return entityId;
-    }
-  }
-
-  private async saveGame(): Promise<void> {
-    if (!storageAvailable()) {
-      this.notify('浏览器存档不可用，请改用「导出」', 'error');
-      return;
-    }
-    try {
-      await writeSlot(AUTO_SLOT, this.engine.state, '自动存档', Date.now());
-      this.notify('已保存到浏览器存档', 'ok');
-    } catch (error) {
-      this.notify(`保存失败：${messageOf(error)}`, 'error');
-    }
-  }
-
-  private async loadGame(): Promise<void> {
-    if (!storageAvailable()) {
-      this.notify('浏览器存档不可用，请改用「导入」', 'error');
-      return;
-    }
-    try {
-      const envelope = await readSlot(AUTO_SLOT);
-      if (!envelope) {
-        this.notify('没有找到浏览器存档', 'error');
-        return;
-      }
-      this.adopt(envelope.state, '已载入浏览器存档');
-    } catch (error) {
-      this.notify(`读取失败：${messageOf(error)}`, 'error');
     }
   }
 

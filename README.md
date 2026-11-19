@@ -37,15 +37,19 @@
 `declare_war` / `offer_peace` / `levy_army` / `march_army`（需统治者，或影响力 ≥0.4 的公职）。三 seed 100 年：宣战 13–15 次、
 会战 193–209 场、占领 4–6 次、破产率 15.6–17.1%、分裂率 2.8–20.0%。
 
+**M5 整合与美术：完成。** 新手引导（4 步浮层高亮，只出现一次，顶栏「?」重看）、程序化 SVG 地形地图（hover tooltip、
+运力连线、键盘选中）、存档对话框（自动槽 + 手动槽 1–3，覆盖需连点两次）、历史筛选与「只看我的」、快捷键（空格/1/2/3/4/Esc/?）、
+79 个按钮全带 `aria-label`、设计令牌统一、≤900px 单列适配；`build.modulePreload.polyfill=false` 让产物零 `fetch(` 字面量。
+
 **在线试玩**：<https://tulongzikun.github.io/personal_throne/>（GitHub Pages，发布 `release/index.html）。
 离线也可以直接双击 `release/index.html`。
 
-**测试与产物**：16 个测试文件 / 121 个用例；单文件 `release/index.html` 208,059 字节（体积预算 13.2%），
-无 `<script src>`、无 `<link href>`，`file://` 下可运行（Edge 探针 7 面板 / 73 按钮 / 档案区块可见 / 创建对话框可用 / 0 控制台错误）。
+**测试与产物**：16 个测试文件 / 121 个用例；单文件 `release/index.html` 251,396 字节（体积预算 16.0%），
+无 `<script src>`、无 `<link href>`，`file://` 下可运行（Edge 探针 7 面板 / 79 按钮 / 档案区块可见 / 创建对话框与存档对话框可用 / 0 控制台错误）。
 
-**验收**：场景 A–F 与存档版本链见 `docs/acceptance.md`。**尚未完成**：M5 完整美术与教程、多军团与战线（战争后续）、
+**验收**：场景 A–F 与存档版本链见 `docs/acceptance.md`。**尚未完成**：多军团与战线（战争后续）、
 大臣职位实装（已建模未配置人选）、`runPolicyRound` 的 `influence` 接线、政体变更 100 年实测 0 次（门控偏严，roadmap §8 记为可调项）、
-验收 A 的人工审阅、四种地图图层与完整美术（M5）、多军团与战线（M6 后续）、战役地形修正。
+验收 A 的人工审阅、四种地图图层（M5 只做了单层地形）；多军团与战线（M6 后续）、战役地形修正。
 已知问题：国家预算里的抽象关税与贸易系统的到港关税是两个口径，未合并；AI 婚姻只按地区/国别加权，未考虑财富与声望。详见 [development-plan.md §8](development-plan.md)。
 
 ## 环境要求

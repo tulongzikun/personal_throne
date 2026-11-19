@@ -16,6 +16,8 @@ export default defineConfig({
     // 单文件发布：图片、字体全部内联，CSS 不拆分
     assetsInlineLimit: 100_000_000,
     cssCodeSplit: false,
+    // 单文件里没有 modulepreload 链接，关掉 polyfill 让产物零 fetch 字面量
+    modulePreload: { polyfill: false },
     reportCompressedSize: false,
     rollupOptions: {
       output: {
