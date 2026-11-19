@@ -874,6 +874,18 @@ interface EventDef {
 
 **遗留**：两个开局入口都直接进入世界，没有「开局处境」的差异（例如少东家 vs 白手起家会有不同初始现金与关系）。
 
+### 8.19 股份交易与领袖更替（M6.2 第 3 阶段，2026-11-19）
+
+| 项 | 内容 |
+|---|---|
+| 新模块 | `src/systems/organization/Shares.ts`：`sharePrice`（按 `valuation(org)` 折算）、`affordableShare`、`unassignedShare`、`moveShares(org, from, to, share)`（`null` = 未登记份额）、`rankedHolders`、`canClaimLeadership`（份额 ≥ 34% 且超过现任领袖） |
+| 命令 | `buy_shares`（从最大股东依次吃份额，钱付给卖家；不足部分吃未登记份额）、`sell_shares`（优先卖给付得起的最大股东，否则退回未登记池）、`claim_leadership`（份额达标且超过领袖即可接管） |
+| 规则 | 买入按估值一次性付现，玩家现金不足时整单拒绝；卖出同理按估值收现；接管只改 `leadership.leaderId`，不动股份 |
+| 界面 | 组织面板「股权」下新增未登记份额行与 `买入 5% / 卖出 5% / 接管字号` 按钮，提示行给出估值、5% 价格与接管条件 |
+| 测试 | `tests/shares.test.ts` 6 例：买入搬份额并付款、超量购买拒绝且不改状态、现金不足拒绝、卖出收现且未登记份额不变、低于 34% 不能接管、买到超过领袖后可接管并由引擎写历史 |
+
+**遗留**：股份只在玩家与 NPC 之间流转，NPC 之间不会互相收购；接管字号没有「董事会反对/合法性」的阻力。
+
 ## 9. 测试与质量策略
 
 ### 9.1 测试金字塔

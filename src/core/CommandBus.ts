@@ -33,6 +33,14 @@ import {
 import { priceOf } from '../systems/economy/MarketSystem';
 import { switchCareer } from '../systems/character/Career';
 import { declareWar, isAtWar, makePeace } from '../systems/military/WarSystem';
+import {
+  canClaimLeadership,
+  moveShares,
+  rankedHolders,
+  roundShare,
+  sharePrice,
+} from '../systems/organization/Shares';
+import { shareOf } from '../systems/organization/Organization';
 
 export interface CommandBase {
   /** 命令唯一序号，由 GameEngine 分配；用于幂等与审计。 */
@@ -83,7 +91,13 @@ export type Command =
   | (CommandBase & { kind: 'declare_war'; targetCountryId: CountryId })
   | (CommandBase & { kind: 'offer_peace'; targetCountryId: CountryId })
   | (CommandBase & { kind: 'levy_army'; units: number })
-  | (CommandBase & { kind: 'march_army'; regionId: RegionId });
+  | (CommandBase & { kind: 'march_army'; regionId: RegionId })
+  /** 从他人（或未登记份额）手里买入份额，价格按当前估值折算。 */
+  | (CommandBase & { kind: 'buy_shares'; orgId: OrgId; share: number })
+  /** 把自己持有的份额卖回给最大的能付得起钱的股东，或退回未登记份额。 */
+  | (CommandBase & { kind: 'sell_shares'; orgId: OrgId; share: number })
+  /** 持股超过现任领袖且达到 34% 时接管字号。 */
+  | (CommandBase & { kind: 'claim_leadership'; orgId: OrgId });
 
 export type CommandKind = Command['kind'];
 
@@ -608,6 +622,93 @@ export function applyCommand(
       };
     }
 
+    case 'buy_shares': {
+      const org = state.organizations[command.orgId];
+      if (!org || org.lifecycle === 'dissolved') return fail('该组织不存在或已解散');
+      const player = state.playerId;
+      const buyer = state.characters[player];
+      if (!buyer) return fail('找不到玩家人物');
+      if (!Number.isFinite(command.share) || command.share <= 0) return fail('份额必须是正数');
+      const share = roundShare(command.share);
+      const available = roundShare(1 - shareOf(org, player));
+      if (share > available + 1e-9) {
+        return fail(`可购入的份额不足：最多 ${(available * 100).toFixed(1)}%`);
+      }
+      const price = sharePrice(org, share);
+      if (buyer.wealth < price) {
+        return fail(`现金不足：需要 ${price} 铜币，现有 ${buyer.wealth}`);
+      }
+      let remaining = share;
+      const paid = new Map<CharacterId, number>();
+      for (const holder of rankedHolders(org)) {
+        if (remaining <= 0) break;
+        if (holder.characterId === player || holder.share <= 0) continue;
+        const take = roundShare(Math.min(holder.share, remaining));
+        if (take <= 0) continue;
+        moveShares(org, holder.characterId, player, take);
+        paid.set(holder.characterId, (paid.get(holder.characterId) ?? 0) + price * (take / share));
+        remaining = roundShare(remaining - take);
+      }
+      if (remaining > 0) moveShares(org, null, player, remaining);
+      buyer.wealth -= price;
+      for (const [sellerId, amount] of paid) {
+        const seller = state.characters[sellerId];
+        if (seller) seller.wealth += Math.round(amount);
+      }
+      return {
+        ok: true,
+        summary: `${org.name}：买入 ${(share * 100).toFixed(1)}% 股份，花费 ${price} 铜币（现持 ${(shareOf(org, player) * 100).toFixed(1)}%）`,
+        refs: [{ kind: 'organization', id: org.id }],
+      };
+    }
+
+    case 'sell_shares': {
+      const org = state.organizations[command.orgId];
+      if (!org || org.lifecycle === 'dissolved') return fail('该组织不存在或已解散');
+      const player = state.playerId;
+      if (!Number.isFinite(command.share) || command.share <= 0) return fail('份额必须是正数');
+      const share = roundShare(command.share);
+      const owned = shareOf(org, player);
+      if (share > owned + 1e-9) {
+        return fail(`你只持有 ${(owned * 100).toFixed(1)}%，卖不了这么多`);
+      }
+      const price = sharePrice(org, share);
+      const buyer = rankedHolders(org).find((entry) => {
+        if (entry.characterId === player) return false;
+        const character = state.characters[entry.characterId];
+        return character !== undefined && character.wealth >= price;
+      });
+      if (buyer) {
+        const character = state.characters[buyer.characterId];
+        if (character) character.wealth -= price;
+        moveShares(org, player, buyer.characterId, share);
+      } else {
+        moveShares(org, player, null, share);
+      }
+      const me = state.characters[player];
+      if (buyer && me) me.wealth += price;
+      return {
+        ok: true,
+        summary: buyer
+          ? `${org.name}：卖出 ${(share * 100).toFixed(1)}% 股份，收到 ${price} 铜币`
+          : `${org.name}：${(share * 100).toFixed(1)}% 股份回到未登记池，无人接手`,
+        refs: [{ kind: 'organization', id: org.id }],
+      };
+    }
+
+    case 'claim_leadership': {
+      const org = state.organizations[command.orgId];
+      if (!org) return fail('该组织不存在');
+      const verdict = canClaimLeadership(org, state.playerId);
+      if (!verdict.ok) return fail(verdict.reason);
+      org.leadership.leaderId = state.playerId;
+      return {
+        ok: true,
+        summary: `你接管了 ${org.name}，成为新的领袖`,
+        refs: [{ kind: 'organization', id: org.id }],
+      };
+    }
+
     default: {
       const exhaustive: never = command;
       return fail(`未知命令 ${(exhaustive as { kind?: string }).kind ?? '?'}`);
@@ -678,5 +779,11 @@ export function describeCommand(command: Command): string {
       return `征兵 ${command.units} 人`;
     case 'march_army':
       return `军队开往 ${command.regionId}`;
+    case 'buy_shares':
+      return `买入 ${(command.share * 100).toFixed(1)}% 股份`;
+    case 'sell_shares':
+      return `卖出 ${(command.share * 100).toFixed(1)}% 股份`;
+    case 'claim_leadership':
+      return '接管字号';
   }
 }

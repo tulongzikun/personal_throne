@@ -6,6 +6,8 @@ import type { Organization, OrgStrategy } from '../core/WorldState';
 import type { UiDeps } from './context';
 import { clear, el, fmtInt, fmtMoney, fmtPct, statCell } from './dom';
 import { ORG_LIFECYCLE_LABELS, ORG_STRATEGY_LABELS, ORG_TYPE_LABELS, labelOf } from './labels';
+import { valuation } from '../systems/organization/Organization';
+import { canClaimLeadership, unassignedShare } from '../systems/organization/Shares';
 
 const STRATEGIES: readonly OrgStrategy[] = ['expand', 'steady', 'contract', 'pivot'];
 
@@ -214,7 +216,17 @@ export class OrganizationPanel {
       shares.append(row);
     }
     if (org.shares.length === 0) shares.append(el('li', 'empty', '没有登记股东'));
+    const free = unassignedShare(org);
+    if (free > 0.0005) {
+      const row = el('li', 'row-list__item');
+      row.append(
+        el('span', 'row-list__name', '未登记份额'),
+        el('span', 'row-list__meta', fmtPct(free)),
+      );
+      shares.append(row);
+    }
     this.host.append(shares);
+    this.host.append(this.buildShareActions(org));
 
     this.host.append(el('h3', 'section-title', '经营指令'));
     if (controlled) {
@@ -236,6 +248,45 @@ export class OrganizationPanel {
       result.setAttribute('role', 'status');
       this.host.append(result);
     }
+  }
+
+  private buildShareActions(org: Organization): HTMLElement {
+    const state = this.deps.state();
+    const wrap = el('div', 'action-group');
+    const owned = org.shares.find((entry) => entry.characterId === state.playerId)?.share ?? 0;
+    const price = valuation(org);
+    const buttons = el('div', 'btn-row');
+    buttons.append(
+      this.commandButton('买入 5%', 'ghost', () =>
+        this.exec({ kind: 'buy_shares', orgId: org.id, share: 0.05 }),
+      ),
+    );
+    if (owned >= 0.05) {
+      buttons.append(
+        this.commandButton('卖出 5%', 'ghost', () =>
+          this.exec({ kind: 'sell_shares', orgId: org.id, share: 0.05 }),
+        ),
+      );
+    }
+    const claim = canClaimLeadership(org, state.playerId);
+    if (claim.ok) {
+      buttons.append(
+        this.commandButton('接管字号', 'gold', () =>
+          this.exec({ kind: 'claim_leadership', orgId: org.id }),
+        ),
+      );
+    }
+    wrap.append(
+      buttons,
+      el(
+        'p',
+        'field__hint',
+        `估值约 ${fmtMoney(price)} 铜币 · 5% ≈ ${fmtMoney(Math.round(price * 0.05))} · ${
+          claim.ok ? '你已超过现任领袖，可接管字号' : claim.reason
+        }`,
+      ),
+    );
+    return wrap;
   }
 
   private buildActions(org: Organization): HTMLElement {
