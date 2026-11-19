@@ -8,7 +8,7 @@
         {
           "path": "stability",
           "op": "<",
-          "value": 0.5
+          "value": 0.75
         }
       ]
     },
@@ -47,8 +47,9 @@
     "id": "ev_country_bumper",
     "domain": "country",
     "scope": "country",
+    "exclusivity": "harvest",
     "risk": {
-      "lambda0": 0.03,
+      "lambda0": 0.02,
       "terms": [
         {
           "path": "stability",
@@ -75,26 +76,58 @@
     }
   },
   {
+    "id": "ev_country_famine",
+    "domain": "country",
+    "scope": "country",
+    "exclusivity": "harvest",
+    "risk": {
+      "lambda0": 0.012,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -0.6
+        }
+      ]
+    },
+    "cooldownDays": 90,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -200
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.03
+      },
+      {
+        "kind": "mul",
+        "path": "population",
+        "value": 0.995
+      }
+    ],
+    "text": {
+      "title": "歉收",
+      "body": "夏季的旱情让谷仓见底，赈济与平粜吃掉了本就不宽的国库余量。"
+    }
+  },
+  {
     "id": "ev_country_war_scare",
     "domain": "country",
     "scope": "country",
     "conditions": {
       "any": [
         {
-          "path": "debtRatio",
-          "op": ">",
-          "value": 0.12
+          "path": "policies.militaryShare",
+          "op": "<",
+          "value": 0.5
         }
       ]
     },
     "risk": {
-      "lambda0": 0.02,
-      "terms": [
-        {
-          "path": "debtRatio",
-          "coef": 6
-        }
-      ]
+      "lambda0": 0.004,
+      "terms": []
     },
     "cooldownDays": 200,
     "effects": [
@@ -152,6 +185,214 @@
           "value": 0.6
         }
       ]
+    }
+  },
+  {
+    "id": "ev_country_fiscal_crisis",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "any": [
+        {
+          "path": "treasuryRatio",
+          "op": "<",
+          "value": 1.2
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.0015,
+      "terms": []
+    },
+    "cooldownDays": 180,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -600
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.02
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "国库告急",
+      "body": "债主堵在财政厅门口，官员的薪俸延迟发放，连卫队的口粮都要赊账。"
+    }
+  },
+  {
+    "id": "ev_country_tariff_dispute",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "any": [
+        {
+          "path": "policies.tariffRate",
+          "op": ">",
+          "value": 0.1
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.003,
+      "terms": [
+        {
+          "path": "policies.tariffRate",
+          "coef": 2
+        }
+      ]
+    },
+    "cooldownDays": 120,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "policies.tariffRate",
+        "value": -0.02
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -150
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.01
+      }
+    ],
+    "text": {
+      "title": "关税争端",
+      "body": "对岸的商团抗议重税，扣押了本国商船；谈判以小幅降税与赔款收场。"
+    }
+  },
+  {
+    "id": "ev_country_plague",
+    "domain": "country",
+    "scope": "country",
+    "risk": {
+      "lambda0": 0.008,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -0.4
+        }
+      ]
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "mul",
+        "path": "population",
+        "value": 0.97
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.05
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -200
+      }
+    ],
+    "text": {
+      "title": "疫病",
+      "body": "港口先出现发热的病人，随后是街区。城门封闭，人口与税收一起减少。"
+    }
+  },
+  {
+    "id": "ev_country_polity_pressure",
+    "domain": "country",
+    "scope": "country",
+    "exclusivity": "throne",
+    "conditions": {
+      "any": [
+        {
+          "path": "stability",
+          "op": "<",
+          "value": 0.8
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.008,
+      "terms": [
+        {
+          "path": "legitimacy",
+          "coef": -0.8
+        }
+      ]
+    },
+    "cooldownDays": 120,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.03
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "政体压力",
+      "body": "广场上有人公开讨论废除旧制，贵族与商会各自串联，王座下的地板开始松动。"
+    }
+  },
+  {
+    "id": "ev_country_succession_crisis",
+    "domain": "country",
+    "scope": "country",
+    "exclusivity": "throne",
+    "conditions": {
+      "any": [
+        {
+          "path": "legitimacy",
+          "op": "<",
+          "value": 0.75
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.008,
+      "terms": [
+        {
+          "path": "legitimacy",
+          "coef": -1.2
+        }
+      ]
+    },
+    "cooldownDays": 150,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.06
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.04
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -250
+      }
+    ],
+    "text": {
+      "title": "继位危机",
+      "body": "继承顺序出现争议，几位远亲同时宣称拥有继承权，宫廷被迫花钱买安静。"
     }
   }
 ]

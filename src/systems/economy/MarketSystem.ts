@@ -28,7 +28,6 @@ export function settleMonthlyMarket(state: WorldState, content: WorldContent): M
   for (const marketKey of sortedIds(state.markets)) {
     const market = state.markets[marketKey];
     if (!market) continue;
-    if ((state.tiers[market.regionId] ?? 3) > 2) continue;
 
     const region = state.regions[market.regionId];
     const good = content.goods.find((candidate) => candidate.id === market.goodId);
@@ -40,22 +39,31 @@ export function settleMonthlyMarket(state: WorldState, content: WorldContent): M
     );
     market.demand = demand;
 
-    // 本月投放量是 production；stock 是缓冲库存，不参与竞价，
+    // 本月投放量 = 本地生产 + 上月到港进口；stock 是缓冲库存，不参与竞价，
     // 否则只要有一个月库存结余，价格就会被永久压到下限。
-    const supply = market.production;
-    const available = market.stock + supply;
+    const supply = market.production + market.importedUnits;
+    const available = market.stock + market.production;
     const shortage = Math.max(0, demand - supply);
     const surplusUnit = Math.max(0, supply - demand) / Math.max(1, demand);
 
+    // 管制会压低有效价格上限：审批/限价让高价难以完全传导。
+    const country = state.countries[region.countryId];
+    const regulation = country?.policies.regulation ?? 0.5;
+    const capRatio = Math.max(0.2, 1 - 0.7 * regulation);
+    const effectiveCeiling = Math.round(market.floor + (market.ceiling - market.floor) * capRatio);
+
     const imbalance = (demand - supply) / Math.max(demand, supply, 1);
     const alpha = Math.min(priceAdjustCeiling, Math.max(priceAdjustFloor, good.alpha));
-    const raw = market.price * (1 + alpha * imbalance);
+    // 长期锚定基准价：竞争性供给会让价格缓慢回归，避免一次性冲击永久顶在上下限。
+    const anchor = (good.basePrice - market.price) * 0.03;
+    const raw = market.price * (1 + alpha * imbalance) + anchor;
     const priceBefore = market.price;
-    market.price = Math.round(Math.min(market.ceiling, Math.max(market.floor, raw)));
+    market.price = Math.round(Math.min(effectiveCeiling, Math.max(market.floor, raw)));
 
     // 库存结转：先吃库存再吃本月产出；不足则清空（缺口留给贸易）。
     market.stock = Math.max(0, Math.round(available - Math.min(demand, available)));
     market.production = 0;
+    market.importedUnits = 0;
 
     // 价格偏离基准价的可观测指标（sim 报告用，0 = 恰好等于基准价）。
     state.stats.priceDeviationSum += Math.abs(market.price - good.basePrice) / good.basePrice;

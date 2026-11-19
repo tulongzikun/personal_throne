@@ -99,6 +99,11 @@ function emptyStats(): Record<string, number> {
     tradeCost: 0,
     orgCountSum: 0,
     orgCountSamples: 0,
+    policyProposals: 0,
+    policyChanges: 0,
+    policyCost: 0,
+    minPolicyIntervalDays: 0,
+    polityChanges: 0,
   };
 }
 
@@ -110,13 +115,14 @@ function migrateV1toV2(raw: Record<string, unknown>): void {
   const organizations = (raw['organizations'] ?? {}) as Record<string, Record<string, unknown>>;
   let maxNpc = 0;
   for (const [id, org] of Object.entries(organizations)) {
-    const match = /^o_npc_(d+)$/.exec(id);
+    const match = /^o_npc_(\d+)$/.exec(id);
     if (match) maxNpc = Math.max(maxNpc, Number(match[1]));
     org['origin'] ??= match ? 'npc' : 'content';
     org['lastMonthProfit'] ??= 0;
     org['lastMonthTax'] ??= 0;
     org['lastMonthTransport'] ??= 0;
     org['lastMonthTariff'] ??= 0;
+    org['lastMonthTradeRevenue'] ??= 0;
     org['unpaidWages'] ??= 0;
     org['distressMonths'] ??= 0;
     org['graceUntilDay'] ??= 0;
@@ -161,6 +167,39 @@ function migrateV1toV2(raw: Record<string, unknown>): void {
   raw['stats'] ??= emptyStats();
 }
 
+/** v2 → v3（M3 国家与政策）：补齐政策冷却、政体压力、内阁路线与进口计价字段。 */
+function migrateV2toV3(raw: Record<string, unknown>): void {
+  const countries = (raw['countries'] ?? {}) as Record<string, Record<string, unknown>>;
+  for (const country of Object.values(countries)) {
+    country['policyCooldowns'] ??= {};
+    country['polityPressureMonths'] ??= 0;
+    country['lastPolityChangeDay'] ??= 0;
+    country['cabinetAction'] ??= null;
+    country['cabinetUtility'] ??= 0;
+    country['succession'] ??= country['polity'] === 'republic' ? 'elective' : 'primogeniture';
+    country['offices'] ??= [];
+  }
+
+  const markets = (raw['markets'] ?? {}) as Record<string, Record<string, unknown>>;
+  for (const market of Object.values(markets)) {
+    market['importedUnits'] ??= 0;
+  }
+
+  const stats = raw['stats'];
+  if (stats && typeof stats === 'object') {
+    const record = stats as Record<string, unknown>;
+    record['policyProposals'] ??= 0;
+    record['policyChanges'] ??= 0;
+    record['policyCost'] ??= 0;
+    record['minPolicyIntervalDays'] ??= 0;
+    record['polityChanges'] ??= 0;
+  } else {
+    raw['stats'] = emptyStats();
+  }
+
+  raw['characterSeq'] ??= 0;
+}
+
 /** 把 `WorldState` 从它的 `schemaVersion` 升到当前版本。 */
 export function migrateWorldState(raw: unknown): WorldState {
   if (typeof raw !== 'object' || raw === null) {
@@ -179,6 +218,11 @@ export function migrateWorldState(raw: unknown): WorldState {
     if (version === 1) {
       migrateV1toV2(state);
       version = 2;
+      continue;
+    }
+    if (version === 2) {
+      migrateV2toV3(state);
+      version = 3;
       continue;
     }
     throw new SaveError(`缺少 v${version} → v${SCHEMA_VERSION} 的迁移步骤`);

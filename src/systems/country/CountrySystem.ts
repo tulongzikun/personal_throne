@@ -20,10 +20,13 @@ export interface CountryBudget {
   readonly publicWorks: number;
   readonly treasuryAfter: number;
   readonly debtAfter: number;
+  /** 本月合法性与稳定性的变化量（M4 事件读取用）。 */
+  readonly legitimacyDelta: number;
+  readonly stabilityDelta: number;
 }
 
 const ADMIN_RATE = 0.12;
-const HEAD_TAX_PER_CAPITA = 0.002;
+const HEAD_TAX_PER_CAPITA = 0.02;
 
 export function settleMonthlyCountry(
   state: WorldState,
@@ -42,11 +45,14 @@ export function settleMonthlyCountry(
     country.population = population;
 
     const headTax = Math.round(population * HEAD_TAX_PER_CAPITA * country.policies.taxRate);
-    const tariff = Math.round(population * country.policies.tariffRate * 0.05);
+    // 关税税基随贸易开放度变化：开放度越高，过境贸易与报关越充分。
+    const tariffBase = 0.03 + 0.02 * country.policies.tradeFreedom;
+    const tariff = Math.round(population * country.policies.tariffRate * tariffBase);
     const revenue = headTax + tariff;
 
     const military = Math.round(country.policies.militaryShare * (revenue + 100));
-    const admin = Math.round(revenue * ADMIN_RATE);
+    // 管制越重，行政成本越高（审批、稽查、价格管制）。
+    const admin = Math.round(revenue * (ADMIN_RATE + 0.04 * country.policies.regulation));
     const interest = Math.round(country.debt * interestRateMonthly);
     const baseExpense = military + admin + interest;
 
@@ -70,7 +76,8 @@ export function settleMonthlyCountry(
     country.treasury -= publicWorks;
 
     country.monthlyRevenue = revenue;
-    country.monthlyExpense = baseExpense + publicWorks;
+    // 公共工程单独记账：它是有余钱才做的可选支出，不进入赤字压力。
+    country.monthlyExpense = baseExpense;
     country.military = Math.max(1, Math.round(military / 10));
 
     // 治理指标缓慢演化：赤字与短缺侵蚀合法性，稳定与合法性相互支撑。
@@ -80,6 +87,8 @@ export function settleMonthlyCountry(
       entityId: country.id,
       periodKey: ctx.periodKey,
     });
+    const legitimacyBefore = country.legitimacy;
+    const stabilityBefore = country.stability;
     country.legitimacy = clamp01(
       country.legitimacy - deficitPressure + (failedChecks > 0.95 ? -0.01 : 0.002),
     );
@@ -93,6 +102,8 @@ export function settleMonthlyCountry(
       publicWorks,
       treasuryAfter: country.treasury,
       debtAfter: country.debt,
+      legitimacyDelta: Number((country.legitimacy - legitimacyBefore).toFixed(4)),
+      stabilityDelta: Number((country.stability - stabilityBefore).toFixed(4)),
     });
   }
 

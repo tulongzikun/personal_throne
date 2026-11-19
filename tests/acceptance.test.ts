@@ -125,6 +125,45 @@ describe('§13 B 商业干预', () => {
     );
     expect(changed).toBe(true);
   });
+
+  it('推动降关税后商路价差收窄、贸易毛利上升（验收 C）', () => {
+    const base = createWorld(content, { seed: 'accept-c', createdAt: 0 });
+    const low = cloneWorld(base);
+    const high = cloneWorld(base);
+
+    const lobby = applyCommand(
+      low,
+      { kind: 'lobby', countryId: 'c_league', policy: 'tariffRate', delta: -0.04 },
+      content,
+    );
+    expect(lobby.ok).toBe(true);
+    expect(low.countries['c_league']!.policies.tariffRate).toBeCloseTo(0.02, 5);
+    high.countries['c_league']!.policies.tariffRate = 0.9;
+
+    for (const world of [low, high]) {
+      const destination = world.markets[marketKeyOf('r_tidemarket', 'grain')]!;
+      destination.stock = 0;
+      destination.demand = 600;
+      destination.price = 20;
+      const source = world.markets[marketKeyOf('r_greenfield', 'grain')]!;
+      source.stock = 800;
+      source.price = 5;
+    }
+
+    new GameEngine(low, content).advanceDays(180);
+    new GameEngine(high, content).advanceDays(180);
+
+    const lowMarket = low.markets[marketKeyOf('r_tidemarket', 'grain')]!;
+    const highMarket = high.markets[marketKeyOf('r_tidemarket', 'grain')]!;
+    const lowMargin = low.stats.tradeRevenue - low.stats.tradeCost;
+    const highMargin = high.stats.tradeRevenue - high.stats.tradeCost;
+
+    expect(lowMarket.price).toBeLessThanOrEqual(highMarket.price);
+    expect(lowMarket.stock).toBeGreaterThan(highMarket.stock);
+    expect(low.stats.tradeRevenue).toBeGreaterThan(high.stats.tradeRevenue);
+    expect(lowMargin).toBeGreaterThan(highMargin);
+    expect(lowMargin).toBeGreaterThan(0);
+  });
 });
 
 describe('§13 D 财务危机', () => {

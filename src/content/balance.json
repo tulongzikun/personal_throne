@@ -108,8 +108,22 @@
     "entryCapital": 2400
   },
   "trade": {
-    "unitTransportCost": 1,
+    "unitTransportCost": 0.35,
     "lossRate": 0.03,
     "tariffEnabled": true
+  },
+  "policy": {
+    "cooldownMonths": 30,
+    "proposalCostBase": 120,
+    "proposalCostRate": 0.02,
+    "supportThreshold": 0.45,
+    "minPressure": 0.6,
+    "maxDeltaPerRound": 0.16,
+    "polityChangeMonths": 24,
+    "polityChangeLegitimacy": 0.2,
+    "polityChangeStability": 0.25,
+    "polityChangeDebtRatio": 1.5,
+    "polityChangeCooldownMonths": 240,
+    "polityChangeChance": 0.5
   }
 }

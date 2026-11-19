@@ -218,6 +218,13 @@ export function readFeature(state: WorldState, target: EventTarget, path: string
       const assets = readNumber(state, target, 'assets') ?? 0;
       return Math.min(1, liabilities / (assets + 1));
     }
+    case 'treasuryRatio': {
+      // 国家流动性：国库可覆盖多少个月的开支（<1 表示不足一年）。
+      if (target.scope !== 'country') return 0;
+      const treasury = readNumber(state, target, 'treasury') ?? 0;
+      const expense = readNumber(state, target, 'monthlyExpense') ?? 0;
+      return Math.min(1, treasury / Math.max(1, expense * 12));
+    }
     case 'priceRatio': {
       if (target.scope !== 'region') return 0;
       let worst = 0;

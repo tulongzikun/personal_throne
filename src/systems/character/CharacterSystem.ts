@@ -12,6 +12,7 @@ import type { SettleContext, WorldContent, WorldState } from '../../core/WorldSt
 import { sortedIds } from '../../core/WorldState';
 import { transferWealth } from './Character';
 import { successionOrder } from '../organization/Organization';
+import { installRuler } from '../country/Ruler';
 
 export interface CharacterSettlement {
   readonly deaths: readonly string[];
@@ -120,16 +121,11 @@ export function handleDeath(
     }
   }
 
-  // 国家统治者死亡：由合法性最高的在世组织领袖暂代（M3 后替换为完整继承规则）。
+  // 国家统治者死亡：按政体立刻产生在世继承人（不允许出现无主国家）。
   for (const countryId of sortedIds(state.countries)) {
     const country = state.countries[countryId];
     if (!country || country.rulerId !== characterId) continue;
-    const regent =
-      successions[0]?.to ??
-      sortedIds(state.organizations)
-        .map((id) => state.organizations[id]?.leadership.leaderId)
-        .find((id): id is string => Boolean(id) && state.characters[id as string]?.alive === true);
-    if (regent) country.rulerId = regent;
+    installRuler(state, country, country.polity);
     country.legitimacy = Math.min(country.legitimacy, 0.4);
     country.stability = Math.min(country.stability, 0.3);
   }

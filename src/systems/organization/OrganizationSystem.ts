@@ -152,6 +152,7 @@ function maybeEnterMarkets(
         lastMonthTax: 0,
         lastMonthTransport: 0,
         lastMonthTariff: 0,
+        lastMonthTradeRevenue: 0,
         unpaidWages: 0,
         distressMonths: 0,
         graceUntilDay: 0,

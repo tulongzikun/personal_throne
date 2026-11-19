@@ -24,7 +24,7 @@
     "name": "武器",
     "basePrice": 60,
     "alpha": 0.22,
-    "floorRatio": 0.5,
+    "floorRatio": 0.7,
     "ceilingRatio": 2.4,
     "consumptionPerCapita": 0.001,
     "subsistenceShare": 0.05
@@ -34,7 +34,7 @@
     "name": "奢侈品",
     "basePrice": 150,
     "alpha": 0.18,
-    "floorRatio": 0.5,
+    "floorRatio": 0.7,
     "ceilingRatio": 2.2,
     "consumptionPerCapita": 0.0006,
     "subsistenceShare": 0.05

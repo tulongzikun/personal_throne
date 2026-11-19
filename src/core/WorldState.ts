@@ -22,7 +22,7 @@ export type ContractId = string;
 export type ArmyId = string;
 export type EntityId = string;
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /* ------------------------------------------------------------------ */
 /* 静态内容（schema）                                                   */
@@ -40,6 +40,17 @@ export type OrgLifecycle =
   | 'shrinking'
   | 'dissolved';
 export type Polity = 'monarchy' | 'republic';
+export type SuccessionMode = 'primogeniture' | 'elective' | 'council';
+
+/** 国家公职：M3 只保留结构，M4 的事件/议会模型再填充。 */
+export interface CountryOffice {
+  id: string;
+  title: string;
+  holderId: CharacterId;
+  /** 0–1，供政策支持度与事件使用。 */
+  influence: number;
+  salaryMonthly: number;
+}
 export type Terrain = 'city' | 'plains' | 'mountains' | 'coast' | 'forest';
 
 export interface GoodDef {
@@ -208,6 +219,33 @@ export interface BalanceConfig {
     readonly lossRate: number;
     readonly tariffEnabled: boolean;
   };
+  /**
+   * 政策三阶段的校准参数（M3）：
+   * 压力 → 提案（成本 + 冷却）→ 按政体决策；政权更迭只在长期崩溃时发生。
+   */
+  readonly policy: {
+    /** 同一国家同一政策的变更冷却（月）。 */
+    readonly cooldownMonths: number;
+    /** 提案的固定行政成本（铜币）。 */
+    readonly proposalCostBase: number;
+    /** 提案成本占月收入的比率。 */
+    readonly proposalCostRate: number;
+    /** 压力 × 0.5 + 支持度 × 0.6 达到该阈值才通过。 */
+    readonly supportThreshold: number;
+    /** 压力强度低于该值不进入表决（避免财政小波动引发每月改革）。 */
+    readonly minPressure: number;
+    /** 单轮单政策的最大变更幅度。 */
+    readonly maxDeltaPerRound: number;
+    /** 政权更迭条件需要连续满足的月数。 */
+    readonly polityChangeMonths: number;
+    readonly polityChangeLegitimacy: number;
+    readonly polityChangeStability: number;
+    readonly polityChangeDebtRatio: number;
+    /** 两次政权更迭的最小间隔（月）。 */
+    readonly polityChangeCooldownMonths: number;
+    /** 满足条件后的单次判定概率。 */
+    readonly polityChangeChance: number;
+  };
 }
 
 export interface RiskTable {
@@ -340,6 +378,8 @@ export interface Organization {
   lastMonthTransport: number;
   /** 上月关税（由贸易系统写入，财务结算后清零）。 */
   lastMonthTariff: number;
+  /** 上月贸易收入（由贸易系统写入，计入损益后清零）。 */
+  lastMonthTradeRevenue: number;
   /** 欠薪：现金不足以发工资时转入负债，清算时优先于股东受偿。 */
   unpaidWages: number;
   /** 已连续处于危机/宽限的月数。 */
@@ -392,6 +432,19 @@ export interface Country {
   rulerId: CharacterId;
   policies: PolicyVector;
   diplomacy: Record<CountryId, number>;
+  /** 各政策上次成功变更的日期（`PolicyKey` → day），用于冷却。 */
+  policyCooldowns: Record<string, number>;
+  /** 连续满足政权更迭条件的月数（确定性计数，不做随机抖动）。 */
+  polityPressureMonths: number;
+  /** 上次政权更迭日期（0 表示从未）。 */
+  lastPolityChangeDay: number;
+  /** 内阁最近一次采纳的财政路线，供政策压力与 UI 观察。 */
+  cabinetAction: 'raise_tax' | 'cut_military' | 'borrow' | null;
+  cabinetUtility: number;
+  /** 继承规则：君主制默认 primogeniture，共和制默认 elective（M4 可用 council）。 */
+  succession: SuccessionMode;
+  /** 公职列表；M3 允许为空，M4 议会/内阁模型再填充。 */
+  offices: CountryOffice[];
 }
 
 export interface Region {
@@ -420,6 +473,8 @@ export interface Market {
   shareByOrg: Record<OrgId, number>;
   /** 开通该地区商路的组织；货到后由其收取贸易收益并承担关税。 */
   routeOwnerId: OrgId | null;
+  /** 本月到港、尚未被市场计价吸收的进口量（M3：进口参与定价）。 */
+  importedUnits: number;
 }
 
 export type ContractStatus = 'open' | 'fulfilled' | 'defaulted' | 'cancelled';
@@ -502,6 +557,13 @@ export interface WorldStats {
   tradeCost: number;
   orgCountSum: number;
   orgCountSamples: number;
+  /** 政策三阶段的可观测统计（M3）。 */
+  policyProposals: number;
+  policyChanges: number;
+  policyCost: number;
+  /** 同一政策两次成功变更之间的最小间隔（天，0 = 尚无第二次）。 */
+  minPolicyIntervalDays: number;
+  polityChanges: number;
 }
 
 export interface Relation {
@@ -560,6 +622,8 @@ export interface WorldState {
   contractSeq: number;
   /** NPC 新建组织 ID 序号，只增不减。 */
   orgSeq: number;
+  /** 无继承人时补位的统治者序号，只增不减。 */
+  characterSeq: number;
   stats: WorldStats;
 }
 
@@ -633,6 +697,7 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
       lastMonthTax: 0,
       lastMonthTransport: 0,
       lastMonthTariff: 0,
+      lastMonthTradeRevenue: 0,
       unpaidWages: 0,
       distressMonths: 0,
       graceUntilDay: 0,
@@ -682,6 +747,13 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
       rulerId: def.rulerId,
       policies: { ...def.policies },
       diplomacy: {},
+      policyCooldowns: {},
+      polityPressureMonths: 0,
+      lastPolityChangeDay: 0,
+      cabinetAction: null,
+      cabinetUtility: 0,
+      succession: def.polity === 'monarchy' ? 'primogeniture' : 'elective',
+      offices: [],
     };
   }
   // 外交初始值：同政体 20，异政体 -10，自国除外。
@@ -710,6 +782,7 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
         exportCapacity: 0,
         shareByOrg: {},
         routeOwnerId: null,
+        importedUnits: 0,
       };
     }
   }
@@ -752,6 +825,7 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
     scheduleSeq: 0,
     contractSeq: 0,
     orgSeq: 0,
+    characterSeq: 0,
     stats: {
       bankruptcies: 0,
       restructurings: 0,
@@ -767,6 +841,11 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
       tradeCost: 0,
       orgCountSum: 0,
       orgCountSamples: 0,
+      policyProposals: 0,
+      policyChanges: 0,
+      policyCost: 0,
+      minPolicyIntervalDays: 0,
+      polityChanges: 0,
     },
   };
 }
@@ -825,6 +904,8 @@ export function validateWorld(state: WorldState): string[] {
     if (key !== country.id) problems.push(`国家键 ${key} 与 id ${country.id} 不一致`);
     if (!state.characters[country.rulerId]) {
       problems.push(`国家 ${country.id} 的统治者在人物表中不存在`);
+    } else if (!state.characters[country.rulerId]?.alive) {
+      problems.push(`国家 ${country.id} 的统治者已死亡（不允许无主国家）`);
     }
     for (const regionId of country.regionIds) {
       if (!state.regions[regionId]) problems.push(`国家 ${country.id} 的地区 ${regionId} 不存在`);
@@ -841,6 +922,7 @@ export function validateWorld(state: WorldState): string[] {
       problems.push(`市场 ${key} 的地区不存在`);
     }
     if (market.price < 0 || market.stock < 0) problems.push(`市场 ${key} 价格或库存为负`);
+    if (market.importedUnits < 0) problems.push(`市场 ${key} 进口量为负`);
   }
 
   for (const [key, region] of Object.entries(state.regions)) {

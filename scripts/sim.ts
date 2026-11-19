@@ -73,6 +73,20 @@ function main(): void {
     state.stats.orgCountSamples > 0 ? state.stats.orgCountSum / state.stats.orgCountSamples : 0;
   const priceDeviation =
     state.stats.priceSamples > 0 ? state.stats.priceDeviationSum / state.stats.priceSamples : 0;
+  const marketRatios: { key: string; ratio: number }[] = [];
+  for (const market of Object.values(state.markets)) {
+    const good = content.goods.find((item) => item.id === market.goodId);
+    if (!good) continue;
+    marketRatios.push({
+      key: `${market.regionId}:${market.goodId}`,
+      ratio: market.price / good.basePrice,
+    });
+  }
+  marketRatios.sort((a, b) => a.ratio - b.ratio);
+  const p95Index = Math.max(0, Math.ceil(marketRatios.length * 0.95) - 1);
+  const p95 = marketRatios[p95Index]?.ratio ?? 0;
+  const withinBand = marketRatios.filter((item) => item.ratio >= 0.7 && item.ratio <= 1.4).length;
+  const widest = marketRatios[marketRatios.length - 1];
   const eventCounts = new Map<string, number>();
   for (const record of state.history) {
     if (!record.causeEventId) continue;
@@ -97,6 +111,15 @@ function main(): void {
     `新进入       ${state.stats.founded} 家 / 价格偏离基准 ${(priceDeviation * 100).toFixed(1)}% / 关税 ${state.stats.tariffRevenue}`,
   );
   console.log(
+    `市场偏离    均价偏离 ${(priceDeviation * 100).toFixed(1)}% / p95 ${(p95 * 100).toFixed(1)}% / 70–140% 内 ${withinBand}/${marketRatios.length}${
+      widest ? `（最高 ${widest.key} ${(widest.ratio * 100).toFixed(0)}%）` : ''
+    }`,
+  );
+  console.log(
+    `政策        提案 ${state.stats.policyProposals} / 变更 ${state.stats.policyChanges} / 支出 ${state.stats.policyCost} / 最小间隔 ${state.stats.minPolicyIntervalDays} 天`,
+  );
+  console.log(`政体        变更 ${state.stats.polityChanges} 次`);
+  console.log(
     `事件分布    ${[...eventCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([id, count]) => `${id}×${count}`)
@@ -113,6 +136,7 @@ function main(): void {
     const second = run(years, seed);
     const same = second.hash === first.hash;
     console.log(`复跑校验    ${same ? '一致 ✅' : '不一致 ❌'}`);
+    console.log(`复跑耗时    ${second.elapsed.toFixed(0)} ms`);
     if (!same) {
       console.log(`  第一次 ${first.hash}`);
       console.log(`  第二次 ${second.hash}`);

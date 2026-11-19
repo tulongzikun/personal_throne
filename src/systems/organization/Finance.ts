@@ -71,12 +71,23 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     // 运输与关税只来自本月贸易登记；结算后清零，避免与损益重复记账。
     const transportCost = Math.max(0, org.lastMonthTransport);
     const tariff = Math.max(0, org.lastMonthTariff);
+    // 贸易收入在到港时登记，属于本月经营成果；采购成本已通过现金投入体现。
+    const tradeRevenue = Math.max(0, org.lastMonthTradeRevenue);
     org.lastMonthTransport = 0;
     org.lastMonthTariff = 0;
+    org.lastMonthTradeRevenue = 0;
 
     const grossProfit =
-      revenue - materialCost - payroll - admin - interest - transportCost - tariff;
-    const tax = grossProfit > 0 ? Math.round(grossProfit * profitTaxRate) : 0;
+      revenue + tradeRevenue - materialCost - payroll - admin - interest - transportCost - tariff;
+    // 有效税率随国家税制变化：政策税率 0.1 → 基准的 75%，0.35 → 基准的 137.5%。
+    const homeRegion = state.regions[org.homeRegionId];
+    const taxCountry = homeRegion ? state.countries[homeRegion.countryId] : undefined;
+    const effectiveTaxRate = clamp(
+      taxCountry ? profitTaxRate * (0.5 + taxCountry.policies.taxRate * 2.5) : profitTaxRate,
+      0.02,
+      0.5,
+    );
+    const tax = grossProfit > 0 ? Math.round(grossProfit * effectiveTaxRate) : 0;
 
     const equityBefore = equityOf(org);
     const net = org.cash + revenue - materialCost - admin - interest - transportCost - tariff - tax;
@@ -95,7 +106,7 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     org.unpaidWages += unpaid;
     org.liabilities += unpaid + arrears;
 
-    org.lastMonthRevenue = revenue;
+    org.lastMonthRevenue = revenue + tradeRevenue;
     org.lastMonthCost = materialCost + payroll + admin + interest + transportCost + tariff + tax;
     org.lastMonthProfit = grossProfit - tax;
     org.lastMonthTax = tax;
@@ -231,4 +242,8 @@ function fallbackPrice(state: WorldState, org: { homeRegionId: string; industry:
   if (org.industry === 'service') return 1;
   const market = state.markets[marketKeyOf(org.homeRegionId, org.industry)];
   return market?.price ?? 10;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }

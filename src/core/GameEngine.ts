@@ -25,7 +25,7 @@ import {
   type WorldState,
 } from './WorldState';
 import { isQuarterEnd, isYearEnd } from './GameClock';
-import { settleMonthlyDecisions } from '../systems/npc/DecisionSystem';
+import { settleMonthlyDecisions, settleCountryDecisions } from '../systems/npc/DecisionSystem';
 import { monthlyOrganizationSettlement } from '../systems/organization/OrganizationSystem';
 import { settleMonthlyProduction } from '../systems/economy/ProductionSystem';
 import { settleMonthlyMarket } from '../systems/economy/MarketSystem';
@@ -217,13 +217,32 @@ export class GameEngine {
       }
     }
 
-    // 政策压力季度检查（3/6/9/12 月末）。
+    // 政策压力季度检查（3/6/9/12 月末），带成本、冷却与政体决策。
     if (isQuarterEnd(ctx.day)) {
-      for (const proposal of runPolicyRound(this.state, ctx, ctx.day)) {
+      const round = runPolicyRound(this.state, ctx, ctx.day, this.content.balance.policy);
+      for (const proposal of round) {
         this.record('policy', `${formatDate(ctx.day)} ${proposal.reason}`, [
           { kind: 'country', id: proposal.countryId },
         ]);
       }
+      for (const change of round.polityChanges) {
+        this.record('policy', `${formatDate(ctx.day)} ${change.reason}`, [
+          { kind: 'country', id: change.countryId },
+        ]);
+      }
+    }
+
+    // 国家层面 NPC 决策：统治者/执政官每月在增税、削军、借债之间选一条路线。
+    const cabinet = settleCountryDecisions(this.state, ctx);
+    for (const decision of cabinet.decisions) {
+      this.record(
+        'command',
+        `${formatDate(ctx.day)} ${decision.reason}（效用 ${decision.utility.toFixed(3)}）`,
+        [
+          { kind: 'country', id: decision.countryId },
+          { kind: 'character', id: decision.characterId },
+        ],
+      );
     }
   }
 

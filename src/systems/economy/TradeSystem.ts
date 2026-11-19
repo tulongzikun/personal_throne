@@ -49,6 +49,9 @@ export function settleShipments(state: WorldState, content: WorldContent): Shipm
       continue;
     }
     destination.stock += arrived;
+    // 进口进入"待计价供给"：下个月的市场结算把到港量计入供给，
+    // 否则本地无产能的地区即使买到了货，价格仍会一路顶到上限。
+    destination.importedUnits += arrived;
 
     const destinationRegion = state.regions[shipment.toRegionId];
     const country = destinationRegion ? state.countries[destinationRegion.countryId] : undefined;
@@ -69,9 +72,11 @@ export function settleShipments(state: WorldState, content: WorldContent): Shipm
 
     let revenue = 0;
     if (owner) {
-      revenue = Math.round(arrived * destination.price * 0.9);
+      // 贸易按目的地市价的 95% 成交（批发折扣小于本地零售的 10%）。
+      revenue = Math.round(arrived * destination.price * 0.95);
       owner.cash += revenue;
       owner.tradeRevenue += revenue;
+      owner.lastMonthTradeRevenue += revenue;
       owner.tradeCost += shipment.transportCost + tariff;
       owner.lastMonthTransport += shipment.transportCost;
       state.stats.tradeRevenue += revenue;
@@ -117,6 +122,12 @@ function planFlows(state: WorldState, content: WorldContent): TradeFlow[] {
         if (surplus <= 0 || gap <= 0) continue;
 
         const market = state.markets[marketKeyOf(target.id, good.id)];
+        const destinationRegion = state.regions[target.id];
+        const country = destinationRegion
+          ? state.countries[destinationRegion.countryId]
+          : undefined;
+        const sameCountry = region.countryId === target.countryId;
+        const freedom = country?.policies.tradeFreedom ?? 0.5;
         const routeOwner = market?.routeOwnerId
           ? state.organizations[market.routeOwnerId]
           : undefined;
@@ -125,22 +136,31 @@ function planFlows(state: WorldState, content: WorldContent): TradeFlow[] {
             ? routeOwner
             : pickOwner(state, region.id);
 
-        const capacity = Math.min(
-          link.capacity + (market ? Math.round(market.importCapacity * 0.5) : 0),
-          surplus,
-          gap,
-        );
+        // 贸易开放度提高商路有效容量，也放大玩家/组织开通的进口配额。
+        const routeCapacity = Math.round(link.capacity * (0.7 + 0.6 * freedom));
+        const importBoost = market ? Math.round(market.importCapacity * (0.5 + freedom)) : 0;
+        const capacity = Math.min(routeCapacity + importBoost, surplus, gap);
         if (capacity <= 0) continue;
 
-        const purchasePrice = Math.max(1, priceOf(state, region.id, good.id));
-        const costPerUnit = purchasePrice + Math.round(unitTransportCost * Math.max(1, link.days));
+        // 批发采购：按来源地市价的 90% 买入，留出贸易利差。
+        const purchasePrice = Math.max(1, Math.round(priceOf(state, region.id, good.id) * 0.9));
+        const freight = Math.round(unitTransportCost * Math.max(1, link.days));
+        const tariffPerUnit =
+          content.balance.trade.tariffEnabled && !sameCountry && country
+            ? Math.round(dest.price * country.policies.tariffRate)
+            : 0;
+        const costPerUnit = purchasePrice + freight + tariffPerUnit;
+        // 亏损的货流不会发船：预期售价不足以覆盖采购、运费与关税时跳过。
+        const expectedRevenue = Math.round(dest.price * 0.95);
+        if (expectedRevenue - costPerUnit < 0) continue;
         const affordable = owner ? Math.floor(owner.cash / Math.max(1, costPerUnit)) : capacity;
         const units = Math.min(capacity, affordable);
         if (units <= 0) continue;
 
         const purchase = units * purchasePrice;
         const transportCost = Math.round(units * unitTransportCost * Math.max(1, link.days));
-        const lost = Math.round(units * lossRate);
+        // 开放度降低在途损耗（保险、港口效率、更成熟的商路）。
+        const lost = Math.round(units * lossRate * (1 - 0.3 * freedom));
 
         if (owner) {
           owner.cash -= purchase + transportCost;
@@ -150,11 +170,6 @@ function planFlows(state: WorldState, content: WorldContent): TradeFlow[] {
         }
         source.stock = Math.max(0, source.stock - units);
 
-        const destinationRegion = state.regions[target.id];
-        const country = destinationRegion
-          ? state.countries[destinationRegion.countryId]
-          : undefined;
-        const sameCountry = region.countryId === target.countryId;
         const tariffDue =
           content.balance.trade.tariffEnabled && !sameCountry && country
             ? Math.round(units * dest.price * country.policies.tariffRate)

@@ -519,9 +519,9 @@ interface EventDef {
 | M0 工程基线 | ✅ 完成 | `pnpm build` / `pnpm release` 脚本齐备；`release/index.html` 已入仓，2,730 字节（预算占用 0.17%）；CI 四步全配 |
 | M1 模拟核心 | ✅ 完成 | 8 个 core 模块、14 个 systems 文件、内容装配、存档、`pnpm sim`、34 个用例；100 年模拟实测 1.3 s（预算 2 s），同种子哈希稳定；R8 由内容审计与 `validateWorld` 覆盖；证据见 §8.2 |
 | M2 组织与经济 | ✅ 完成 | 生命周期四态与清算、契约（供货/运输/贷款/雇佣）、市场份额竞争、在途货运与关税、四类风险系数表、组织事件 10 条；验收 B/D 已断言，100 年破产率 22.2–31.6%、分裂率 5.6–10.5%；证据见 §8.3 |
-| M3 国家与政策 | 🟡 骨架 | `CountrySystem` / `PolicySystem` / `DecisionSystem` 已接入月结；验收 C 未做 |
+| M3 国家与政策 | ✅ 完成 | 政策三阶段 + 传导经济 + 政体不变式 + 国家事件 10 条 + 内阁决策；验收 C 已断言；100 年政策变更 17/18/25 次、均价偏离 12.8–16.3%、20/20 市场在 70–140%；65 用例；证据见 §8.6 |
 | M4 角色与叙事 | 🟡 骨架 | `Character` / `CharacterSystem` / `SkillCheck` 与 14 条事件已有；"商人→从政"路径未验证；**重新计价 36 人日**（roadmap §1.2），人物档案增补六维/阵营/信仰/地点（roadmap §2.0.1） |
-| M5 整合与校准 | 🟡 薄 UI 可用 | `src/ui/` 12 个文件（地图/人物/组织/国家/事件/历史 + 时间控制 + 存档），`release/index.html` 145 KB 单文件可离线游玩；完整美术、教程与校准未做 |
+| M5 整合与校准 | 🟡 薄 UI 可用 | `src/ui/` 12 个文件（地图/人物/组织/国家/事件/历史 + 时间控制 + 存档），`release/index.html` 161 KB 单文件可离线游玩；完整美术、教程与校准未做 |
 | M6 战争与扩展 | ⬜ 占位 | `WarSystem` 仅月度军费结算，无战役与领土变更 |
 
 ### 8.2 M1 收尾修复（2026-11-19）
@@ -683,6 +683,20 @@ interface EventDef {
 | D4 | 人物档案 | 六维 1–20（生成用「天赋标签 3 选」：默认 10、标签 +2、上限 16）；阵营九宫格（`law`/`good` 双轴 −100..100，随事件/抉择/命令动态调整、年度向 0 收敛）；`location.site`；`faith` 可为 `null` |
 
 合计（参考值，**不设上限**）**96 人日 + 6 人日缓冲 ≈ 21 周**。类型定义、迁移规则（`SCHEMA_VERSION` 2 → 3）与验收用例见 [docs/roadmap-m4-plus.md](docs/roadmap-m4-plus.md) §2.0.1。
+
+### 8.6 M3 国家与政策（2026-11-19）
+
+| 项 | 实现 | 证据 |
+|---|---|---|
+| 政策三阶段 | `evaluatePolicyPressure` 七类压力 → 提案（成本 120 + 月收入 2%，国库不足转债务）→ 政体支持度 `0.35+legit*0.45+authority*0.2`（共和用 `capitalWeight`），`pressure*0.5+support*0.6 ≥ 0.45` 且 `pressure ≥ 0.6` 才通过 | `tests/policy.test.ts` 6 例；100 年 17/18/25 次变更，最小间隔 900 天 |
+| 政策传导 | 关税进贸易成本与到港征收；`tradeFreedom` 影响容量/损耗/税基；`regulation` 压有效价格上限并抬行政成本；`taxRate` 进组织有效税率 | 验收 C：低关税毛利 45,025 vs 高关税 24,855 |
+| 政体不变式 | `Ruler.ts` 的 `chooseRuler/spawnRegent/installRuler`；`validateWorld` 断言统治者在世；政体变更需连续 24 月合法性与稳定度崩溃 + 距上次 ≥240 月 + 50% 判定 | `tests/policy.test.ts` 强制崩溃用例 |
+| 事件 | 国家事件 4 → 10 条（原 ID 未改），`harvest`/`throne` 两组互斥 | 三 seed 10 条全部命中 |
+| 同盟顶价 | 删掉 `tiers>2` 断供、`importedUnits` 参与供给、运价 0.35、3% 基准锚定、`capRatio=max(0.2,1-0.7*regulation)`；`weapons/luxury` floorRatio 0.5→0.7 | 均价偏离 120% → 12.8–16.3%；20/20 落在 70–140% |
+| 内阁决策 | `settleCountryDecisions`：增税 / 裁军 / 借债三选一，0.03 粘性，借债上限债务率 1.5 | `tests/policy.test.ts` |
+| 存档 | `SCHEMA_VERSION` 2→3（`policyCooldowns/polityPressureMonths/lastPolityChangeDay/cabinetAction/succession/offices/importedUnits` 等），`CONTENT_VERSION` 0.3.0 | `tests/migration.test.ts` |
+
+**遗留**：`Country.offices` 已建模但未配置人选、`runPolicyRound` 的 `influence` 参数已就绪但引擎未传（M4 接）；政体变更 100 年实测 0 次（门控偏严，可调）；国家预算的抽象关税与贸易到港关税两个口径未合并。
 
 ---
 

@@ -32,7 +32,6 @@ export function settleMonthlyProduction(
   for (const regionId of sortedIds(state.regions)) {
     const region = state.regions[regionId];
     if (!region) continue;
-    if ((state.tiers[regionId] ?? 3) > 2) continue;
 
     const laborPool = Math.max(0, Math.round(region.population * LABOR_FRACTION));
 
