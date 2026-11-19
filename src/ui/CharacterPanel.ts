@@ -3,6 +3,8 @@
 import { ATTRIBUTE_KEYS } from '../core/WorldState';
 import type { Character, Organization } from '../core/WorldState';
 import { alignmentCell, alignmentLabel } from '../systems/character/Profile';
+import { careerTitle } from '../systems/character/Career';
+import { RELATION_LABELS, relationsOf } from '../systems/character/Relations';
 import type { UiDeps } from './context';
 import { clear, el, fmtMoney, fmtPct, statCell } from './dom';
 import {
@@ -127,6 +129,30 @@ export class CharacterPanel {
       ),
     );
     this.host.append(alignment);
+
+    const career = el(
+      'p',
+      'alignment-block__axes',
+      `生涯：${careerTitle(selected.classId, selected.careerRank)}（${selected.careerRank}/3）`,
+    );
+    this.host.append(career);
+
+    const relations = relationsOf(state, selected.id).slice(0, 6);
+    if (relations.length > 0) {
+      this.host.append(el('h3', 'section-title', '关系'));
+      const list = el('ul', 'bar-list');
+      for (const relation of relations) {
+        const other = state.characters[relation.to];
+        const sign = relation.value > 0 ? '+' : '';
+        const item = el(
+          'li',
+          'stat-line',
+          `${other?.name ?? relation.to} · ${RELATION_LABELS[relation.type]} ${sign}${relation.value}`,
+        );
+        list.append(item);
+      }
+      this.host.append(list);
+    }
 
     this.host.append(el('h3', 'section-title', '六维'));
     const attributes = el('ul', 'bar-list');

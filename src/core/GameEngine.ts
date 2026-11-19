@@ -32,6 +32,8 @@ import { settleMonthlyMarket } from '../systems/economy/MarketSystem';
 import { settleMonthlyTrade } from '../systems/economy/TradeSystem';
 import { settleMonthlyCharacters } from '../systems/character/CharacterSystem';
 import { settleYearlyDemography } from '../systems/character/Demography';
+import { settleYearlyCareer } from '../systems/character/Career';
+import { decayRelations } from '../systems/character/Relations';
 import {
   createPlayerCharacter,
   type CharacterCreationChoice,
@@ -323,6 +325,18 @@ export class GameEngine {
           { kind: 'character', id },
         ]);
       }
+
+      // 年度：生涯晋升/降级，关系网向 0 回归（M4.3）。
+      for (const change of settleYearlyCareer(this.state, ctx.day)) {
+        this.record(
+          'milestone',
+          `${formatDate(ctx.day)} ${this.state.characters[change.characterId]?.name ?? change.characterId} ${
+            change.direction === 'up' ? '晋升为' : '降为'
+          }${change.title}`,
+          [{ kind: 'character', id: change.characterId }],
+        );
+      }
+      decayRelations(this.state);
     }
 
     // 月度摘要：一行总览，方便 UI 与 100 年快进后的"年年有记录"。

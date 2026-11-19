@@ -19,6 +19,7 @@ import type {
   OrgStrategy,
   PolicyVector,
   RegionId,
+  CharacterId,
   WorldContent,
   WorldState,
 } from './WorldState';
@@ -30,6 +31,7 @@ import {
   signLoanContract,
 } from '../systems/organization/ContractSystem';
 import { priceOf } from '../systems/economy/MarketSystem';
+import { switchCareer } from '../systems/character/Career';
 
 export interface CommandBase {
   /** 命令唯一序号，由 GameEngine 分配；用于幂等与审计。 */
@@ -69,7 +71,12 @@ export type Command =
     })
   | (CommandBase & { kind: 'break_contract'; orgId: OrgId; contractId: string })
   | (CommandBase & { kind: 'restructure'; orgId: OrgId })
-  | (CommandBase & { kind: 'sell_asset'; orgId: OrgId; amount: number });
+  | (CommandBase & { kind: 'sell_asset'; orgId: OrgId; amount: number })
+  | (CommandBase & {
+      kind: 'change_career';
+      characterId: CharacterId;
+      classId: 'merchant' | 'mercenary' | 'politician';
+    });
 
 export type CommandKind = Command['kind'];
 
@@ -431,6 +438,16 @@ export function applyCommand(
       };
     }
 
+    case 'change_career': {
+      if (command.characterId !== state.playerId) return fail('只能为自己转行');
+      const result = switchCareer(state, command.characterId, command.classId, state.clock.day);
+      if (!result.ok) return fail(result.error ?? '转行失败');
+      return {
+        ok: true,
+        summary: result.message ?? '转行',
+        refs: [{ kind: 'character', id: command.characterId }],
+      };
+    }
     case 'sell_asset': {
       const org = state.organizations[command.orgId];
       if (!org) return fail(`组织 ${command.orgId} 不存在`);
@@ -539,5 +556,7 @@ export function describeCommand(command: Command): string {
       return '债务重组';
     case 'sell_asset':
       return `出售资产 ${command.amount}`;
+    case 'change_career':
+      return `转行为 ${command.classId}`;
   }
 }

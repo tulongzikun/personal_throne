@@ -22,7 +22,7 @@ export type ContractId = string;
 export type ArmyId = string;
 export type EntityId = string;
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /* ------------------------------------------------------------------ */
 /* 人物档案（schema，M4）                                               */
@@ -167,6 +167,9 @@ export interface CharacterDef {
     readonly sinceDay?: number;
   };
   readonly offices?: readonly CharacterOffice[];
+  /** 生涯阶梯等级（0 起步 … 3 顶尖），见 systems/character/Career.ts。 */
+  readonly careerRank?: number;
+  readonly careerSinceDay?: number;
 }
 
 export interface OrganizationDef {
@@ -467,6 +470,10 @@ export interface Character {
   homeRegionId: RegionId;
   location: CharacterLocation;
   offices: CharacterOffice[];
+  /** 生涯阶梯等级（0–3），晋升由 Career 系统按财富/技能/声望判定。 */
+  careerRank: number;
+  /** 进入当前阶梯的日期（天）。 */
+  careerSinceDay: number;
 }
 
 export interface Organization {
@@ -829,6 +836,8 @@ export function buildCharacter(def: CharacterDef): Character {
       sinceDay: def.location?.sinceDay ?? 0,
     },
     offices: def.offices ? def.offices.map((office) => ({ ...office })) : [],
+    careerRank: clampToRange(Math.round(def.careerRank ?? 0), 0, 3),
+    careerSinceDay: Math.max(0, Math.round(def.careerSinceDay ?? 0)),
   };
 }
 
@@ -1053,6 +1062,13 @@ export function validateWorld(state: WorldState): string[] {
       problems.push(`人物 ${character.id} 的组织 ${character.organizationId} 不存在`);
     }
     if (character.wealth < 0) problems.push(`人物 ${character.id} 财富为负`);
+    if (
+      !Number.isInteger(character.careerRank) ||
+      character.careerRank < 0 ||
+      character.careerRank > 3
+    ) {
+      problems.push(`人物 ${character.id} 的生涯等级越界`);
+    }
     for (const key of ATTRIBUTE_KEYS) {
       const value = character.attributes?.[key];
       if (!Number.isInteger(value) || value < 1 || value > 20) {

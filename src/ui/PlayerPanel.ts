@@ -8,6 +8,7 @@ import type { Organization } from '../core/WorldState';
 import type { UiDeps } from './context';
 import { clear, el, fmtMoney, fmtPct } from './dom';
 import { alignmentLabel } from '../systems/character/Profile';
+import { CAREER_CLASSES, careerTitle, canSwitchCareer } from '../systems/character/Career';
 import { CLASS_LABELS, RACE_LABELS, SKILL_LABELS, SEX_LABELS, labelOf } from './labels';
 
 export class PlayerPanel {
@@ -64,6 +65,12 @@ export class PlayerPanel {
           : (deps.content().faiths?.find((faith) => faith.id === player.faith)?.name ?? '未知'),
       ),
     );
+    rows.append(
+      this.row(
+        '生涯',
+        `${careerTitle(player.classId, player.careerRank)}（${player.careerRank}/3）`,
+      ),
+    );
     if (country) rows.append(this.row('归属', country.name));
     if (org) {
       rows.append(this.row('组织', org.name));
@@ -93,6 +100,27 @@ export class PlayerPanel {
       orgButton.type = 'button';
       orgButton.addEventListener('click', () => deps.openOrganization(org.id));
       actions.append(orgButton);
+    }
+    const alternatives = CAREER_CLASSES.filter((classId) => classId !== player.classId);
+    const switchable = alternatives.filter(
+      (classId) => canSwitchCareer(state, player.id, classId) === null,
+    );
+    if (switchable.length > 0) {
+      for (const classId of switchable) {
+        const node = el('button', 'btn btn--small', `转行${labelOf(CLASS_LABELS, classId)}`);
+        node.type = 'button';
+        node.addEventListener('click', () => {
+          const result = deps.dispatch({
+            kind: 'change_career',
+            characterId: player.id,
+            classId: classId as 'merchant' | 'mercenary' | 'politician',
+          });
+          if (!result.ok) deps.notify(result.error ?? '转行失败', 'error');
+          else deps.notify(result.summary ?? '已转行', 'ok');
+          deps.refresh();
+        });
+        actions.append(node);
+      }
     }
     this.host.append(actions);
   }

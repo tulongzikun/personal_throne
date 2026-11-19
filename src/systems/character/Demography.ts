@@ -21,6 +21,7 @@ import type {
 import { buildCharacter, neutralAttributes, sortedIds } from '../../core/WorldState';
 import { clampAlignment } from './Profile';
 import { handleDeath, mortalityRisk } from './CharacterSystem';
+import { linkKin } from './Relations';
 
 /** 具名人口上限：超过后停止出生（其余人口以抽象人口计入国家 `population`）。 */
 export const MAX_NAMED_CHARACTERS = 400;
@@ -398,6 +399,7 @@ export function settleYearlyDemography(
       a.spouseId = partner.id;
       partner.spouseId = aId;
       linkFamily(state, a, partner);
+      linkKin(state, aId, partner.id);
       marriages.push({ a: aId, b: partner.id });
     }
   }
@@ -479,6 +481,8 @@ function birth(
   });
   child.birthYear = yearIndex;
   state.characters[id] = child;
+  linkKin(state, id, father.id);
+  linkKin(state, id, mother.id);
 
   if (child.familyId !== null) {
     const family = state.families[child.familyId];

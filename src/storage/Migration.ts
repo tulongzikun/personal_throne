@@ -232,6 +232,15 @@ function migrateV3toV4(raw: Record<string, unknown>): void {
   }
 }
 
+/** v4 → v5：补生涯阶梯字段（关系网不需要新字段，复用现有 relations）。 */
+function migrateV4toV5(raw: Record<string, unknown>): void {
+  const characters = (raw['characters'] ?? {}) as Record<string, Record<string, unknown>>;
+  for (const character of Object.values(characters)) {
+    character['careerRank'] ??= 0;
+    character['careerSinceDay'] ??= 0;
+  }
+}
+
 /** 把 `WorldState` 从它的 `schemaVersion` 升到当前版本。 */
 export function migrateWorldState(raw: unknown): WorldState {
   if (typeof raw !== 'object' || raw === null) {
@@ -260,6 +269,11 @@ export function migrateWorldState(raw: unknown): WorldState {
     if (version === 3) {
       migrateV3toV4(state);
       version = 4;
+      continue;
+    }
+    if (version === 4) {
+      migrateV4toV5(state);
+      version = 5;
       continue;
     }
     throw new SaveError(`缺少 v${version} → v${SCHEMA_VERSION} 的迁移步骤`);
