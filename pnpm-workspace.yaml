@@ -1,0 +1,4 @@
+# pnpm 11 起，依赖构建脚本必须在 allowBuilds 白名单里显式声明，
+# 否则 `pnpm install` 会以 ERR_PNPM_IGNORED_BUILDS 失败（CI 上尤其明显）。
+allowBuilds:
+  esbuild: true
