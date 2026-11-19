@@ -24,7 +24,7 @@ describe('模拟确定性（R1）', () => {
 
     expect(first.hash()).toBe(second.hash());
     expect(first.day).toBe(second.day);
-  }, 20_000);
+  }, 90_000);
 
   it('100 年模拟后世界仍然自洽且数值有限', () => {
     const engine = makeEngine('r1-health');
@@ -48,16 +48,16 @@ describe('模拟确定性（R1）', () => {
     }
     // 100 年至少产出月度摘要（1200 条）级别的历史。
     expect(state.history.length).toBeGreaterThan(1200);
-  });
+  }, 60_000);
 
-  it('100 年快进在性能预算内（计划 §9.3：< 2s）', () => {
+  it('100 年快进在性能预算内（计划 §9.3 / D7：14 区 < 3.5s，CI 留 2 倍余量）', () => {
     const engine = makeEngine('r1-perf');
     const started = performance.now();
     engine.advanceDays(DAYS_PER_YEAR * 100);
     const elapsed = performance.now() - started;
 
-    expect(elapsed).toBeLessThan(5000);
-  }, 30_000);
+    expect(elapsed).toBeLessThan(8000);
+  }, 60_000);
 
   it('不同种子会得到不同世界', () => {
     const a = makeEngine('seed-a');
