@@ -299,30 +299,30 @@ personal_throne/                # 仓库根即项目根
 | `core/EventEngine.ts` | 条件求值、λ 风险、互斥竞速、冷却、效果应用、后续事件 | `evaluate()`, `collectCandidates()`, `selectTriggered()`, `applyEvent()` | M1 完成 |
 | `core/History.ts` | 追加式历史、查询、月度摘要 | `History`, `HistoryRecord`, `HistoryKind` | M1 完成 |
 | `core/SimulationTier.ts` | L1/L2/L3 评分与升降层、国家聚合 | `Tier`, `computeTiers()`, `applyTiers()` | M1 完成（M2 继续校准） |
-| `systems/character/Character.ts` | 人物查询、派生技能、财富转移 | `effectiveSkill()`, `transferWealth()` | M4 骨架 |
-| `systems/character/CharacterSystem.ts` | 月度成长、年度老化、死亡与领袖继承 | `settleMonthlyCharacters()`, `settleYearlyCharacters()`, `handleDeath()` | M4 骨架 |
+| `systems/character/Character.ts` | 人物查询、派生技能、财富转移 | `effectiveSkill()`, `transferWealth()` | M4 完成 |
+| `systems/character/CharacterSystem.ts` | 月度酬金、年度老化、死亡与领袖继承 | `settleMonthlyCharacters()`, `settleYearlyCharacters()`, `handleDeath()` | M4 完成（年度循环已由 `Demography` 接管） |
 | `systems/character/SkillCheck.ts` | D20 检定、对抗检定 | `skillCheck()`, `opposedCheck()` | M4 骨架 |
 | `systems/organization/Organization.ts` | 股权、控股、继承顺序、估值 | `majorityHolder()`, `successionOrder()`, `valuation()` | M2 骨架 |
 | `systems/organization/Finance.ts` | 月度损益、权益与会计恒等式 | `settleMonthlyFinance()`, `equityOf()` | M2 骨架 |
 | `systems/organization/OrganizationRisk.ts` | 冲突/资金/规模的风险增量 | `settleMonthlyRisk()` | M2 骨架 |
-| `systems/organization/OrganizationSystem.ts` | 月度编排：财务 → 风险 → 生命周期 | `monthlyOrganizationSettlement()` | M2 骨架 |
-| `systems/country/CountrySystem.ts` | 月度预算、债务、稳定性聚合 | `settleMonthlyCountry()` | M3 骨架 |
-| `systems/country/PolicySystem.ts` | 政策压力、提案、政体差异 | `evaluatePolicyPressure()`, `runPolicyRound()`, `capitalWeight()` | M3 骨架 |
+| `systems/organization/OrganizationSystem.ts` | 月度编排：财务 → 风险 → 生命周期 | `monthlyOrganizationSettlement()` | M2 完成 |
+| `systems/country/CountrySystem.ts` | 月度预算、债务、稳定性聚合 | `settleMonthlyCountry()` | M3 完成 |
+| `systems/country/PolicySystem.ts` | 政策压力、提案、政体差异 | `evaluatePolicyPressure()`, `runPolicyRound()`, `capitalWeight()` | M3 完成 |
 | `systems/economy/MarketSystem.ts` | 地区×商品价格与库存 | `settleMonthlyMarket()`, `priceOf()` | M2 骨架 |
 | `systems/economy/ProductionSystem.ts` | 投入产出、产能、效率 | `settleMonthlyProduction()` | M2 骨架 |
 | `systems/economy/TradeSystem.ts` | 商路流量、运力、关税 | `settleMonthlyTrade()` | M2 骨架 |
-| `systems/npc/DecisionSystem.ts` | 效用评分与月度决策 | `strategyUtility()`, `settleMonthlyDecisions()` | M3 骨架 |
-| `systems/military/WarSystem.ts` | 月度军费结算；战争深度模拟未做 | `settleMonthlyMilitary()`, `totalArmySize()` | M6（占位） |
+| `systems/npc/DecisionSystem.ts` | 效用评分与月度决策（组织 + 内阁） | `strategyUtility()`, `settleMonthlyDecisions()`, `settleCountryDecisions()` | M3 完成 |
+| `systems/military/WarSystem.ts` | 军费、宣战、行军、会战、围城占领、厌战议和、AI 宣战 | `settleMonthlyMilitary()`, `declareWar()`, `settleMonthlyWar()`, `makePeace()`, `battlePower()` | M6 完成 |
 | `content/index.ts` | 唯一 JSON 装配器；事件按 id 排序 | `content`, `CONTENT_VERSION`, `eventsById` | M1 完成 |
-| `content/*.json` | 静态内容；`world.json` 2 国 5 区 20 人，`goods.json` 4 商品 | — | M1 完成 |
-| `content/events/*.json` | 14 条事件（组织 4 / 国家 4 / 经济 3 / 冒险 3） | — | M1 完成（M2–M4 继续扩） |
+| `content/*.json` | 静态内容；`world.json` 7 国 14 区 51 人，`goods.json` 4 商品，另有信仰 6 / 出身 6 / 名字池 4 文化 | — | M1 完成，M6.1 扩到当前规模 |
+| `content/events/*.json` | 41 条事件（组织 12 / 国家 18 / 经济 3 / 冒险 5 / 战争 3），含事件链、抉择与互斥组 | — | M1 完成，M2–M6 扩展 |
 | `storage/SaveManager.ts` | 信封、序列化与校验、IndexedDB 槽位、文件导入导出 | `createEnvelope()`, `serializeSave()`, `parseSave()`, `readSlot()`, `writeSlot()`, `listSlots()`, `deleteSlot()`, `downloadSave()`, `readSaveFile()` | M1 基础完成 |
-| `storage/Migration.ts` | 信封与世界状态迁移、错误类型 | `SAVE_FORMAT`, `SAVE_FORMAT_VERSION`, `SaveError`, `migrateSave()`, `migrateWorldState()` | M1 完成（仅 v1） |
+| `storage/Migration.ts` | 信封与世界状态迁移、错误类型 | `SAVE_FORMAT`, `SAVE_FORMAT_VERSION = 6`, `SaveError`, `migrateSave()`, `migrateWorldState()` | 逐级迁移 v1→v7（`SCHEMA_VERSION = 7`） |
 | `scripts/sim.ts` | 无 UI 快进、摘要、耗时、`--check` 复跑 | — | M1 完成 |
 | `scripts/release.mjs` | 发布校验（存在/无外链/体积）并复制 | — | M0 完成 |
 | `release/index.html` | 仓库内成品单文件 | — | 每阶段更新 |
 | `tests/helpers/index.ts` | 固定内容 + 固定种子的测试夹具 | `makeWorld()`, `makeEngine()` | M1 完成 |
-| `ui/App.ts` 等 | 布局、面板、SVG 地图、事件弹窗（**尚未创建**） | — | M5 |
+| `ui/*.ts` | 布局、玩家卡、地形地图、人物/组织/国家面板、事件与抉择弹窗、历史筛选、存档对话框、创建人物、引导 | — | M5 完成（16 个文件） |
 
 **依赖方向**：`ui → core, storage`；`core → systems, content`；`systems → core（类型）, content`；`content` 不依赖任何代码。任何反向依赖由 ESLint `no-restricted-imports` 拦截。
 
@@ -512,7 +512,7 @@ interface EventDef {
 
 以启动周为 W1，共 16 周。每周 5 个工作日，按 1 人 + AI 结对估算。
 
-### 8.1 当前进度（v0.2 实测）
+### 8.1 当前进度（v0.3 实测，M0–M6 全部完成）
 
 | 里程碑 | 状态 | 证据（仓库内可核对） |
 |---|---|---|
@@ -521,8 +521,10 @@ interface EventDef {
 | M2 组织与经济 | ✅ 完成 | 生命周期四态与清算、契约（供货/运输/贷款/雇佣）、市场份额竞争、在途货运与关税、四类风险系数表、组织事件 10 条；验收 B/D 已断言，100 年破产率 22.2–31.6%、分裂率 5.6–10.5%；证据见 §8.3 |
 | M3 国家与政策 | ✅ 完成 | 政策三阶段 + 传导经济 + 政体不变式 + 国家事件 10 条 + 内阁决策；验收 C 已断言；100 年政策变更 17/18/25 次、均价偏离 12.8–16.3%、20/20 市场在 70–140%；65 用例；证据见 §8.6 |
 | M4 角色与叙事 | ✅ 完成（M4.1–M4.6） | 人物档案、人口学、存档 v4 迁移、开局创建（6 背景 × 3 天赋）、关系网（五类有向关系 + 年度回归）、生涯阶梯（3 职业 × 4 级，财富+技能+公职晋升、破产降级、转行命令）已落地；存档 v5；100 年 demo 存活 45 人、破产率 17.9%、价格偏离 14.3%；事件链与抉择（`choices` + `choose` + 超时自动处理）已落地；验收报告见 `docs/acceptance.md`；证据见 §8.7–§8.12 |
-| M5 整合与校准 | ✅ 完成 | `src/ui/` 14 个文件（玩家卡 + 地图/人物/组织/国家/事件/历史 + 时间控制 + 存档 + 人物创建），`release/index.html` 197 KB 单文件可离线游玩；完整美术、教程与校准未做 |
-| M6 战争与扩展 | ✅ MVP 完成 | 常备军（规模/训练/士气/统帅）、宣战（双向交战 + 外交暴跌）、行军（按月推进 + 守土 + 拦截）、会战（战力比 + 伤亡 + 撤退）、围城与占领、厌战与议和（割让）、AI 宣战；`balance.war` 参数化；存档 v7；16 文件 121 用例；证据见 §8.13 |
+| M5 整合与校准 | ✅ 完成 | `src/ui/` 16 个文件（玩家卡 + 地形地图 + 人物/组织/国家/事件/历史 + 时间控制 + 多槽位存档 + 人物创建 + 引导 + 快捷键），`release/index.html` 280 KB 单文件可离线游玩；四种地图图层与像素级美术未做；证据见 §8.14 |
+| M6 战争与扩展 | ✅ 完成（M6 + M6.1） | 战争：常备军（规模/训练/士气/统帅）、宣战、行军、会战、围城与占领、厌战与议和、AI 宣战，`balance.war` 参数化，存档 v7（§8.13）；扩展：7 国 / 14 区 / 18 组织 / 51 人物 / 4 文化、6 条新国事件，14 区 100 年 2.8–3.1 s（§8.16） |
+
+> 收尾状态（2026-11-19）：M0–M6 全部完成；17 个测试文件 / 126 例全绿；`release/index.html` 280,172 字节（预算 17.8%）；CI 与 Pages 部署均为 success；100 年模拟三 seed 哈希稳定（demo `b0bdd064cfa3372c`）。
 
 ### 8.2 M1 收尾修复（2026-11-19）
 
