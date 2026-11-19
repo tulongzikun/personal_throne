@@ -32,7 +32,7 @@ import economyEvents from './events/economy.json';
 import organizationEvents from './events/organization.json';
 import warEvents from './events/war.json';
 
-export const CONTENT_VERSION = '0.5.0';
+export const CONTENT_VERSION = '0.6.0';
 
 function byId<T extends { id: string }>(items: readonly T[]): T[] {
   return [...items].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));

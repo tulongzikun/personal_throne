@@ -11,6 +11,7 @@
  * 随机数全部走命名流：`event:<entityId>:<periodKey>:<eventId>`，与遍历顺序无关。
  */
 
+import { DAYS_PER_MONTH } from './GameClock';
 import type { Random } from './Random';
 import type {
   CondExpr,
@@ -216,11 +217,54 @@ function sanitize(path: string, value: number): number {
   return value;
 }
 
+/** 单轮抽样共享的特征缓存：价格比与历史计数都很贵，逐实体重算会变成 O(实体×事件×市场)。 */
+export interface FeatureCache {
+  readonly day: number;
+  /** regionId → 该地区最差价格比（0–1）。 */
+  readonly price: Map<string, number>;
+  /** eventId → (entityId → 近一年次数)。 */
+  readonly history: Map<string, Map<string, number>>;
+}
+
+export function createFeatureCache(state: WorldState): FeatureCache {
+  const price = new Map<string, number>();
+  for (const market of Object.values(state.markets)) {
+    const ratio = market.price / Math.max(1, market.floor);
+    const value = Math.min(1, Math.max(0, ratio - 1));
+    const prev = price.get(market.regionId) ?? 0;
+    if (value > prev) price.set(market.regionId, value);
+  }
+  return { day: state.clock.day, price, history: new Map() };
+}
+
+function historyCount(
+  state: WorldState,
+  cache: FeatureCache,
+  eventId: string,
+): Map<string, number> {
+  const cached = cache.history.get(eventId);
+  if (cached) return cached;
+  const counts = new Map<string, number>();
+  const since = cache.day - HISTORY_WINDOW_DAYS;
+  for (const record of state.history) {
+    if (record.day <= since || record.causeEventId !== eventId) continue;
+    for (const ref of record.refs) counts.set(ref.id, (counts.get(ref.id) ?? 0) + 1);
+  }
+  cache.history.set(eventId, counts);
+  return counts;
+}
+
 /** 风险项使用的归一化特征（0–1 或小数值），避免量纲差异。 */
-export function readFeature(state: WorldState, target: EventTarget, path: string): number {
+export function readFeature(
+  state: WorldState,
+  target: EventTarget,
+  path: string,
+  cache?: FeatureCache,
+): number {
   // 历史窗口特征：history.<eventId> = 目标实体近一年内经历该事件的次数。
   if (path.startsWith('history.')) {
     const eventId = path.slice('history.'.length);
+    if (cache) return historyCount(state, cache, eventId).get(target.entityId) ?? 0;
     const since = state.clock.day - HISTORY_WINDOW_DAYS;
     return state.history.filter(
       (record) =>
@@ -256,6 +300,7 @@ export function readFeature(state: WorldState, target: EventTarget, path: string
     }
     case 'priceRatio': {
       if (target.scope !== 'region') return 0;
+      if (cache) return cache.price.get(target.entityId) ?? 0;
       let worst = 0;
       for (const market of Object.values(state.markets)) {
         if (market.regionId !== target.entityId) continue;
@@ -323,9 +368,24 @@ export function collectCandidates(
   maxTier = 2,
 ): Candidate[] {
   const candidates: Candidate[] = [];
+  const cache = createFeatureCache(state);
   const events = [...content.events].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   // 同一轮里各 scope 的实体列表复用，避免逐事件重排。
   const entityCache = new Map<EventScope, readonly EntityId[]>();
+  // 同一实体的同一特征在一轮内只解析一次：多个事件常读 conflict/governance/cashRatio 这类共享路径。
+  const featureMemo = new Map<EntityId, Map<string, number>>();
+  const featureFor = (target: EventTarget, path: string): number => {
+    let memo = featureMemo.get(target.entityId);
+    if (!memo) {
+      memo = new Map();
+      featureMemo.set(target.entityId, memo);
+    }
+    const cached = memo.get(path);
+    if (cached !== undefined) return cached;
+    const value = readFeature(state, target, path, cache);
+    memo.set(path, value);
+    return value;
+  };
   const entitiesFor = (scope: EventScope): readonly EntityId[] => {
     let list = entityCache.get(scope);
     if (!list) {
@@ -335,9 +395,13 @@ export function collectCandidates(
     return list;
   };
 
+  // 人物事件按季度抽样：冒险类事件每月逐人判定既贵又吵（百年能刷出三千条）。
+  const characterRound = Math.floor(day / DAYS_PER_MONTH) % 3 === 0;
+
   for (const def of events) {
     // 链条后续只允许由父事件排定，避免随机直接跳到第 2/3 步。
     if ((def.chain?.step ?? 0) > 1) continue;
+    if (def.scope === 'character' && !characterRound) continue;
     for (const entityId of entitiesFor(def.scope)) {
       if ((state.tiers[entityId] ?? 3) > maxTier) continue;
       const cooldownKey = `${def.id}@${entityId}`;
@@ -346,13 +410,13 @@ export function collectCandidates(
 
       const target: EventTarget = { scope: def.scope, entityId };
       // 条件与风险项共用同一套特征函数，因此 `debtRatio` 这类派生量也能写进 conditions。
-      const resolver = (path: string): number => readFeature(state, target, path);
+      const resolver = (path: string): number => featureFor(target, path);
 
       if (def.conditions && !evaluate(def.conditions, resolver)) continue;
 
       let exponent = 0;
       for (const term of def.risk.terms) {
-        exponent += term.coef * readFeature(state, target, term.path);
+        exponent += term.coef * featureFor(target, term.path);
       }
       const lambda = def.risk.lambda0 * Math.exp(exponent);
       if (!(lambda > 0) || !Number.isFinite(lambda)) continue;

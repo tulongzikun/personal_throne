@@ -15,7 +15,7 @@
     "policies": {
       "taxRate": 0.18,
       "tariffRate": 0.2,
-      "militaryShare": 0.22,
+      "militaryShare": 0.05,
       "tradeFreedom": 0.45,
       "regulation": 0.55
     }
@@ -36,8 +36,113 @@
     "policies": {
       "taxRate": 0.1,
       "tariffRate": 0.06,
-      "militaryShare": 0.12,
+      "militaryShare": 0.1,
       "tradeFreedom": 0.75,
+      "regulation": 0.3
+    }
+  },
+  {
+    "id": "c_highvale",
+    "name": "高谷王国",
+    "polity": "monarchy",
+    "population": 37000,
+    "treasury": 12000,
+    "monthlyRevenue": 1050,
+    "monthlyExpense": 1000,
+    "debt": 1200,
+    "military": 700,
+    "legitimacy": 0.66,
+    "stability": 0.7,
+    "rulerId": "c_highvale_king_oswin",
+    "policies": {
+      "taxRate": 0.14,
+      "tariffRate": 0.18,
+      "militaryShare": 0.32,
+      "tradeFreedom": 0.4,
+      "regulation": 0.6
+    }
+  },
+  {
+    "id": "c_covenant",
+    "name": "圣焰教国",
+    "polity": "republic",
+    "population": 35000,
+    "treasury": 14000,
+    "monthlyRevenue": 1200,
+    "monthlyExpense": 1150,
+    "debt": 1200,
+    "military": 650,
+    "legitimacy": 0.74,
+    "stability": 0.68,
+    "rulerId": "c_covenant_hierarch_seraph",
+    "policies": {
+      "taxRate": 0.16,
+      "tariffRate": 0.12,
+      "militaryShare": 0.34,
+      "tradeFreedom": 0.25,
+      "regulation": 0.8
+    }
+  },
+  {
+    "id": "c_clans",
+    "name": "铁峰部落联盟",
+    "polity": "republic",
+    "population": 29000,
+    "treasury": 7000,
+    "monthlyRevenue": 700,
+    "monthlyExpense": 690,
+    "debt": 1200,
+    "military": 1100,
+    "legitimacy": 0.55,
+    "stability": 0.6,
+    "rulerId": "c_clans_khan_batu",
+    "policies": {
+      "taxRate": 0.2,
+      "tariffRate": 0,
+      "militaryShare": 0.45,
+      "tradeFreedom": 0.35,
+      "regulation": 0.35
+    }
+  },
+  {
+    "id": "c_merchants",
+    "name": "珊瑚商邦",
+    "polity": "republic",
+    "population": 34000,
+    "treasury": 21000,
+    "monthlyRevenue": 2400,
+    "monthlyExpense": 2300,
+    "debt": 800,
+    "military": 500,
+    "legitimacy": 0.65,
+    "stability": 0.72,
+    "rulerId": "c_merchants_doge_lorenzo",
+    "policies": {
+      "taxRate": 0.13,
+      "tariffRate": 0.05,
+      "militaryShare": 0.35,
+      "tradeFreedom": 0.8,
+      "regulation": 0.25
+    }
+  },
+  {
+    "id": "c_steppe",
+    "name": "苍狼汗国",
+    "polity": "monarchy",
+    "population": 30000,
+    "treasury": 6500,
+    "monthlyRevenue": 700,
+    "monthlyExpense": 680,
+    "debt": 1400,
+    "military": 1300,
+    "legitimacy": 0.58,
+    "stability": 0.62,
+    "rulerId": "c_steppe_khan_yesu",
+    "policies": {
+      "taxRate": 0.2,
+      "tariffRate": 0.08,
+      "militaryShare": 0.45,
+      "tradeFreedom": 0.5,
       "regulation": 0.3
     }
   }

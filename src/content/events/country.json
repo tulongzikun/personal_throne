@@ -25,7 +25,7 @@
         }
       ]
     },
-    "cooldownDays": 60,
+    "cooldownDays": 132,
     "effects": [
       {
         "kind": "add",
@@ -64,7 +64,7 @@
         }
       ]
     },
-    "cooldownDays": 120,
+    "cooldownDays": 264,
     "effects": [
       {
         "kind": "add",
@@ -96,7 +96,7 @@
         }
       ]
     },
-    "cooldownDays": 90,
+    "cooldownDays": 198,
     "effects": [
       {
         "kind": "add",
@@ -128,7 +128,7 @@
         {
           "path": "policies.militaryShare",
           "op": "<",
-          "value": 0.5
+          "value": 0.055
         }
       ]
     },
@@ -136,12 +136,12 @@
       "lambda0": 0.004,
       "terms": []
     },
-    "cooldownDays": 200,
+    "cooldownDays": 440,
     "effects": [
       {
         "kind": "add",
         "path": "policies.militaryShare",
-        "value": 0.05
+        "value": 0.005
       },
       {
         "kind": "add",
@@ -167,7 +167,7 @@
       "lambda0": 0.01,
       "terms": []
     },
-    "cooldownDays": 30,
+    "cooldownDays": 66,
     "effects": [
       {
         "kind": "add",
@@ -211,7 +211,7 @@
       "lambda0": 0.0015,
       "terms": []
     },
-    "cooldownDays": 180,
+    "cooldownDays": 396,
     "effects": [
       {
         "kind": "add",
@@ -256,7 +256,7 @@
         }
       ]
     },
-    "cooldownDays": 120,
+    "cooldownDays": 264,
     "effects": [
       {
         "kind": "add",
@@ -326,7 +326,7 @@
         }
       ]
     },
-    "cooldownDays": 240,
+    "cooldownDays": 528,
     "effects": [
       {
         "kind": "mul",
@@ -372,7 +372,7 @@
         }
       ]
     },
-    "cooldownDays": 120,
+    "cooldownDays": 264,
     "effects": [
       {
         "kind": "add",
@@ -413,7 +413,7 @@
         }
       ]
     },
-    "cooldownDays": 150,
+    "cooldownDays": 330,
     "effects": [
       {
         "kind": "add",
@@ -466,7 +466,7 @@
       "id": "country_unrest",
       "step": 2
     },
-    "cooldownDays": 90,
+    "cooldownDays": 198,
     "effects": [
       {
         "kind": "add",
@@ -517,7 +517,7 @@
       "id": "country_unrest",
       "step": 3
     },
-    "cooldownDays": 180,
+    "cooldownDays": 396,
     "effects": [
       {
         "kind": "add",
@@ -543,6 +543,321 @@
     "text": {
       "title": "戒严",
       "body": "王命下，城门关闭、宵禁开始。秩序回来了，人心没有。"
+    }
+  },
+  {
+    "id": "ev_country_synod_gathering",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "all": [
+        {
+          "path": "policies.regulation",
+          "op": ">",
+          "value": 0.65
+        },
+        {
+          "path": "stability",
+          "op": "<",
+          "value": 0.8
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.008,
+      "terms": [
+        {
+          "path": "policies.regulation",
+          "coef": 1.2
+        },
+        {
+          "path": "legitimacy",
+          "coef": -0.8
+        }
+      ]
+    },
+    "cooldownDays": 792,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.05
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -300
+      }
+    ],
+    "text": {
+      "title": "教务会议",
+      "body": "教长们在烬瀑城召开教务会议，重申教义并决议拨款赈济，国库为此支付了一笔开销。"
+    }
+  },
+  {
+    "id": "ev_country_clan_feud",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "all": [
+        {
+          "path": "policies.militaryShare",
+          "op": ">",
+          "value": 0.25
+        },
+        {
+          "path": "stability",
+          "op": "<",
+          "value": 0.75
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.009,
+      "terms": [
+        {
+          "path": "policies.militaryShare",
+          "coef": 1.5
+        },
+        {
+          "path": "stability",
+          "coef": -1.2
+        }
+      ]
+    },
+    "cooldownDays": 660,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.04
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.03
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -500
+      }
+    ],
+    "text": {
+      "title": "部落械斗",
+      "body": "两个氏族为草场与矿脉爆发械斗，长老会调停失败，联盟不得不掏钱安抚各方。"
+    }
+  },
+  {
+    "id": "ev_country_merchant_charter",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "all": [
+        {
+          "path": "policies.tradeFreedom",
+          "op": ">",
+          "value": 0.6
+        },
+        {
+          "path": "policies.tariffRate",
+          "op": "<",
+          "value": 0.15
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.01,
+      "terms": [
+        {
+          "path": "policies.tradeFreedom",
+          "coef": 1.4
+        },
+        {
+          "path": "policies.tariffRate",
+          "coef": -1.5
+        }
+      ]
+    },
+    "cooldownDays": 660,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 800
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.02
+      },
+      {
+        "kind": "add",
+        "path": "policies.tradeFreedom",
+        "value": 0.02
+      }
+    ],
+    "text": {
+      "title": "商邦特许状",
+      "body": "议会签发新的远洋特许状，商团争相认购，一笔可观的许可费进入国库。"
+    }
+  },
+  {
+    "id": "ev_country_steppe_raid",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "all": [
+        {
+          "path": "policies.militaryShare",
+          "op": ">",
+          "value": 0.3
+        },
+        {
+          "path": "stability",
+          "op": "<",
+          "value": 0.75
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.007,
+      "terms": [
+        {
+          "path": "policies.militaryShare",
+          "coef": 1.6
+        },
+        {
+          "path": "stability",
+          "coef": -1
+        }
+      ]
+    },
+    "cooldownDays": 924,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -600
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.05
+      },
+      {
+        "kind": "add",
+        "path": "military",
+        "value": 40
+      }
+    ],
+    "text": {
+      "title": "草原劫掠",
+      "body": "边境马队越境劫掠，粮仓与商队受损；汗庭一边追剿，一边加募骑手。"
+    }
+  },
+  {
+    "id": "ev_country_vale_avalanche",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "all": [
+        {
+          "path": "policies.regulation",
+          "op": ">",
+          "value": 0.5
+        },
+        {
+          "path": "stability",
+          "op": "<",
+          "value": 0.78
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.008,
+      "terms": [
+        {
+          "path": "policies.regulation",
+          "coef": 0.8
+        }
+      ]
+    },
+    "cooldownDays": 792,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -450
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.03
+      }
+    ],
+    "text": {
+      "title": "山口雪崩",
+      "body": "石渡关外的雪崩埋了半段官道，商队滞留，官府紧急拨款清雪抚恤。"
+    }
+  },
+  {
+    "id": "ev_country_moot",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "all": [
+        {
+          "path": "legitimacy",
+          "op": "<",
+          "value": 0.65
+        },
+        {
+          "path": "policies.militaryShare",
+          "op": ">",
+          "value": 0.2
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.009,
+      "terms": [
+        {
+          "path": "legitimacy",
+          "coef": -1.5
+        },
+        {
+          "path": "policies.militaryShare",
+          "coef": 0.9
+        }
+      ]
+    },
+    "cooldownDays": 660,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.06
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.02
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -200
+      }
+    ],
+    "text": {
+      "title": "大帐议事",
+      "body": "各部首领围坐大帐，重新确认推举与贡赋；一场公开议事让权威稍稍回稳。"
     }
   }
 ]

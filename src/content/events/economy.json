@@ -3,15 +3,36 @@
     "id": "ev_econ_famine",
     "domain": "economy",
     "scope": "region",
-    "conditions": { "any": [{ "path": "market.grain.stock", "op": "<", "value": 20 }] },
+    "conditions": {
+      "any": [
+        {
+          "path": "market.grain.stock",
+          "op": "<",
+          "value": 20
+        }
+      ]
+    },
     "risk": {
       "lambda0": 0.02,
-      "terms": [{ "path": "priceRatio", "coef": 2.5 }]
+      "terms": [
+        {
+          "path": "priceRatio",
+          "coef": 2.5
+        }
+      ]
     },
-    "cooldownDays": 240,
+    "cooldownDays": 528,
     "effects": [
-      { "kind": "add", "path": "market.grain.price", "value": 2 },
-      { "kind": "add", "path": "market.grain.stock", "value": -40 }
+      {
+        "kind": "add",
+        "path": "market.grain.price",
+        "value": 1
+      },
+      {
+        "kind": "add",
+        "path": "market.grain.stock",
+        "value": -40
+      }
     ],
     "text": {
       "title": "粮价飞涨",
@@ -24,12 +45,25 @@
     "scope": "region",
     "risk": {
       "lambda0": 0.03,
-      "terms": [{ "path": "priceRatio", "coef": -2.0 }]
+      "terms": [
+        {
+          "path": "priceRatio",
+          "coef": -2
+        }
+      ]
     },
-    "cooldownDays": 120,
+    "cooldownDays": 264,
     "effects": [
-      { "kind": "add", "path": "market.grain.price", "value": -2 },
-      { "kind": "add", "path": "market.grain.stock", "value": 60 }
+      {
+        "kind": "add",
+        "path": "market.grain.price",
+        "value": -1
+      },
+      {
+        "kind": "add",
+        "path": "market.grain.stock",
+        "value": 60
+      }
     ],
     "text": {
       "title": "谷贱伤农",
@@ -42,12 +76,25 @@
     "scope": "region",
     "risk": {
       "lambda0": 0.02,
-      "terms": [{ "path": "market.iron.stock", "coef": -0.001 }]
+      "terms": [
+        {
+          "path": "market.iron.stock",
+          "coef": -0.001
+        }
+      ]
     },
-    "cooldownDays": 180,
+    "cooldownDays": 396,
     "effects": [
-      { "kind": "add", "path": "market.iron.price", "value": 3 },
-      { "kind": "add", "path": "market.weapons.price", "value": 4 }
+      {
+        "kind": "add",
+        "path": "market.iron.price",
+        "value": 1
+      },
+      {
+        "kind": "add",
+        "path": "market.weapons.price",
+        "value": 2
+      }
     ],
     "text": {
       "title": "炉火不熄",

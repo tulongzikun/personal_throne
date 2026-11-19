@@ -18,9 +18,19 @@
           "capacity": 600
         },
         {
+          "to": "r_highvale",
+          "days": 5,
+          "capacity": 500
+        },
+        {
           "to": "r_portlumen",
           "days": 8,
           "capacity": 400
+        },
+        {
+          "to": "r_windsteppe",
+          "days": 6,
+          "capacity": 350
         }
       ]
     },
@@ -34,14 +44,19 @@
       "y": 200,
       "links": [
         {
-          "to": "r_silvermoon",
-          "days": 3,
-          "capacity": 600
-        },
-        {
           "to": "r_ironpeak",
           "days": 4,
           "capacity": 300
+        },
+        {
+          "to": "r_redhollow",
+          "days": 3,
+          "capacity": 300
+        },
+        {
+          "to": "r_silvermoon",
+          "days": 3,
+          "capacity": 600
         },
         {
           "to": "r_tidemarket",
@@ -53,8 +68,8 @@
     {
       "id": "r_ironpeak",
       "name": "铁峰堡",
-      "countryId": "c_kingdom",
-      "population": 15000,
+      "countryId": "c_clans",
+      "population": 18000,
       "terrain": "mountains",
       "x": 320,
       "y": 140,
@@ -97,16 +112,179 @@
       "y": 330,
       "links": [
         {
-          "to": "r_portlumen",
-          "days": 2,
-          "capacity": 500
+          "to": "r_coralbay",
+          "days": 5,
+          "capacity": 450
+        },
+        {
+          "to": "r_emberfall",
+          "days": 7,
+          "capacity": 350
         },
         {
           "to": "r_greenfield",
           "days": 6,
           "capacity": 300
+        },
+        {
+          "to": "r_portlumen",
+          "days": 2,
+          "capacity": 500
         }
       ]
+    },
+    {
+      "id": "r_highvale",
+      "name": "高谷城",
+      "countryId": "c_highvale",
+      "population": 24000,
+      "terrain": "city",
+      "x": 120,
+      "y": 90,
+      "links": [
+        {
+          "to": "r_silvermoon",
+          "days": 5,
+          "capacity": 500
+        },
+        {
+          "to": "r_stoneford",
+          "days": 2,
+          "capacity": 400
+        }
+      ]
+    },
+    {
+      "id": "r_stoneford",
+      "name": "石渡关",
+      "countryId": "c_highvale",
+      "population": 13000,
+      "terrain": "mountains",
+      "x": 170,
+      "y": 60,
+      "links": [
+        {
+          "to": "r_highvale",
+          "days": 2,
+          "capacity": 400
+        }
+      ]
+    },
+    {
+      "id": "r_emberfall",
+      "name": "烬瀑城",
+      "countryId": "c_covenant",
+      "population": 22000,
+      "terrain": "city",
+      "x": 380,
+      "y": 150,
+      "links": [
+        {
+          "to": "r_tidemarket",
+          "days": 7,
+          "capacity": 350
+        }
+      ]
+    },
+    {
+      "id": "r_ashfield",
+      "name": "灰野原",
+      "countryId": "c_covenant",
+      "population": 13000,
+      "terrain": "plains",
+      "x": 420,
+      "y": 190,
+      "links": [
+        {
+          "to": "r_coralbay",
+          "days": 8,
+          "capacity": 300
+        }
+      ]
+    },
+    {
+      "id": "r_redhollow",
+      "name": "红谷林",
+      "countryId": "c_clans",
+      "population": 11000,
+      "terrain": "forest",
+      "x": 300,
+      "y": 220,
+      "links": [
+        {
+          "to": "r_greenfield",
+          "days": 3,
+          "capacity": 300
+        }
+      ]
+    },
+    {
+      "id": "r_coralbay",
+      "name": "珊瑚湾",
+      "countryId": "c_merchants",
+      "population": 25000,
+      "terrain": "coast",
+      "x": 300,
+      "y": 360,
+      "links": [
+        {
+          "to": "r_ashfield",
+          "days": 8,
+          "capacity": 300
+        },
+        {
+          "to": "r_saltisle",
+          "days": 2,
+          "capacity": 300
+        },
+        {
+          "to": "r_tidemarket",
+          "days": 5,
+          "capacity": 450
+        }
+      ]
+    },
+    {
+      "id": "r_saltisle",
+      "name": "盐屿",
+      "countryId": "c_merchants",
+      "population": 9000,
+      "terrain": "coast",
+      "x": 360,
+      "y": 400,
+      "links": [
+        {
+          "to": "r_coralbay",
+          "days": 2,
+          "capacity": 300
+        }
+      ]
+    },
+    {
+      "id": "r_windsteppe",
+      "name": "风蹄原",
+      "countryId": "c_steppe",
+      "population": 19000,
+      "terrain": "plains",
+      "x": 70,
+      "y": 170,
+      "links": [
+        {
+          "to": "r_silvermoon",
+          "days": 6,
+          "capacity": 350
+        }
+      ]
+    },
+    {
+      "id": "r_horsemoot",
+      "name": "马集",
+      "countryId": "c_steppe",
+      "population": 11000,
+      "terrain": "plains",
+      "x": 50,
+      "y": 240,
+      "links": []
     }
   ],
   "characters": [
@@ -144,7 +322,8 @@
         "willpower": 12,
         "perception": 12,
         "charisma": 13
-      }
+      },
+      "culture": "silvermoon"
     },
     {
       "id": "c_king_aerik",
@@ -178,7 +357,8 @@
         "willpower": 16,
         "perception": 12,
         "charisma": 14
-      }
+      },
+      "culture": "silvermoon"
     },
     {
       "id": "c_consul_mira",
@@ -212,7 +392,8 @@
         "willpower": 14,
         "perception": 13,
         "charisma": 15
-      }
+      },
+      "culture": "league"
     },
     {
       "id": "c_grainwheel_hob",
@@ -245,7 +426,8 @@
         "willpower": 12,
         "perception": 13,
         "charisma": 11
-      }
+      },
+      "culture": "silvermoon"
     },
     {
       "id": "c_ironhand_garrick",
@@ -279,7 +461,8 @@
         "willpower": 14,
         "perception": 11,
         "charisma": 12
-      }
+      },
+      "culture": "silvermoon"
     },
     {
       "id": "c_peakmine_helga",
@@ -313,7 +496,8 @@
         "willpower": 14,
         "perception": 12,
         "charisma": 10
-      }
+      },
+      "culture": "silvermoon"
     },
     {
       "id": "c_bluewave_soren",
@@ -347,7 +531,8 @@
         "willpower": 11,
         "perception": 14,
         "charisma": 13
-      }
+      },
+      "culture": "league"
     },
     {
       "id": "c_bank_odell",
@@ -381,7 +566,8 @@
         "willpower": 14,
         "perception": 14,
         "charisma": 11
-      }
+      },
+      "culture": "league"
     },
     {
       "id": "c_guard_captain",
@@ -415,7 +601,8 @@
         "willpower": 13,
         "perception": 12,
         "charisma": 10
-      }
+      },
+      "culture": "silvermoon"
     },
     {
       "id": "c_freeblades_vex",
@@ -449,7 +636,8 @@
         "willpower": 11,
         "perception": 11,
         "charisma": 12
-      }
+      },
+      "culture": "league"
     },
     {
       "id": "c_vareth_lord",
@@ -483,7 +671,8 @@
         "willpower": 14,
         "perception": 13,
         "charisma": 14
-      }
+      },
+      "culture": "silvermoon"
     },
     {
       "id": "c_nightpouch_rusk",
@@ -517,7 +706,8 @@
         "willpower": 12,
         "perception": 13,
         "charisma": 9
-      }
+      },
+      "culture": "league"
     },
     {
       "id": "c_threadguild_maven",
@@ -551,7 +741,8 @@
         "willpower": 13,
         "perception": 14,
         "charisma": 13
-      }
+      },
+      "culture": "silvermoon"
     },
     {
       "id": "c_chancellor_hale",
@@ -585,7 +776,8 @@
         "willpower": 15,
         "perception": 13,
         "charisma": 13
-      }
+      },
+      "culture": "silvermoon"
     },
     {
       "id": "c_treasurer_lin",
@@ -619,7 +811,8 @@
         "willpower": 13,
         "perception": 14,
         "charisma": 10
-      }
+      },
+      "culture": "silvermoon"
     },
     {
       "id": "c_marshal_dorn",
@@ -653,7 +846,8 @@
         "willpower": 13,
         "perception": 12,
         "charisma": 11
-      }
+      },
+      "culture": "silvermoon"
     },
     {
       "id": "c_league_speaker_tomas",
@@ -687,7 +881,8 @@
         "willpower": 13,
         "perception": 12,
         "charisma": 15
-      }
+      },
+      "culture": "league"
     },
     {
       "id": "c_smuggler_queen_nia",
@@ -721,7 +916,8 @@
         "willpower": 11,
         "perception": 13,
         "charisma": 13
-      }
+      },
+      "culture": "league"
     },
     {
       "id": "c_widow_sera",
@@ -754,7 +950,8 @@
         "willpower": 12,
         "perception": 13,
         "charisma": 12
-      }
+      },
+      "culture": "league"
     },
     {
       "id": "c_young_heir_aldric",
@@ -788,6 +985,1092 @@
         "willpower": 10,
         "perception": 10,
         "charisma": 13
+      },
+      "culture": "silvermoon"
+    },
+    {
+      "id": "c_highvale_king_oswin",
+      "name": "奥斯温·高谷",
+      "culture": "vale",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 56,
+      "regionId": "r_highvale",
+      "organizationId": null,
+      "wealth": 15000,
+      "skills": {
+        "law": 6,
+        "persuasion": 6,
+        "insight": 5
+      },
+      "traits": {
+        "authority": 0.78,
+        "loyalty": 0.5,
+        "caution": 0.55
+      },
+      "sex": "male",
+      "faithId": "faith_dawn",
+      "alignment": {
+        "law": 22,
+        "good": 20
+      },
+      "attributes": {
+        "physique": 10,
+        "agility": 8,
+        "intellect": 14,
+        "willpower": 15,
+        "perception": 12,
+        "charisma": 15
+      }
+    },
+    {
+      "id": "c_highvale_chancellor_mara",
+      "name": "玛拉·霜河",
+      "culture": "vale",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 47,
+      "regionId": "r_highvale",
+      "organizationId": null,
+      "wealth": 6400,
+      "skills": {
+        "persuasion": 6,
+        "law": 5,
+        "insight": 5
+      },
+      "traits": {
+        "authority": 0.55,
+        "charisma": 0.6,
+        "loyalty": 0.7
+      },
+      "sex": "female",
+      "faithId": "faith_dawn",
+      "alignment": {
+        "law": 20,
+        "good": 14
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 9,
+        "intellect": 13,
+        "willpower": 13,
+        "perception": 13,
+        "charisma": 14
+      }
+    },
+    {
+      "id": "c_highvale_marshal_bran",
+      "name": "布兰·铁松",
+      "culture": "vale",
+      "raceId": "human",
+      "classId": "mercenary",
+      "age": 44,
+      "regionId": "r_stoneford",
+      "organizationId": null,
+      "wealth": 3500,
+      "skills": {
+        "melee": 7,
+        "tactics": 6,
+        "intimidation": 5
+      },
+      "traits": {
+        "authority": 0.6,
+        "loyalty": 0.55,
+        "caution": 0.45
+      },
+      "sex": "male",
+      "faithId": "faith_forge",
+      "alignment": {
+        "law": 16,
+        "good": 6
+      },
+      "attributes": {
+        "physique": 15,
+        "agility": 12,
+        "intellect": 10,
+        "willpower": 14,
+        "perception": 11,
+        "charisma": 11
+      }
+    },
+    {
+      "id": "c_highvale_treasurer_eira",
+      "name": "艾拉·冷泉",
+      "culture": "vale",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 52,
+      "regionId": "r_highvale",
+      "organizationId": "o_vale_granary",
+      "wealth": 5200,
+      "skills": {
+        "trade": 7,
+        "appraisal": 6,
+        "negotiation": 5
+      },
+      "traits": {
+        "ambition": 0.5,
+        "caution": 0.65,
+        "charisma": 0.55
+      },
+      "sex": "female",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 18,
+        "good": 9
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 9,
+        "intellect": 14,
+        "willpower": 12,
+        "perception": 13,
+        "charisma": 13
+      }
+    },
+    {
+      "id": "c_highforge_dain",
+      "name": "戴恩·石渡",
+      "culture": "vale",
+      "raceId": "dwarf",
+      "classId": "merchant",
+      "age": 49,
+      "regionId": "r_stoneford",
+      "organizationId": "o_highforge",
+      "wealth": 6000,
+      "skills": {
+        "smithing": 8,
+        "trade": 5,
+        "appraisal": 6
+      },
+      "traits": {
+        "ambition": 0.45,
+        "caution": 0.6,
+        "loyalty": 0.6
+      },
+      "sex": "male",
+      "faithId": "faith_forge",
+      "alignment": {
+        "law": 15,
+        "good": 4
+      },
+      "attributes": {
+        "physique": 15,
+        "agility": 8,
+        "intellect": 13,
+        "willpower": 14,
+        "perception": 11,
+        "charisma": 10
+      }
+    },
+    {
+      "id": "c_free_scholar_edwin",
+      "name": "埃德温·长阶",
+      "culture": "vale",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 35,
+      "regionId": "r_greenfield",
+      "organizationId": null,
+      "wealth": 1200,
+      "skills": {
+        "lore": 6,
+        "insight": 5,
+        "persuasion": 4
+      },
+      "traits": {
+        "ambition": 0.55,
+        "caution": 0.7,
+        "loyalty": 0.5
+      },
+      "sex": "male",
+      "faithId": "faith_dawn",
+      "alignment": {
+        "law": 10,
+        "good": 15
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 9,
+        "intellect": 16,
+        "willpower": 12,
+        "perception": 13,
+        "charisma": 11
+      }
+    },
+    {
+      "id": "c_covenant_hierarch_seraph",
+      "name": "塞拉菲娅·晨焰",
+      "culture": "silvermoon",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 60,
+      "regionId": "r_emberfall",
+      "organizationId": null,
+      "wealth": 20000,
+      "skills": {
+        "persuasion": 8,
+        "law": 7,
+        "insight": 6
+      },
+      "traits": {
+        "authority": 0.85,
+        "loyalty": 0.6,
+        "caution": 0.5
+      },
+      "sex": "female",
+      "faithId": "faith_dawn",
+      "alignment": {
+        "law": 40,
+        "good": 28
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 8,
+        "intellect": 15,
+        "willpower": 17,
+        "perception": 13,
+        "charisma": 16
+      }
+    },
+    {
+      "id": "c_covenant_speaker_oris",
+      "name": "奥里斯·圣典",
+      "culture": "silvermoon",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 55,
+      "regionId": "r_emberfall",
+      "organizationId": null,
+      "wealth": 7600,
+      "skills": {
+        "law": 7,
+        "persuasion": 5,
+        "insight": 5
+      },
+      "traits": {
+        "authority": 0.6,
+        "loyalty": 0.75,
+        "caution": 0.55
+      },
+      "sex": "male",
+      "faithId": "faith_dawn",
+      "alignment": {
+        "law": 35,
+        "good": 18
+      },
+      "attributes": {
+        "physique": 9,
+        "agility": 8,
+        "intellect": 14,
+        "willpower": 14,
+        "perception": 12,
+        "charisma": 13
+      }
+    },
+    {
+      "id": "c_covenant_marshal_galen",
+      "name": "加伦·灰烬",
+      "culture": "silvermoon",
+      "raceId": "human",
+      "classId": "mercenary",
+      "age": 46,
+      "regionId": "r_ashfield",
+      "organizationId": null,
+      "wealth": 4000,
+      "skills": {
+        "melee": 7,
+        "tactics": 6,
+        "intimidation": 5
+      },
+      "traits": {
+        "authority": 0.6,
+        "loyalty": 0.5,
+        "caution": 0.4
+      },
+      "sex": "male",
+      "faithId": "faith_ember",
+      "alignment": {
+        "law": 20,
+        "good": 0
+      },
+      "attributes": {
+        "physique": 14,
+        "agility": 12,
+        "intellect": 11,
+        "willpower": 13,
+        "perception": 11,
+        "charisma": 12
+      }
+    },
+    {
+      "id": "c_covenant_treasurer_maeve",
+      "name": "梅芙·金灯",
+      "culture": "silvermoon",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 50,
+      "regionId": "r_emberfall",
+      "organizationId": null,
+      "wealth": 6200,
+      "skills": {
+        "trade": 6,
+        "appraisal": 7,
+        "negotiation": 4
+      },
+      "traits": {
+        "ambition": 0.4,
+        "caution": 0.7,
+        "loyalty": 0.6
+      },
+      "sex": "female",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 28,
+        "good": 8
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 9,
+        "intellect": 15,
+        "willpower": 12,
+        "perception": 13,
+        "charisma": 12
+      }
+    },
+    {
+      "id": "c_ash_herders_tomas",
+      "name": "托马·灰野",
+      "culture": "silvermoon",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 45,
+      "regionId": "r_ashfield",
+      "organizationId": "o_ash_herders",
+      "wealth": 3400,
+      "skills": {
+        "trade": 6,
+        "negotiation": 5,
+        "appraisal": 5
+      },
+      "traits": {
+        "ambition": 0.5,
+        "caution": 0.6,
+        "loyalty": 0.55
+      },
+      "sex": "male",
+      "faithId": "faith_ember",
+      "alignment": {
+        "law": 12,
+        "good": 10
+      },
+      "attributes": {
+        "physique": 12,
+        "agility": 10,
+        "intellect": 13,
+        "willpower": 12,
+        "perception": 12,
+        "charisma": 12
+      }
+    },
+    {
+      "id": "c_free_priest_ansel",
+      "name": "安塞尔·灰堡",
+      "culture": "silvermoon",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 39,
+      "regionId": "r_emberfall",
+      "organizationId": null,
+      "wealth": 800,
+      "skills": {
+        "persuasion": 5,
+        "insight": 6,
+        "lore": 5
+      },
+      "traits": {
+        "ambition": 0.3,
+        "caution": 0.6,
+        "loyalty": 0.7
+      },
+      "sex": "male",
+      "faithId": "faith_dawn",
+      "alignment": {
+        "law": 25,
+        "good": 22
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 8,
+        "intellect": 14,
+        "willpower": 13,
+        "perception": 13,
+        "charisma": 12
+      }
+    },
+    {
+      "id": "c_clans_khan_batu",
+      "name": "巴图·苍狼",
+      "culture": "steppe",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 53,
+      "regionId": "r_ironpeak",
+      "organizationId": null,
+      "wealth": 11000,
+      "skills": {
+        "persuasion": 6,
+        "law": 5,
+        "insight": 6
+      },
+      "traits": {
+        "authority": 0.8,
+        "loyalty": 0.4,
+        "caution": 0.45
+      },
+      "sex": "male",
+      "faithId": "faith_forge",
+      "alignment": {
+        "law": 8,
+        "good": 4
+      },
+      "attributes": {
+        "physique": 14,
+        "agility": 11,
+        "intellect": 12,
+        "willpower": 15,
+        "perception": 12,
+        "charisma": 14
+      }
+    },
+    {
+      "id": "c_clans_elder_alan",
+      "name": "阿兰·白鹿",
+      "culture": "steppe",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 61,
+      "regionId": "r_redhollow",
+      "organizationId": null,
+      "wealth": 4800,
+      "skills": {
+        "insight": 7,
+        "persuasion": 5,
+        "lore": 5
+      },
+      "traits": {
+        "authority": 0.6,
+        "loyalty": 0.7,
+        "caution": 0.65
+      },
+      "sex": "female",
+      "faithId": "faith_ember",
+      "alignment": {
+        "law": 5,
+        "good": 8
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 9,
+        "intellect": 14,
+        "willpower": 14,
+        "perception": 15,
+        "charisma": 12
+      }
+    },
+    {
+      "id": "c_clans_warchief_temur",
+      "name": "铁木·黑毡",
+      "culture": "steppe",
+      "raceId": "human",
+      "classId": "mercenary",
+      "age": 40,
+      "regionId": "r_ironpeak",
+      "organizationId": null,
+      "wealth": 3800,
+      "skills": {
+        "melee": 8,
+        "tactics": 7,
+        "intimidation": 6
+      },
+      "traits": {
+        "authority": 0.65,
+        "loyalty": 0.45,
+        "caution": 0.35
+      },
+      "sex": "male",
+      "faithId": "faith_forge",
+      "alignment": {
+        "law": 5,
+        "good": 0
+      },
+      "attributes": {
+        "physique": 16,
+        "agility": 13,
+        "intellect": 10,
+        "willpower": 14,
+        "perception": 12,
+        "charisma": 11
+      }
+    },
+    {
+      "id": "c_clans_treasurer_saran",
+      "name": "萨仁·金鞍",
+      "culture": "steppe",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 44,
+      "regionId": "r_redhollow",
+      "organizationId": null,
+      "wealth": 3200,
+      "skills": {
+        "trade": 6,
+        "appraisal": 5,
+        "negotiation": 5
+      },
+      "traits": {
+        "ambition": 0.5,
+        "caution": 0.6,
+        "charisma": 0.5
+      },
+      "sex": "female",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 10,
+        "good": 6
+      },
+      "attributes": {
+        "physique": 9,
+        "agility": 10,
+        "intellect": 13,
+        "willpower": 12,
+        "perception": 12,
+        "charisma": 12
+      }
+    },
+    {
+      "id": "c_deepvein_bor",
+      "name": "博尔·深脉",
+      "culture": "steppe",
+      "raceId": "dwarf",
+      "classId": "merchant",
+      "age": 58,
+      "regionId": "r_ironpeak",
+      "organizationId": "o_deepvein",
+      "wealth": 6400,
+      "skills": {
+        "mining": 8,
+        "appraisal": 6,
+        "trade": 4
+      },
+      "traits": {
+        "ambition": 0.45,
+        "caution": 0.55,
+        "loyalty": 0.65
+      },
+      "sex": "male",
+      "faithId": "faith_forge",
+      "alignment": {
+        "law": 12,
+        "good": 5
+      },
+      "attributes": {
+        "physique": 16,
+        "agility": 8,
+        "intellect": 13,
+        "willpower": 14,
+        "perception": 11,
+        "charisma": 9
+      }
+    },
+    {
+      "id": "c_clan_smiths_altan",
+      "name": "阿勒坦·火帐",
+      "culture": "steppe",
+      "raceId": "dwarf",
+      "classId": "merchant",
+      "age": 50,
+      "regionId": "r_ironpeak",
+      "organizationId": "o_clan_smiths",
+      "wealth": 4600,
+      "skills": {
+        "smithing": 7,
+        "trade": 5,
+        "intimidation": 4
+      },
+      "traits": {
+        "ambition": 0.6,
+        "caution": 0.4,
+        "loyalty": 0.5
+      },
+      "sex": "male",
+      "faithId": "faith_forge",
+      "alignment": {
+        "law": 10,
+        "good": 3
+      },
+      "attributes": {
+        "physique": 16,
+        "agility": 9,
+        "intellect": 12,
+        "willpower": 13,
+        "perception": 11,
+        "charisma": 10
+      }
+    },
+    {
+      "id": "c_redhollow_yeru",
+      "name": "耶鲁·鹰旗",
+      "culture": "steppe",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 38,
+      "regionId": "r_redhollow",
+      "organizationId": "o_redhollow_timber",
+      "wealth": 3100,
+      "skills": {
+        "trade": 6,
+        "appraisal": 5,
+        "negotiation": 5
+      },
+      "traits": {
+        "ambition": 0.55,
+        "caution": 0.5,
+        "loyalty": 0.55
+      },
+      "sex": "female",
+      "faithId": "faith_ember",
+      "alignment": {
+        "law": 6,
+        "good": 7
+      },
+      "attributes": {
+        "physique": 11,
+        "agility": 11,
+        "intellect": 13,
+        "willpower": 12,
+        "perception": 13,
+        "charisma": 12
+      }
+    },
+    {
+      "id": "c_merchants_doge_lorenzo",
+      "name": "洛伦佐·珊瑚",
+      "culture": "league",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 62,
+      "regionId": "r_coralbay",
+      "organizationId": null,
+      "wealth": 22000,
+      "skills": {
+        "persuasion": 7,
+        "trade": 6,
+        "insight": 5
+      },
+      "traits": {
+        "authority": 0.7,
+        "charisma": 0.75,
+        "caution": 0.5
+      },
+      "sex": "male",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 12,
+        "good": -4
+      },
+      "attributes": {
+        "physique": 9,
+        "agility": 8,
+        "intellect": 14,
+        "willpower": 15,
+        "perception": 13,
+        "charisma": 16
+      }
+    },
+    {
+      "id": "c_merchants_speaker_camila",
+      "name": "卡米拉·盐帆",
+      "culture": "league",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 48,
+      "regionId": "r_coralbay",
+      "organizationId": null,
+      "wealth": 8600,
+      "skills": {
+        "persuasion": 6,
+        "law": 5,
+        "insight": 6
+      },
+      "traits": {
+        "authority": 0.55,
+        "charisma": 0.65,
+        "loyalty": 0.6
+      },
+      "sex": "female",
+      "faithId": "faith_tide",
+      "alignment": {
+        "law": 10,
+        "good": 2
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 10,
+        "intellect": 13,
+        "willpower": 13,
+        "perception": 14,
+        "charisma": 14
+      }
+    },
+    {
+      "id": "c_merchants_admiral_dario",
+      "name": "达里奥·潮锚",
+      "culture": "league",
+      "raceId": "human",
+      "classId": "mercenary",
+      "age": 45,
+      "regionId": "r_coralbay",
+      "organizationId": null,
+      "wealth": 4200,
+      "skills": {
+        "melee": 6,
+        "tactics": 7,
+        "intimidation": 5
+      },
+      "traits": {
+        "authority": 0.6,
+        "loyalty": 0.5,
+        "caution": 0.5
+      },
+      "sex": "male",
+      "faithId": "faith_tide",
+      "alignment": {
+        "law": 14,
+        "good": 1
+      },
+      "attributes": {
+        "physique": 13,
+        "agility": 13,
+        "intellect": 11,
+        "willpower": 13,
+        "perception": 12,
+        "charisma": 12
+      }
+    },
+    {
+      "id": "c_merchants_treasurer_beatrice",
+      "name": "贝亚特丽切·珍珠",
+      "culture": "league",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 53,
+      "regionId": "r_saltisle",
+      "organizationId": null,
+      "wealth": 7400,
+      "skills": {
+        "trade": 7,
+        "appraisal": 6,
+        "negotiation": 5
+      },
+      "traits": {
+        "ambition": 0.55,
+        "caution": 0.65,
+        "loyalty": 0.5
+      },
+      "sex": "female",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 9,
+        "good": -2
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 9,
+        "intellect": 15,
+        "willpower": 12,
+        "perception": 13,
+        "charisma": 13
+      }
+    },
+    {
+      "id": "c_coral_exchange_orlando",
+      "name": "奥兰多·金网",
+      "culture": "league",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 56,
+      "regionId": "r_coralbay",
+      "organizationId": "o_coral_exchange",
+      "wealth": 10200,
+      "skills": {
+        "trade": 8,
+        "appraisal": 7,
+        "negotiation": 6
+      },
+      "traits": {
+        "ambition": 0.65,
+        "caution": 0.55,
+        "charisma": 0.65
+      },
+      "sex": "male",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 8,
+        "good": -8
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 9,
+        "intellect": 16,
+        "willpower": 13,
+        "perception": 14,
+        "charisma": 14
+      }
+    },
+    {
+      "id": "c_salt_smugglers_zena",
+      "name": "泽娜·暗盐",
+      "culture": "league",
+      "raceId": "human",
+      "classId": "mercenary",
+      "age": 35,
+      "regionId": "r_saltisle",
+      "organizationId": "o_salt_smugglers",
+      "wealth": 2400,
+      "skills": {
+        "melee": 7,
+        "intimidation": 7,
+        "tactics": 4
+      },
+      "traits": {
+        "ambition": 0.75,
+        "loyalty": 0.35,
+        "caution": 0.4
+      },
+      "sex": "female",
+      "faithId": "faith_veil",
+      "alignment": {
+        "law": -30,
+        "good": -15
+      },
+      "attributes": {
+        "physique": 13,
+        "agility": 15,
+        "intellect": 11,
+        "willpower": 12,
+        "perception": 13,
+        "charisma": 12
+      }
+    },
+    {
+      "id": "c_free_caravan_marco",
+      "name": "马尔科·沙洲",
+      "culture": "league",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 32,
+      "regionId": "r_coralbay",
+      "organizationId": null,
+      "wealth": 1300,
+      "skills": {
+        "trade": 5,
+        "negotiation": 5,
+        "appraisal": 4
+      },
+      "traits": {
+        "ambition": 0.6,
+        "caution": 0.45,
+        "loyalty": 0.5
+      },
+      "sex": "male",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 2,
+        "good": 5
+      },
+      "attributes": {
+        "physique": 10,
+        "agility": 12,
+        "intellect": 12,
+        "willpower": 11,
+        "perception": 12,
+        "charisma": 13
+      }
+    },
+    {
+      "id": "c_steppe_khan_yesu",
+      "name": "也速·风蹄",
+      "culture": "steppe",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 51,
+      "regionId": "r_windsteppe",
+      "organizationId": null,
+      "wealth": 10500,
+      "skills": {
+        "persuasion": 6,
+        "law": 5,
+        "insight": 6
+      },
+      "traits": {
+        "authority": 0.75,
+        "loyalty": 0.45,
+        "caution": 0.5
+      },
+      "sex": "male",
+      "faithId": "faith_ember",
+      "alignment": {
+        "law": 5,
+        "good": 0
+      },
+      "attributes": {
+        "physique": 14,
+        "agility": 12,
+        "intellect": 12,
+        "willpower": 15,
+        "perception": 12,
+        "charisma": 14
+      }
+    },
+    {
+      "id": "c_steppe_shaman_udagan",
+      "name": "乌云·火帐",
+      "culture": "steppe",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 63,
+      "regionId": "r_windsteppe",
+      "organizationId": null,
+      "wealth": 3900,
+      "skills": {
+        "lore": 7,
+        "insight": 7,
+        "persuasion": 4
+      },
+      "traits": {
+        "authority": 0.6,
+        "loyalty": 0.65,
+        "caution": 0.6
+      },
+      "sex": "female",
+      "faithId": "faith_ember",
+      "alignment": {
+        "law": 0,
+        "good": 10
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 9,
+        "intellect": 14,
+        "willpower": 15,
+        "perception": 16,
+        "charisma": 12
+      }
+    },
+    {
+      "id": "c_steppe_warchief_nayan",
+      "name": "那颜·鹰旗",
+      "culture": "steppe",
+      "raceId": "human",
+      "classId": "mercenary",
+      "age": 40,
+      "regionId": "r_horsemoot",
+      "organizationId": null,
+      "wealth": 3600,
+      "skills": {
+        "melee": 8,
+        "tactics": 6,
+        "intimidation": 6
+      },
+      "traits": {
+        "authority": 0.62,
+        "loyalty": 0.5,
+        "caution": 0.35
+      },
+      "sex": "male",
+      "faithId": "faith_forge",
+      "alignment": {
+        "law": 4,
+        "good": 2
+      },
+      "attributes": {
+        "physique": 16,
+        "agility": 14,
+        "intellect": 10,
+        "willpower": 13,
+        "perception": 12,
+        "charisma": 11
+      }
+    },
+    {
+      "id": "c_steppe_treasurer_tana",
+      "name": "塔娜·雪原",
+      "culture": "steppe",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 42,
+      "regionId": "r_horsemoot",
+      "organizationId": null,
+      "wealth": 3000,
+      "skills": {
+        "trade": 6,
+        "appraisal": 5,
+        "negotiation": 5
+      },
+      "traits": {
+        "ambition": 0.45,
+        "caution": 0.6,
+        "loyalty": 0.55
+      },
+      "sex": "female",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 8,
+        "good": 4
+      },
+      "attributes": {
+        "physique": 10,
+        "agility": 11,
+        "intellect": 13,
+        "willpower": 12,
+        "perception": 12,
+        "charisma": 12
+      }
+    },
+    {
+      "id": "c_free_exile_kara",
+      "name": "卡拉·雪原",
+      "culture": "steppe",
+      "raceId": "human",
+      "classId": "mercenary",
+      "age": 29,
+      "regionId": "r_horsemoot",
+      "organizationId": null,
+      "wealth": 600,
+      "skills": {
+        "melee": 6,
+        "tactics": 4,
+        "intimidation": 4
+      },
+      "traits": {
+        "ambition": 0.5,
+        "loyalty": 0.4,
+        "caution": 0.55
+      },
+      "sex": "female",
+      "faithId": "faith_veil",
+      "alignment": {
+        "law": -15,
+        "good": 0
+      },
+      "attributes": {
+        "physique": 12,
+        "agility": 14,
+        "intellect": 11,
+        "willpower": 12,
+        "perception": 13,
+        "charisma": 11
       }
     }
   ]

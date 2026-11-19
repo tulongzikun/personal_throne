@@ -6,12 +6,12 @@
     "industry": "grain",
     "foundedDay": 1,
     "homeRegionId": "r_greenfield",
-    "scale": 0.42,
-    "cash": 2600,
+    "scale": 0.8,
+    "cash": 2635,
     "assets": 5200,
     "liabilities": 900,
-    "members": 46,
-    "payrollMonthly": 276,
+    "members": 90,
+    "payrollMonthly": 195,
     "leaderId": "c_player",
     "legitimacy": 0.62,
     "conflict": 0.18,
@@ -20,9 +20,18 @@
     "strategy": "steady",
     "lifecycle": "stable",
     "shares": [
-      { "characterId": "c_player", "share": 0.38 },
-      { "characterId": "c_grainwheel_hob", "share": 0.22 },
-      { "characterId": "c_vareth_lord", "share": 0.15 }
+      {
+        "characterId": "c_player",
+        "share": 0.38
+      },
+      {
+        "characterId": "c_grainwheel_hob",
+        "share": 0.22
+      },
+      {
+        "characterId": "c_vareth_lord",
+        "share": 0.15
+      }
     ]
   },
   {
@@ -33,11 +42,11 @@
     "foundedDay": 1,
     "homeRegionId": "r_silvermoon",
     "scale": 0.55,
-    "cash": 4200,
+    "cash": 4258,
     "assets": 9800,
     "liabilities": 2600,
     "members": 64,
-    "payrollMonthly": 448,
+    "payrollMonthly": 317,
     "leaderId": "c_ironhand_garrick",
     "legitimacy": 0.7,
     "conflict": 0.3,
@@ -46,8 +55,14 @@
     "strategy": "expand",
     "lifecycle": "growing",
     "shares": [
-      { "characterId": "c_ironhand_garrick", "share": 0.45 },
-      { "characterId": "c_marshal_dorn", "share": 0.1 }
+      {
+        "characterId": "c_ironhand_garrick",
+        "share": 0.45
+      },
+      {
+        "characterId": "c_marshal_dorn",
+        "share": 0.1
+      }
     ]
   },
   {
@@ -58,11 +73,11 @@
     "foundedDay": 1,
     "homeRegionId": "r_ironpeak",
     "scale": 0.38,
-    "cash": 1800,
+    "cash": 1825,
     "assets": 8400,
     "liabilities": 1500,
     "members": 72,
-    "payrollMonthly": 432,
+    "payrollMonthly": 307,
     "leaderId": "c_peakmine_helga",
     "legitimacy": 0.66,
     "conflict": 0.25,
@@ -71,8 +86,14 @@
     "strategy": "steady",
     "lifecycle": "stable",
     "shares": [
-      { "characterId": "c_peakmine_helga", "share": 0.4 },
-      { "characterId": "c_ironhand_garrick", "share": 0.2 }
+      {
+        "characterId": "c_peakmine_helga",
+        "share": 0.4
+      },
+      {
+        "characterId": "c_ironhand_garrick",
+        "share": 0.2
+      }
     ]
   },
   {
@@ -83,11 +104,11 @@
     "foundedDay": 1,
     "homeRegionId": "r_portlumen",
     "scale": 0.6,
-    "cash": 5600,
+    "cash": 5677,
     "assets": 11200,
     "liabilities": 2400,
     "members": 58,
-    "payrollMonthly": 406,
+    "payrollMonthly": 289,
     "leaderId": "c_bluewave_soren",
     "legitimacy": 0.72,
     "conflict": 0.2,
@@ -96,8 +117,14 @@
     "strategy": "expand",
     "lifecycle": "growing",
     "shares": [
-      { "characterId": "c_bluewave_soren", "share": 0.5 },
-      { "characterId": "c_widow_sera", "share": 0.12 }
+      {
+        "characterId": "c_bluewave_soren",
+        "share": 0.5
+      },
+      {
+        "characterId": "c_widow_sera",
+        "share": 0.12
+      }
     ]
   },
   {
@@ -108,11 +135,11 @@
     "foundedDay": 1,
     "homeRegionId": "r_portlumen",
     "scale": 0.7,
-    "cash": 18400,
+    "cash": 18654,
     "assets": 26000,
     "liabilities": 12000,
     "members": 40,
-    "payrollMonthly": 600,
+    "payrollMonthly": 425,
     "leaderId": "c_bank_odell",
     "legitimacy": 0.78,
     "conflict": 0.14,
@@ -120,7 +147,12 @@
     "efficiency": 0.62,
     "strategy": "contract",
     "lifecycle": "stable",
-    "shares": [{ "characterId": "c_bank_odell", "share": 0.7 }]
+    "shares": [
+      {
+        "characterId": "c_bank_odell",
+        "share": 0.7
+      }
+    ]
   },
   {
     "id": "o_silverguard",
@@ -130,11 +162,11 @@
     "foundedDay": 1,
     "homeRegionId": "r_silvermoon",
     "scale": 0.5,
-    "cash": 1500,
+    "cash": 1521,
     "assets": 3600,
     "liabilities": 600,
     "members": 120,
-    "payrollMonthly": 720,
+    "payrollMonthly": 510,
     "leaderId": "c_guard_captain",
     "legitimacy": 0.8,
     "conflict": 0.22,
@@ -142,7 +174,12 @@
     "efficiency": 0.5,
     "strategy": "contract",
     "lifecycle": "stable",
-    "shares": [{ "characterId": "c_guard_captain", "share": 0.6 }]
+    "shares": [
+      {
+        "characterId": "c_guard_captain",
+        "share": 0.6
+      }
+    ]
   },
   {
     "id": "o_freeblades",
@@ -152,11 +189,11 @@
     "foundedDay": 1,
     "homeRegionId": "r_tidemarket",
     "scale": 0.34,
-    "cash": 1100,
+    "cash": 1115,
     "assets": 2200,
     "liabilities": 700,
     "members": 85,
-    "payrollMonthly": 510,
+    "payrollMonthly": 362,
     "leaderId": "c_freeblades_vex",
     "legitimacy": 0.6,
     "conflict": 0.42,
@@ -164,7 +201,12 @@
     "efficiency": 0.52,
     "strategy": "contract",
     "lifecycle": "crisis",
-    "shares": [{ "characterId": "c_freeblades_vex", "share": 0.55 }]
+    "shares": [
+      {
+        "characterId": "c_freeblades_vex",
+        "share": 0.55
+      }
+    ]
   },
   {
     "id": "o_house_vareth",
@@ -173,12 +215,12 @@
     "industry": "grain",
     "foundedDay": 1,
     "homeRegionId": "r_greenfield",
-    "scale": 0.66,
-    "cash": 9800,
+    "scale": 0.8,
+    "cash": 9934,
     "assets": 26000,
     "liabilities": 3200,
-    "members": 210,
-    "payrollMonthly": 1280,
+    "members": 260,
+    "payrollMonthly": 907,
     "leaderId": "c_vareth_lord",
     "legitimacy": 0.74,
     "conflict": 0.28,
@@ -187,8 +229,14 @@
     "strategy": "steady",
     "lifecycle": "stable",
     "shares": [
-      { "characterId": "c_vareth_lord", "share": 0.55 },
-      { "characterId": "c_young_heir_aldric", "share": 0.05 }
+      {
+        "characterId": "c_vareth_lord",
+        "share": 0.55
+      },
+      {
+        "characterId": "c_young_heir_aldric",
+        "share": 0.05
+      }
     ]
   },
   {
@@ -199,11 +247,11 @@
     "foundedDay": 1,
     "homeRegionId": "r_tidemarket",
     "scale": 0.3,
-    "cash": 3200,
+    "cash": 3244,
     "assets": 1800,
     "liabilities": 400,
     "members": 38,
-    "payrollMonthly": 266,
+    "payrollMonthly": 189,
     "leaderId": "c_nightpouch_rusk",
     "legitimacy": 0.44,
     "conflict": 0.52,
@@ -212,8 +260,14 @@
     "strategy": "pivot",
     "lifecycle": "growing",
     "shares": [
-      { "characterId": "c_nightpouch_rusk", "share": 0.32 },
-      { "characterId": "c_smuggler_queen_nia", "share": 0.18 }
+      {
+        "characterId": "c_nightpouch_rusk",
+        "share": 0.32
+      },
+      {
+        "characterId": "c_smuggler_queen_nia",
+        "share": 0.18
+      }
     ]
   },
   {
@@ -224,11 +278,11 @@
     "foundedDay": 1,
     "homeRegionId": "r_silvermoon",
     "scale": 0.44,
-    "cash": 3000,
+    "cash": 3042,
     "assets": 6200,
     "liabilities": 1100,
     "members": 52,
-    "payrollMonthly": 312,
+    "payrollMonthly": 222,
     "leaderId": "c_threadguild_maven",
     "legitimacy": 0.68,
     "conflict": 0.2,
@@ -236,6 +290,271 @@
     "efficiency": 0.56,
     "strategy": "steady",
     "lifecycle": "stable",
-    "shares": [{ "characterId": "c_threadguild_maven", "share": 0.5 }]
+    "shares": [
+      {
+        "characterId": "c_threadguild_maven",
+        "share": 0.5
+      }
+    ]
+  },
+  {
+    "id": "o_vale_granary",
+    "name": "高谷粮仓",
+    "type": "guild",
+    "industry": "grain",
+    "foundedDay": 1,
+    "homeRegionId": "r_highvale",
+    "scale": 0.6,
+    "cash": 3650,
+    "assets": 9600,
+    "liabilities": 1100,
+    "members": 150,
+    "payrollMonthly": 510,
+    "leaderId": "c_highvale_treasurer_eira",
+    "legitimacy": 0.6,
+    "conflict": 0.2,
+    "governance": 0.58,
+    "efficiency": 0.6,
+    "strategy": "steady",
+    "lifecycle": "stable",
+    "shares": [
+      {
+        "characterId": "c_highvale_treasurer_eira",
+        "share": 0.45
+      },
+      {
+        "characterId": "c_highvale_king_oswin",
+        "share": 0.2
+      },
+      {
+        "characterId": "c_highvale_chancellor_mara",
+        "share": 0.1
+      }
+    ]
+  },
+  {
+    "id": "o_ash_herders",
+    "name": "灰野牧社",
+    "type": "guild",
+    "industry": "grain",
+    "foundedDay": 1,
+    "homeRegionId": "r_ashfield",
+    "scale": 0.55,
+    "cash": 2635,
+    "assets": 6800,
+    "liabilities": 900,
+    "members": 100,
+    "payrollMonthly": 425,
+    "leaderId": "c_ash_herders_tomas",
+    "legitimacy": 0.57,
+    "conflict": 0.22,
+    "governance": 0.55,
+    "efficiency": 0.55,
+    "strategy": "steady",
+    "lifecycle": "growing",
+    "shares": [
+      {
+        "characterId": "c_ash_herders_tomas",
+        "share": 0.5
+      },
+      {
+        "characterId": "c_covenant_speaker_oris",
+        "share": 0.15
+      }
+    ]
+  },
+  {
+    "id": "o_highforge",
+    "name": "高炉工坊",
+    "type": "company",
+    "industry": "iron",
+    "foundedDay": 1,
+    "homeRegionId": "r_stoneford",
+    "scale": 0.7,
+    "cash": 4258,
+    "assets": 20000,
+    "liabilities": 2400,
+    "members": 140,
+    "payrollMonthly": 695,
+    "leaderId": "c_highforge_dain",
+    "legitimacy": 0.61,
+    "conflict": 0.24,
+    "governance": 0.6,
+    "efficiency": 0.7,
+    "strategy": "expand",
+    "lifecycle": "growing",
+    "shares": [
+      {
+        "characterId": "c_highforge_dain",
+        "share": 0.4
+      },
+      {
+        "characterId": "c_highvale_king_oswin",
+        "share": 0.2
+      },
+      {
+        "characterId": "c_highvale_marshal_bran",
+        "share": 0.1
+      }
+    ]
+  },
+  {
+    "id": "o_deepvein",
+    "name": "深脉矿场",
+    "type": "company",
+    "industry": "iron",
+    "foundedDay": 1,
+    "homeRegionId": "r_ironpeak",
+    "scale": 0.6,
+    "cash": 2635,
+    "assets": 13200,
+    "liabilities": 1700,
+    "members": 90,
+    "payrollMonthly": 408,
+    "leaderId": "c_deepvein_bor",
+    "legitimacy": 0.56,
+    "conflict": 0.3,
+    "governance": 0.57,
+    "efficiency": 0.62,
+    "strategy": "steady",
+    "lifecycle": "stable",
+    "shares": [
+      {
+        "characterId": "c_deepvein_bor",
+        "share": 0.45
+      },
+      {
+        "characterId": "c_clans_khan_batu",
+        "share": 0.2
+      }
+    ]
+  },
+  {
+    "id": "o_clan_smiths",
+    "name": "火帐铁匠",
+    "type": "guild",
+    "industry": "weapons",
+    "foundedDay": 1,
+    "homeRegionId": "r_ironpeak",
+    "scale": 0.55,
+    "cash": 2027,
+    "assets": 8200,
+    "liabilities": 1500,
+    "members": 80,
+    "payrollMonthly": 374,
+    "leaderId": "c_clan_smiths_altan",
+    "legitimacy": 0.52,
+    "conflict": 0.38,
+    "governance": 0.45,
+    "efficiency": 0.6,
+    "strategy": "contract",
+    "lifecycle": "growing",
+    "shares": [
+      {
+        "characterId": "c_clan_smiths_altan",
+        "share": 0.5
+      },
+      {
+        "characterId": "c_clans_warchief_temur",
+        "share": 0.15
+      }
+    ]
+  },
+  {
+    "id": "o_redhollow_timber",
+    "name": "红谷木社",
+    "type": "guild",
+    "industry": "luxury",
+    "foundedDay": 1,
+    "homeRegionId": "r_redhollow",
+    "scale": 0.5,
+    "cash": 1419,
+    "assets": 3400,
+    "liabilities": 700,
+    "members": 70,
+    "payrollMonthly": 298,
+    "leaderId": "c_redhollow_yeru",
+    "legitimacy": 0.55,
+    "conflict": 0.28,
+    "governance": 0.52,
+    "efficiency": 0.55,
+    "strategy": "steady",
+    "lifecycle": "stable",
+    "shares": [
+      {
+        "characterId": "c_redhollow_yeru",
+        "share": 0.5
+      },
+      {
+        "characterId": "c_clans_elder_alan",
+        "share": 0.15
+      }
+    ]
+  },
+  {
+    "id": "o_salt_smugglers",
+    "name": "暗盐帮",
+    "type": "smugglers",
+    "industry": "luxury",
+    "foundedDay": 1,
+    "homeRegionId": "r_saltisle",
+    "scale": 0.3,
+    "cash": 913,
+    "assets": 1600,
+    "liabilities": 1200,
+    "members": 34,
+    "payrollMonthly": 169,
+    "leaderId": "c_salt_smugglers_zena",
+    "legitimacy": 0.4,
+    "conflict": 0.58,
+    "governance": 0.3,
+    "efficiency": 0.6,
+    "strategy": "pivot",
+    "lifecycle": "crisis",
+    "shares": [
+      {
+        "characterId": "c_salt_smugglers_zena",
+        "share": 0.6
+      },
+      {
+        "characterId": "c_merchants_treasurer_beatrice",
+        "share": 0.1
+      }
+    ]
+  },
+  {
+    "id": "o_coral_exchange",
+    "name": "珊瑚交易所",
+    "type": "bank",
+    "industry": "service",
+    "foundedDay": 1,
+    "homeRegionId": "r_coralbay",
+    "scale": 0.6,
+    "cash": 14193,
+    "assets": 22000,
+    "liabilities": 9800,
+    "members": 36,
+    "payrollMonthly": 383,
+    "leaderId": "c_coral_exchange_orlando",
+    "legitimacy": 0.72,
+    "conflict": 0.16,
+    "governance": 0.72,
+    "efficiency": 0.6,
+    "strategy": "contract",
+    "lifecycle": "stable",
+    "shares": [
+      {
+        "characterId": "c_coral_exchange_orlando",
+        "share": 0.35
+      },
+      {
+        "characterId": "c_merchants_doge_lorenzo",
+        "share": 0.25
+      },
+      {
+        "characterId": "c_merchants_treasurer_beatrice",
+        "share": 0.1
+      }
+    ]
   }
 ]

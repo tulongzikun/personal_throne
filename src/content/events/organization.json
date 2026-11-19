@@ -16,7 +16,7 @@
         }
       ]
     },
-    "cooldownDays": 150,
+    "cooldownDays": 330,
     "effects": [
       {
         "kind": "add",
@@ -57,7 +57,7 @@
       ]
     },
     "exclusivity": "org_power",
-    "cooldownDays": 90,
+    "cooldownDays": 198,
     "effects": [
       {
         "kind": "add",
@@ -107,7 +107,7 @@
       ]
     },
     "exclusivity": "org_power",
-    "cooldownDays": 480,
+    "cooldownDays": 1056,
     "effects": [
       {
         "kind": "add",
@@ -134,21 +134,21 @@
         {
           "path": "conflict",
           "op": ">",
-          "value": 0.5
+          "value": 0.4
         },
         {
           "path": "governance",
           "op": "<",
-          "value": 0.6
+          "value": 0.65
         }
       ]
     },
     "risk": {
-      "lambda0": 0.01,
+      "lambda0": 0.07,
       "terms": [
         {
           "path": "conflict",
-          "coef": 3
+          "coef": 2
         },
         {
           "path": "governance",
@@ -157,7 +157,7 @@
       ]
     },
     "exclusivity": "org_power",
-    "cooldownDays": 900,
+    "cooldownDays": 1320,
     "effects": [
       {
         "kind": "add",
@@ -207,7 +207,7 @@
         }
       ]
     },
-    "cooldownDays": 300,
+    "cooldownDays": 660,
     "effects": [
       {
         "kind": "add",
@@ -256,7 +256,7 @@
         }
       ]
     },
-    "cooldownDays": 240,
+    "cooldownDays": 528,
     "effects": [
       {
         "kind": "add",
@@ -310,7 +310,7 @@
         }
       ]
     },
-    "cooldownDays": 300,
+    "cooldownDays": 660,
     "effects": [
       {
         "kind": "add",
@@ -405,7 +405,7 @@
         }
       ]
     },
-    "cooldownDays": 360,
+    "cooldownDays": 792,
     "effects": [
       {
         "kind": "merge"
@@ -433,7 +433,7 @@
         }
       ]
     },
-    "cooldownDays": 180,
+    "cooldownDays": 396,
     "effects": [
       {
         "kind": "add",
@@ -467,7 +467,7 @@
       "lambda0": 0.006,
       "terms": []
     },
-    "cooldownDays": 240,
+    "cooldownDays": 528,
     "effects": [
       {
         "kind": "add",
@@ -516,7 +516,7 @@
         }
       ]
     },
-    "cooldownDays": 120,
+    "cooldownDays": 264,
     "effects": [
       {
         "kind": "add",
@@ -562,7 +562,7 @@
       "id": "org_debt",
       "step": 2
     },
-    "cooldownDays": 180,
+    "cooldownDays": 396,
     "effects": [
       {
         "kind": "add",

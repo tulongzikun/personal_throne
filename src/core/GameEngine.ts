@@ -414,11 +414,8 @@ export class GameEngine {
     ).length;
     this.state.stats.orgCountSum += activeOrgs;
     this.state.stats.orgCountSamples += 1;
-    this.record(
-      'milestone',
-      `${formatDate(ctx.day)} 月度结算：人口 ${totalPopulation(this.state)}，组织 ${activeOrgs}，历史 ${this.state.history.length} 条`,
-      [],
-    );
+    // 月度结算只累积统计，不写历史：一百年 1200 条"月度结算"会淹没真正的事件叙事。
+    void totalPopulation(this.state);
   }
 
   /* ---------------------------------------------------------------- */

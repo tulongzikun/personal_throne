@@ -60,7 +60,7 @@ function main(): void {
   const events = state.history.filter((record) => record.kind === 'event').length;
   const deaths = state.history.filter((record) => record.kind === 'death').length;
   const dissolved = state.stats.dissolved;
-  const everOrgs = 10 + state.stats.founded;
+  const everOrgs = content.organizations.length + state.stats.founded;
   const bankruptRate = everOrgs > 0 ? state.stats.bankruptcies / everOrgs : 0;
   const splitOrgs = new Set<string>();
   for (const record of state.history) {

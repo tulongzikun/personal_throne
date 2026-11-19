@@ -153,6 +153,8 @@ export interface CharacterDef {
   readonly skills: Readonly<Record<string, number>>;
   readonly traits: Readonly<Record<string, number>>;
   /* ---- 档案字段（全部可选，缺省由 createWorld 补齐） ---- */
+  /** 文化名池标识（对应 names.json 的 cultures 键）。 */
+  readonly culture?: string;
   readonly sex?: Sex;
   readonly faithId?: string | null;
   readonly alignment?: Alignment;
@@ -493,6 +495,8 @@ export interface WorldMeta {
 export interface Character {
   id: CharacterId;
   name: string;
+  /** 文化名池标识；旧存档/生成人物可能缺省。 */
+  culture?: string;
   raceId: string;
   classId: string;
   age: number;
@@ -879,6 +883,7 @@ export function buildCharacter(def: CharacterDef): Character {
   return {
     id: def.id,
     name: def.name,
+    ...(def.culture ? { culture: def.culture } : {}),
     raceId: def.raceId,
     classId: def.classId,
     age,

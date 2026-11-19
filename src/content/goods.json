@@ -4,8 +4,8 @@
     "name": "粮食",
     "basePrice": 10,
     "alpha": 0.3,
-    "floorRatio": 0.4,
-    "ceilingRatio": 3,
+    "floorRatio": 0.8,
+    "ceilingRatio": 2,
     "consumptionPerCapita": 0.012,
     "subsistenceShare": 0.85
   },
@@ -14,29 +14,29 @@
     "name": "铁矿",
     "basePrice": 25,
     "alpha": 0.25,
-    "floorRatio": 0.45,
-    "ceilingRatio": 2.6,
+    "floorRatio": 0.8,
+    "ceilingRatio": 1.4,
     "consumptionPerCapita": 0.004,
-    "subsistenceShare": 0.5
+    "subsistenceShare": 1
   },
   {
     "id": "weapons",
     "name": "武器",
     "basePrice": 60,
     "alpha": 0.22,
-    "floorRatio": 0.7,
-    "ceilingRatio": 2.4,
+    "floorRatio": 0.8,
+    "ceilingRatio": 1.4,
     "consumptionPerCapita": 0.001,
-    "subsistenceShare": 0.05
+    "subsistenceShare": 1
   },
   {
     "id": "luxury",
     "name": "奢侈品",
     "basePrice": 150,
     "alpha": 0.18,
-    "floorRatio": 0.7,
-    "ceilingRatio": 2.2,
+    "floorRatio": 0.8,
+    "ceilingRatio": 1.4,
     "consumptionPerCapita": 0.0006,
-    "subsistenceShare": 0.05
+    "subsistenceShare": 1
   }
 ]

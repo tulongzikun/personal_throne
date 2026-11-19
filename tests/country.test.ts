@@ -30,7 +30,7 @@ describe('国家预算', () => {
     const rng = new Random('budget');
     const budgets = settleMonthlyCountry(world, content, context(30, rng));
 
-    expect(budgets.length).toBe(2);
+    expect(budgets.length).toBe(7);
     for (const budget of budgets) {
       expect(budget.balance).toBe(budget.revenue - budget.expense);
       expect(budget.treasuryAfter).toBeGreaterThanOrEqual(0);
@@ -57,7 +57,9 @@ describe('国家预算', () => {
     country.policies.taxRate = 0;
 
     const rng = new Random('deficit');
-    const [budget] = settleMonthlyCountry(world, content, context(30, rng));
+    const budget = settleMonthlyCountry(world, content, context(30, rng)).find(
+      (entry) => entry.countryId === 'c_kingdom',
+    );
     expect(budget?.balance).toBeLessThan(0);
     expect(budget?.treasuryAfter).toBe(0);
     expect(budget?.debtAfter).toBeGreaterThan(0);
