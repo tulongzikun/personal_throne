@@ -1663,3 +1663,133 @@ select.input {
     transition-duration: 1ms !important;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* 开局人物创建（M4.2）                                                  */
+/* ------------------------------------------------------------------ */
+
+.modal__card--wide {
+  width: min(880px, 100%);
+  max-height: min(86vh, 820px);
+}
+
+.create-backgrounds {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.create-bg {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  text-align: left;
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.create-bg:hover {
+  border-color: var(--gold-dim);
+}
+
+.create-bg.is-active {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.create-bg__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.create-bg__meta,
+.create-bg__skills {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+.create-bg__desc {
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.create-counter {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.create-counter.is-ready {
+  color: var(--gold);
+}
+
+.create-talents {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.create-talent {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  text-align: left;
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.create-talent.is-active {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.create-talent__name {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.create-talent__attr {
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+}
+
+.create-talent__desc {
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.create-fields {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr 1fr;
+  gap: var(--space-2);
+}
+
+.create-error {
+  margin: var(--space-2) 0 0;
+  font-size: 0.74rem;
+  color: var(--danger, #d96b5b);
+}
+
+.create-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 720px) {
+  .create-fields {
+    grid-template-columns: 1fr;
+  }
+}

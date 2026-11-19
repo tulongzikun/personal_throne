@@ -20,6 +20,7 @@ import {
 import { CharacterPanel } from './CharacterPanel';
 import type { NoticeTone, UiDeps } from './context';
 import { CountryPanel } from './CountryPanel';
+import { CreateCharacterDialog, creationErrorText } from './CreateCharacterDialog';
 import { EventDialog, type WorldSignal } from './EventDialog';
 import { HistoryPanel } from './HistoryPanel';
 import { MapView, countryPalette } from './MapView';
@@ -78,6 +79,7 @@ export class App {
   private readonly countryPanel: CountryPanel;
   private readonly historyPanel: HistoryPanel;
   private readonly eventDialog: EventDialog;
+  private readonly createDialog: CreateCharacterDialog;
   private readonly tabs = new Map<TabId, HTMLButtonElement>();
   private readonly sections = new Map<TabId, HTMLElement>();
   private readonly speedButtons = new Map<Speed, HTMLButtonElement>();
@@ -164,6 +166,7 @@ export class App {
     this.shell.append(timebar.element);
 
     this.eventDialog = new EventDialog(this.shell);
+    this.createDialog = new CreateCharacterDialog(this.shell);
     this.root.append(this.shell);
   }
 
@@ -229,6 +232,7 @@ export class App {
       button('保存', () => void this.saveGame(), 'small'),
       button('读取', () => void this.loadGame(), 'small'),
       button('导出', () => this.exportGame(), 'small'),
+      button('创建人物', () => this.openCreator(), 'small'),
       button('导入', () => importInput.click(), 'small'),
       importInput,
     );
@@ -247,6 +251,20 @@ export class App {
     const node = el('div', 'topbar__stat');
     node.append(el('span', 'topbar__label', label), value);
     return node;
+  }
+
+  /** 打开开局人物创建；成功后重挂界面到新玩家。 */
+  private openCreator(): void {
+    this.createDialog.open(this.engine.content, (choice) => {
+      try {
+        const result = this.engine.createPlayer(choice);
+        this.start(`你以「${result.character.name}」的身份登场`);
+        for (const warning of result.warnings) this.notify(warning, 'info');
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: creationErrorText(error) };
+      }
+    });
   }
 
   private buildLegend(state: WorldState): HTMLElement {

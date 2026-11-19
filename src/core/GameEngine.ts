@@ -32,6 +32,11 @@ import { settleMonthlyMarket } from '../systems/economy/MarketSystem';
 import { settleMonthlyTrade } from '../systems/economy/TradeSystem';
 import { settleMonthlyCharacters } from '../systems/character/CharacterSystem';
 import { settleYearlyDemography } from '../systems/character/Demography';
+import {
+  createPlayerCharacter,
+  type CharacterCreationChoice,
+  type CharacterCreationResult,
+} from '../systems/character/CharacterCreator';
 import { settleMonthlyCountry } from '../systems/country/CountrySystem';
 import { runPolicyRound } from '../systems/country/PolicySystem';
 import { settleMonthlyMilitary } from '../systems/military/WarSystem';
@@ -69,6 +74,23 @@ export class GameEngine {
     } else {
       this.syncCounters();
     }
+    return result;
+  }
+
+  /**
+   * 开局创建玩家人物（M4.2）。
+   *
+   * 走与人口学相同的 `buildCharacter` 路径，因此不需要为玩家特判档案结构；
+   * 创建后把玩家指针指向新人物，并记一条 milestone 历史。
+   */
+  createPlayer(choice: CharacterCreationChoice): CharacterCreationResult {
+    const result = createPlayerCharacter(this.state, this.content, choice, this.rng);
+    this.record(
+      'milestone',
+      `${formatDate(this.day)} 你以「${choice.backgroundId}」的身份登场（${result.character.name}）`,
+      [{ kind: 'character', id: result.character.id }],
+    );
+    this.syncCounters();
     return result;
   }
 
