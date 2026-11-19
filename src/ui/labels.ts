@@ -2,11 +2,14 @@
 
 import type { HistoryKind } from '../core/History';
 import type {
+  AttributeKey,
   OrgLifecycle,
   OrgStrategy,
   OrgType,
   PolicyVector,
   Polity,
+  Sex,
+  SiteKind,
   Terrain,
 } from '../core/WorldState';
 
@@ -94,6 +97,30 @@ export const RACE_LABELS: Record<string, string> = {
   human: '人类',
   dwarf: '矮人',
   elf: '精灵',
+};
+
+export const ATTRIBUTE_LABELS: Record<AttributeKey, string> = {
+  physique: '体魄',
+  agility: '灵敏',
+  intellect: '智识',
+  willpower: '意志',
+  perception: '感知',
+  charisma: '魅力',
+};
+
+export const SITE_LABELS: Record<SiteKind, string> = {
+  city: '城中',
+  town: '镇上',
+  village: '村落',
+  road: '旅途',
+  court: '宫廷',
+  camp: '营地',
+  sea: '海上',
+};
+
+export const SEX_LABELS: Record<Sex, string> = {
+  male: '男',
+  female: '女',
 };
 
 export const CLASS_LABELS: Record<string, string> = {

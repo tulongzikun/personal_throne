@@ -60,9 +60,13 @@ export class Random {
   private readonly seed: string;
   private readonly counters: Record<string, number>;
 
+  /**
+   * @param counters 计数器表。引擎会传入  本身，
+   * 让抽样直接写入存档，省掉每次推进后的整表复制（100 年约 20 万键）。
+   */
   constructor(seed: string, counters: Record<string, number> = {}) {
     this.seed = seed;
-    this.counters = { ...counters };
+    this.counters = counters;
   }
 
   static fromSnapshot(snapshot: RngSnapshot): Random {
@@ -73,9 +77,14 @@ export class Random {
     return { seed: this.seed, counters: { ...this.counters } };
   }
 
-  /** 当前计数器快照（引擎把它写回 WorldState.rngCounters）。 */
+  /** 当前计数器快照（拷贝，供存档与测试使用）。 */
   countersOf(): Record<string, number> {
     return { ...this.counters };
+  }
+
+  /** 计数器表的活引用：引擎直接持有它，抽样即刻生效。 */
+  counterStore(): Record<string, number> {
+    return this.counters;
   }
 
   /** 该键已被抽样的次数，用于调试与一致性断言。 */

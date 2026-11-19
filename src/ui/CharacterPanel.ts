@@ -1,9 +1,18 @@
 /** 人物面板：玩家属性卡 + 可点击的 NPC 只读卡。 */
 
+import { ATTRIBUTE_KEYS } from '../core/WorldState';
 import type { Character, Organization } from '../core/WorldState';
+import { alignmentCell, alignmentLabel } from '../systems/character/Profile';
 import type { UiDeps } from './context';
 import { clear, el, fmtMoney, fmtPct, statCell } from './dom';
-import { CLASS_LABELS, RACE_LABELS, labelOf } from './labels';
+import {
+  ATTRIBUTE_LABELS,
+  CLASS_LABELS,
+  RACE_LABELS,
+  SEX_LABELS,
+  SITE_LABELS,
+  labelOf,
+} from './labels';
 
 export class CharacterPanel {
   private readonly host: HTMLElement;
@@ -78,6 +87,54 @@ export class CharacterPanel {
       statCell('组织职位', this.roleOf(selected, org)),
     );
     this.host.append(stats);
+
+    this.host.append(el('h3', 'section-title', '档案'));
+    const faithName =
+      selected.faith === null
+        ? '无信仰'
+        : (this.deps.content().faiths?.find((faith) => faith.id === selected.faith)?.name ??
+          '未知信仰');
+    const family = selected.familyId ? state.families[selected.familyId] : undefined;
+    const dossier = el('div', 'stat-grid');
+    dossier.append(
+      statCell('性别', labelOf(SEX_LABELS, selected.sex)),
+      statCell('信仰', faithName),
+      statCell(
+        '所在',
+        `${state.regions[selected.regionId]?.name ?? '—'} · ${labelOf(SITE_LABELS, selected.location.site)}`,
+      ),
+      statCell('家族', family?.name ?? '无'),
+      statCell('代际', `第 ${selected.generation} 代`),
+      statCell('出身', state.regions[selected.homeRegionId]?.name ?? '—'),
+    );
+    this.host.append(dossier);
+
+    const alignment = el('div', 'alignment-block');
+    const label = alignmentLabel(selected.alignment);
+    alignment.append(el('p', 'alignment-block__label', `阵营：${label}`));
+    const grid = el('div', 'alignment-grid');
+    const activeCell = alignmentCell(selected.alignment);
+    for (let index = 0; index < 9; index += 1) {
+      const cell = el('span', `alignment-grid__cell${index === activeCell ? ' is-active' : ''}`);
+      grid.append(cell);
+    }
+    alignment.append(grid);
+    alignment.append(
+      el(
+        'p',
+        'alignment-block__axes',
+        `守序 ${selected.alignment.law} · 善良 ${selected.alignment.good}（负值为混乱 / 邪恶）`,
+      ),
+    );
+    this.host.append(alignment);
+
+    this.host.append(el('h3', 'section-title', '六维'));
+    const attributes = el('ul', 'bar-list');
+    for (const key of ATTRIBUTE_KEYS) {
+      const value = selected.attributes[key];
+      attributes.append(this.bar(ATTRIBUTE_LABELS[key], value, 20, `${value}`));
+    }
+    this.host.append(attributes);
 
     if (org) {
       const orgRow = el('div', 'inline-link');

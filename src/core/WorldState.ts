@@ -383,6 +383,36 @@ export interface EventDef {
   readonly text: { readonly title: string; readonly body: string };
 }
 
+export interface FaithDef {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly domains: readonly string[];
+  readonly alignmentLean: Alignment;
+}
+
+export interface BackgroundDef {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly classId: string;
+  readonly regionId: RegionId;
+  readonly faithId: string | null;
+  readonly wealth: number;
+  readonly skills: Readonly<Record<string, number>>;
+  readonly attributes: Partial<Attributes>;
+}
+
+export interface CultureNames {
+  readonly male: readonly string[];
+  readonly female: readonly string[];
+  readonly family: readonly string[];
+}
+
+export interface NamePools {
+  readonly cultures: Readonly<Record<string, CultureNames>>;
+}
+
 export interface WorldContent {
   readonly version: string;
   readonly world: WorldDef;
@@ -391,6 +421,10 @@ export interface WorldContent {
   readonly goods: readonly GoodDef[];
   readonly events: readonly EventDef[];
   readonly balance: BalanceConfig;
+  /** M4 起可选：信仰、开局背景、姓名池。 */
+  readonly faiths?: readonly FaithDef[];
+  readonly backgrounds?: readonly BackgroundDef[];
+  readonly names?: NamePools;
 }
 
 /* ------------------------------------------------------------------ */

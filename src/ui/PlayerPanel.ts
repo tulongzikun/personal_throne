@@ -7,7 +7,8 @@
 import type { Organization } from '../core/WorldState';
 import type { UiDeps } from './context';
 import { clear, el, fmtMoney, fmtPct } from './dom';
-import { CLASS_LABELS, RACE_LABELS, SKILL_LABELS, labelOf } from './labels';
+import { alignmentLabel } from '../systems/character/Profile';
+import { CLASS_LABELS, RACE_LABELS, SKILL_LABELS, SEX_LABELS, labelOf } from './labels';
 
 export class PlayerPanel {
   private readonly host: HTMLElement;
@@ -43,7 +44,7 @@ export class PlayerPanel {
       el(
         'p',
         'player-card__meta',
-        `${labelOf(RACE_LABELS, player.raceId)} · ${labelOf(CLASS_LABELS, player.classId)} · ${player.age} 岁`,
+        `${labelOf(RACE_LABELS, player.raceId)} · ${labelOf(CLASS_LABELS, player.classId)} · ${labelOf(SEX_LABELS, player.sex)} · ${player.age} 岁 · ${alignmentLabel(player.alignment)}`,
       ),
     );
     this.host.append(head);
@@ -55,6 +56,14 @@ export class PlayerPanel {
     const rows = el('dl', 'player-card__rows');
     rows.append(this.row('现金', fmtMoney(player.wealth)));
     rows.append(this.row('所在', region?.name ?? '—'));
+    rows.append(
+      this.row(
+        '信仰',
+        player.faith === null
+          ? '无'
+          : (deps.content().faiths?.find((faith) => faith.id === player.faith)?.name ?? '未知'),
+      ),
+    );
     if (country) rows.append(this.row('归属', country.name));
     if (org) {
       rows.append(this.row('组织', org.name));

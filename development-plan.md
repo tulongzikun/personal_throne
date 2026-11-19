@@ -520,8 +520,8 @@ interface EventDef {
 | M1 模拟核心 | ✅ 完成 | 8 个 core 模块、14 个 systems 文件、内容装配、存档、`pnpm sim`、34 个用例；100 年模拟实测 1.3 s（预算 2 s），同种子哈希稳定；R8 由内容审计与 `validateWorld` 覆盖；证据见 §8.2 |
 | M2 组织与经济 | ✅ 完成 | 生命周期四态与清算、契约（供货/运输/贷款/雇佣）、市场份额竞争、在途货运与关税、四类风险系数表、组织事件 10 条；验收 B/D 已断言，100 年破产率 22.2–31.6%、分裂率 5.6–10.5%；证据见 §8.3 |
 | M3 国家与政策 | ✅ 完成 | 政策三阶段 + 传导经济 + 政体不变式 + 国家事件 10 条 + 内阁决策；验收 C 已断言；100 年政策变更 17/18/25 次、均价偏离 12.8–16.3%、20/20 市场在 70–140%；65 用例；证据见 §8.6 |
-| M4 角色与叙事 | 🟡 骨架 | `Character` / `CharacterSystem` / `SkillCheck` 与 14 条事件已有；"商人→从政"路径未验证；**重新计价 36 人日**（roadmap §1.2），人物档案增补六维/阵营/信仰/地点（roadmap §2.0.1） |
-| M5 整合与校准 | 🟡 薄 UI 可用 | `src/ui/` 12 个文件（地图/人物/组织/国家/事件/历史 + 时间控制 + 存档），`release/index.html` 161 KB 单文件可离线游玩；完整美术、教程与校准未做 |
+| M4 角色与叙事 | 🟡 进行中（M4.1 完成） | 人物档案（六维/阵营/信仰/地点/家系）、人口学（婚姻/出生/死亡/遗产/股份守恒）、存档 v4 迁移已落地；三 seed 100 年存活 45/91/78 人、破产率 17.9–24.0%、分裂率 0–4.0%；开局人物创建、关系网、事件链与抉择待做；证据见 §8.7 |
+| M5 整合与校准 | 🟡 薄 UI 可用 | `src/ui/` 13 个文件（玩家卡 + 地图/人物/组织/国家/事件/历史 + 时间控制 + 存档），`release/index.html` 181 KB 单文件可离线游玩；完整美术、教程与校准未做 |
 | M6 战争与扩展 | ⬜ 占位 | `WarSystem` 仅月度军费结算，无战役与领土变更 |
 
 ### 8.2 M1 收尾修复（2026-11-19）
@@ -697,6 +697,21 @@ interface EventDef {
 | 存档 | `SCHEMA_VERSION` 2→3（`policyCooldowns/polityPressureMonths/lastPolityChangeDay/cabinetAction/succession/offices/importedUnits` 等），`CONTENT_VERSION` 0.3.0 | `tests/migration.test.ts` |
 
 **遗留**：`Country.offices` 已建模但未配置人选、`runPolicyRound` 的 `influence` 参数已就绪但引擎未传（M4 接）；政体变更 100 年实测 0 次（门控偏严，可调）；国家预算的抽象关税与贸易到港关税两个口径未合并。
+
+### 8.7 M4.1 人物档案与人口学（2026-11-19）
+
+| 项 | 实现 | 证据 |
+|---|---|---|
+| 人物档案 | `Character` 增加 `sex/birthYear/generation/familyId/parentIds/spouseId/attributes/alignment/faith/homeRegionId/location/offices`；`ATTRIBUTE_KEYS` 六维 1–20、`Alignment` 双轴 −100..100、`SITE_KINDS` 七种地点、`Family` 家系 | `tests/character-model.test.ts` 6 例 |
+| 生成规则 | `buildCharacter()` 统一构造（缺省属性 10、阵营 0/0、信仰 null）；`Profile.ts` 提供种族修正、技能上限 `3+floor(attr/3)`、九宫格标签与单次阵营变化上限 20；天赋标签 3 选（默认全 10，+2 标签可重复，任一维 ≤16） | `tests/character-model.test.ts` |
+| 人口学 | `Demography.ts`：年度衰老→死亡（遗产：配偶→子女→兄弟姐妹，现金均分、无继承人充公入国库；股份同比例转移，恒为 100%）→婚姻（同地区/同国/异地概率 1/0.45/0.15，建家族）→出生（父母均值 ±1 属性、信仰随机、代际 +1）→人口流入（具名人口 < 24 时每年补 1–6 人） | `tests/character-lifecycle.test.ts` 6 例（含遗产守恒、家族一致性） |
+| 内容 | 6 信仰 / 6 开局背景 / 2 文化姓名池；20 位人物补 `sex/faithId/alignment/attributes`；`CONTENT_VERSION` 0.4.0 | 内容自检 `chars 20 faiths 6` |
+| 性能 | 随机计数器改为引擎持有活引用（不再每次推进后整表复制）；`EventEngine` 路径切分缓存、同轮实体列表复用；`priceRatio` 不再逐次重排市场表 | 100 年引擎内 1.1 s（测试断言 <2 s） |
+| 存档 | `SCHEMA_VERSION` 3→4（新增 `families` 与 15 个档案字段），`migrateV3toV4` 逐人物补默认值 | `tests/migration.test.ts` 仍 5 例通过 |
+
+**三 seed 100 年实测**（`pnpm sim --years 100 --seed demo|alpha|beta --check`）：哈希 `9415d63d1400df5c` / `d46594abab0e06c4` / `40450b05ac9d08b5`，耗时 2.0–2.4 s（含 tsx 启动），存活 45 / 91 / 78 人（出生 58 / 119 / 98 位），家族 13 / 30 / 25 个，破产率 17.9% / 23.1% / 24.0%，分裂率 0% / 3.8% / 4.0%，复跑一致。
+
+**遗留**：开局人物创建（`CharacterCreator.ts` 与 `backgrounds.json` 接线）、关系网与"商人→从政"生涯路径、事件链与抉择（`EventDef.choices`）、`Country.offices` 人选、大臣与 `influence` 接线；AI 婚姻只按地区/国别加权，未考虑财富与声望。
 
 ---
 

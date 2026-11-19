@@ -126,6 +126,17 @@ function main(): void {
       .join('，')}`,
   );
   console.log(`存活人物    ${alive}`);
+  const born = Object.values(state.characters).filter(
+    (character) => character.parentIds[0] !== null && character.parentIds[1] !== null,
+  ).length;
+  const married = Math.round(
+    Object.values(state.characters).filter(
+      (character) => character.alive && character.spouseId !== null,
+    ).length / 2,
+  );
+  console.log(
+    `人口        ${alive} 位具名人物 / 出生 ${born} 位 / 婚姻 ${married} 对 / 家族 ${Object.keys(state.families).length} 个`,
+  );
   console.log(`事件记录    ${events} 条 / 死亡 ${deaths} 人`);
   console.log(`历史总条数  ${state.history.length}`);
   console.log(

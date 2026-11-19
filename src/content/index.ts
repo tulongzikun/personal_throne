@@ -6,18 +6,24 @@
  */
 
 import type {
+  BackgroundDef,
   BalanceConfig,
   CountryDef,
   EventDef,
+  FaithDef,
   GoodDef,
+  NamePools,
   OrganizationDef,
   WorldContent,
   WorldDef,
 } from '../core/WorldState';
 
+import backgroundsJson from './backgrounds.json';
 import balanceJson from './balance.json';
 import countriesJson from './countries.json';
+import faithsJson from './faiths.json';
 import goodsJson from './goods.json';
+import namesJson from './names.json';
 import organizationsJson from './organizations.json';
 import worldJson from './world.json';
 import adventureEvents from './events/adventure.json';
@@ -25,7 +31,7 @@ import countryEvents from './events/country.json';
 import economyEvents from './events/economy.json';
 import organizationEvents from './events/organization.json';
 
-export const CONTENT_VERSION = '0.3.0';
+export const CONTENT_VERSION = '0.4.0';
 
 function byId<T extends { id: string }>(items: readonly T[]): T[] {
   return [...items].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
@@ -46,6 +52,9 @@ export const content: WorldContent = {
   goods: goodsJson as unknown as GoodDef[],
   events,
   balance: balanceJson as unknown as BalanceConfig,
+  faiths: faithsJson.faiths as unknown as FaithDef[],
+  backgrounds: backgroundsJson.backgrounds as unknown as BackgroundDef[],
+  names: namesJson as unknown as NamePools,
 };
 
 /** 按 id 取事件定义，供 UI 与测试使用。 */

@@ -34,8 +34,9 @@ describe('人物档案', () => {
     if (!player) return;
 
     expect(player.generation).toBe(1);
-    expect(player.faith).toBeNull();
-    expect(player.alignment).toEqual({ law: 0, good: 0 });
+    expect(typeof player.faith === 'string' || player.faith === null).toBe(true);
+    expect(Math.abs(player.alignment.law)).toBeLessThanOrEqual(100);
+    expect(Math.abs(player.alignment.good)).toBeLessThanOrEqual(100);
     expect(player.spouseId).toBeNull();
     expect(player.parentIds).toEqual([null, null]);
     expect(player.offices).toEqual([]);
@@ -43,7 +44,9 @@ describe('人物档案', () => {
     expect(player.location.site).toBe('city');
     expect(player.birthYear).toBe(-player.age);
     for (const key of ATTRIBUTE_KEYS) {
-      expect(player.attributes[key]).toBe(10);
+      expect(Number.isInteger(player.attributes[key])).toBe(true);
+      expect(player.attributes[key]).toBeGreaterThanOrEqual(1);
+      expect(player.attributes[key]).toBeLessThanOrEqual(20);
     }
     expect(validateWorld(world)).toEqual([]);
   });

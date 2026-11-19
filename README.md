@@ -25,15 +25,20 @@
 
 **M3 国家与政策：完成。** 政策三阶段（压力 → 提案 → 按政体决策，30 个月冷却、单次幅度上限）、政策传导经济（关税进贸易成本、`tradeFreedom` 影响运力与损耗、`regulation` 压价、`taxRate` 进组织税率）、政体不变式（统治者必须在世，君主死亡即选定继承人或摄政；政体变更需连续 24 个月崩溃且距上次 ≥240 个月）、国家事件 10 条、统治者内阁决策（增税 / 裁军 / 借债）、存档 v3 迁移。验收 C（关税对照实验）已断言。三 seed 100 年实测：政策变更 17 / 18 / 25 次（目标 8–25）、同政策最小间隔 900 天、均价偏离 12.8–16.3%、20 个市场 100% 落在 70–140% 区间。
 
+**M4 角色与叙事：进行中（M4.1 完成）。** 人物档案（六维 1–20、阵营双轴 −100..100 + 九宫格、信仰可无、七种地点、家系与代际）与人口学
+（年度衰老/死亡、遗产与股份守恒、婚姻建族、出生继承、具名人口下限补员）已落地；存档升至 v4 并带迁移。
+人物面板新增「档案 / 阵营九宫格 / 六维」，玩家卡显示性别、信仰与阵营。开局人物创建、关系网、"商人→从政"生涯路径、事件链与抉择待做。
+
 **在线试玩**：<https://tulongzikun.github.io/personal_throne/>（GitHub Pages，发布 `release/index.html）。
 离线也可以直接双击 `release/index.html`。
 
-**测试与产物**：9 个测试文件 / 65 个用例；单文件 `release/index.html` 161,094 字节（体积预算 10.2%），
-无 `<script src>`、无 `<link href>`，`file://` 下可运行（Edge 探针 6 面板 / 69 按钮 / 0 控制台错误）。
+**测试与产物**：11 个测试文件 / 77 个用例；单文件 `release/index.html` 181,224 字节（体积预算 11.5%），
+无 `<script src>`、无 `<link href>`，`file://` 下可运行（Edge 探针 7 面板 / 70 按钮 / 档案区块可见 / 0 控制台错误）。
 
-**尚未完成**：人口世代更替与开局人物创建（100 年后人物全灭，roadmap §2.0.1 / §2.1）、大臣职位实装（ 已建模未配置人选）、
-政体变更 100 年实测 0 次（门控偏严，roadmap §8 记为可调项）、验收 A 的人工审阅、四种地图图层与完整美术（M5）、战争（M6）。
-已知问题：国家预算里的抽象关税与贸易系统的到港关税是两个口径，未合并（M4 税制统一时收敛）。详见 [development-plan.md §8](development-plan.md)。
+**尚未完成**：开局人物创建（`CharacterCreator` 与 6 个背景接线）、关系网与生涯路径、事件链与抉择（`EventDef.choices`）、
+大臣职位实装（已建模未配置人选）、`runPolicyRound` 的 `influence` 接线、政体变更 100 年实测 0 次（门控偏严，roadmap §8 记为可调项）、
+验收 A 的人工审阅、四种地图图层与完整美术（M5）、战争（M6）。
+已知问题：国家预算里的抽象关税与贸易系统的到港关税是两个口径，未合并；AI 婚姻只按地区/国别加权，未考虑财富与声望。详见 [development-plan.md §8](development-plan.md)。
 
 ## 环境要求
 
@@ -50,7 +55,7 @@ pnpm release        # build + 校验（无外链 / ≤ 1,572,864 字节）+ 复�
 pnpm preview        # 预览构建产物
 pnpm typecheck      # 仅类型检查
 pnpm lint           # ESLint（架构依赖方向、Math.random 与 new Date 禁令）
-pnpm test           # vitest run：8 个文件 / 58 个用例
+pnpm test           # vitest run：11 个文件 / 77 个用例
 pnpm test:watch     # 监听模式
 pnpm format         # Prettier
 pnpm sim --years 100 --seed demo-seed            # 无界面快进，打印哈希 / 耗时 / 破产率 / 分裂率 / 价格偏离 / 关税
@@ -61,13 +66,19 @@ pnpm sim --years 100 --seed demo-seed --check    # 复跑并比对状态哈希�
 
 ## 测试
 
-| 文件                         | 用例 | 覆盖                                           |
-| ---------------------------- | ---- | ---------------------------------------------- |
-| `tests/simulation.test.ts`   | 6    | R1 确定性/状态哈希、世界规模、100 年稳定性     |
-| `tests/fastforward.test.ts`  | 4    | R2 快进等价性、R3 存档往返与损坏拒绝           |
-| `tests/organization.test.ts` | 8    | R4/R7 会计恒等式、投资与权限、领袖与统治者继承 |
-| `tests/country.test.ts`      | 7    | R5 预算恒等式、政策三阶段、游说命令            |
-| `tests/events.test.ts`       | 8    | R6 互斥竞速、冷却、效果夹取、后续事件          |
+| 文件                                | 用例 | 覆盖                                                 |
+| ----------------------------------- | ---- | ---------------------------------------------------- |
+| `tests/simulation.test.ts`          | 6    | R1 确定性/状态哈希、世界规模、100 年稳定性与性能预算 |
+| `tests/fastforward.test.ts`         | 4    | R2 快进等价性、R3 存档往返与损坏拒绝                 |
+| `tests/organization.test.ts`        | 8    | R4/R7 会计恒等式、投资与权限、领袖与统治者继承       |
+| `tests/country.test.ts`             | 7    | R5 预算恒等式、政策三阶段、游说命令                  |
+| `tests/events.test.ts`              | 9    | R6 互斥竞速、冷却、效果夹取、后续事件、人物分层      |
+| `tests/policy.test.ts`              | 6    | 政策压力、提案成本、冷却、政体不变式                 |
+| `tests/economy-m2.test.ts`          | 14   | 生命周期清算、契约、市场竞争、运价与关税             |
+| `tests/acceptance.test.ts`          | 6    | 验收 B（商业干预）与 D（财务危机）                   |
+| `tests/migration.test.ts`           | 5    | 存档 v1→v4 迁移、版本上限拒绝、迁移后哈希失效        |
+| `tests/character-model.test.ts`     | 6    | 六维/阵营/信仰/地点、生成规则、v3→v4 迁移            |
+| `tests/character-lifecycle.test.ts` | 6    | 婚姻对称、遗产与股份守恒、出生继承、人口学可复现     |
 
 `tests/helpers/index.ts` 提供 `makeWorld(seed)` / `makeEngine(seed)`，所有用例使用固定内容 + 固定种子。
 

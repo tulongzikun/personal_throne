@@ -683,6 +683,46 @@ a {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+/* 阵营九宫格：3×3 小方块，当前格高亮成金色。 */
+.alignment-block {
+  margin: var(--space-2) 0;
+  padding: var(--space-2);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.alignment-block__label {
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+
+.alignment-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 14px);
+  gap: 3px;
+  margin: 6px 0;
+}
+
+.alignment-grid__cell {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg-panel);
+}
+
+.alignment-grid__cell.is-active {
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 6px rgba(212, 175, 55, 0.55);
+}
+
+.alignment-block__axes {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
 .stat {
   display: flex;
   flex-direction: column;

@@ -130,6 +130,20 @@
         "loyalty": 0.5,
         "caution": 0.45,
         "charisma": 0.6
+      },
+      "sex": "male",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 15,
+        "good": 10
+      },
+      "attributes": {
+        "physique": 10,
+        "agility": 11,
+        "intellect": 13,
+        "willpower": 12,
+        "perception": 12,
+        "charisma": 13
       }
     },
     {
@@ -150,6 +164,20 @@
         "authority": 0.8,
         "loyalty": 0.4,
         "caution": 0.6
+      },
+      "sex": "male",
+      "faithId": "faith_dawn",
+      "alignment": {
+        "law": 25,
+        "good": 30
+      },
+      "attributes": {
+        "physique": 9,
+        "agility": 7,
+        "intellect": 14,
+        "willpower": 16,
+        "perception": 12,
+        "charisma": 14
       }
     },
     {
@@ -170,6 +198,20 @@
         "authority": 0.6,
         "charisma": 0.75,
         "caution": 0.5
+      },
+      "sex": "female",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 12,
+        "good": 12
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 9,
+        "intellect": 13,
+        "willpower": 14,
+        "perception": 13,
+        "charisma": 15
       }
     },
     {
@@ -189,6 +231,20 @@
         "loyalty": 0.7,
         "caution": 0.6,
         "ambition": 0.35
+      },
+      "sex": "male",
+      "faithId": "faith_tide",
+      "alignment": {
+        "law": 5,
+        "good": 12
+      },
+      "attributes": {
+        "physique": 11,
+        "agility": 9,
+        "intellect": 12,
+        "willpower": 12,
+        "perception": 13,
+        "charisma": 11
       }
     },
     {
@@ -209,6 +265,20 @@
         "ambition": 0.8,
         "loyalty": 0.4,
         "caution": 0.5
+      },
+      "sex": "male",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 0,
+        "good": -5
+      },
+      "attributes": {
+        "physique": 12,
+        "agility": 10,
+        "intellect": 13,
+        "willpower": 14,
+        "perception": 11,
+        "charisma": 12
       }
     },
     {
@@ -229,6 +299,20 @@
         "caution": 0.75,
         "loyalty": 0.6,
         "ambition": 0.4
+      },
+      "sex": "female",
+      "faithId": "faith_forge",
+      "alignment": {
+        "law": 15,
+        "good": 10
+      },
+      "attributes": {
+        "physique": 13,
+        "agility": 8,
+        "intellect": 13,
+        "willpower": 14,
+        "perception": 12,
+        "charisma": 10
       }
     },
     {
@@ -249,6 +333,20 @@
         "ambition": 0.55,
         "caution": 0.6,
         "charisma": 0.7
+      },
+      "sex": "male",
+      "faithId": "faith_tide",
+      "alignment": {
+        "law": 8,
+        "good": 15
+      },
+      "attributes": {
+        "physique": 9,
+        "agility": 12,
+        "intellect": 13,
+        "willpower": 11,
+        "perception": 14,
+        "charisma": 13
       }
     },
     {
@@ -269,6 +367,20 @@
         "caution": 0.8,
         "ambition": 0.5,
         "loyalty": 0.5
+      },
+      "sex": "male",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 12,
+        "good": 5
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 7,
+        "intellect": 15,
+        "willpower": 14,
+        "perception": 14,
+        "charisma": 11
       }
     },
     {
@@ -289,6 +401,20 @@
         "loyalty": 0.85,
         "caution": 0.5,
         "ambition": 0.25
+      },
+      "sex": "male",
+      "faithId": "faith_forge",
+      "alignment": {
+        "law": 30,
+        "good": 20
+      },
+      "attributes": {
+        "physique": 14,
+        "agility": 12,
+        "intellect": 11,
+        "willpower": 13,
+        "perception": 12,
+        "charisma": 10
       }
     },
     {
@@ -309,6 +435,20 @@
         "ambition": 0.7,
         "loyalty": 0.3,
         "caution": 0.4
+      },
+      "sex": "female",
+      "faithId": "faith_forge",
+      "alignment": {
+        "law": 5,
+        "good": -5
+      },
+      "attributes": {
+        "physique": 13,
+        "agility": 15,
+        "intellect": 10,
+        "willpower": 11,
+        "perception": 11,
+        "charisma": 12
       }
     },
     {
@@ -329,6 +469,20 @@
         "authority": 0.75,
         "loyalty": 0.5,
         "ambition": 0.6
+      },
+      "sex": "male",
+      "faithId": "faith_dawn",
+      "alignment": {
+        "law": 18,
+        "good": 15
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 7,
+        "intellect": 13,
+        "willpower": 14,
+        "perception": 13,
+        "charisma": 14
       }
     },
     {
@@ -349,6 +503,20 @@
         "caution": 0.7,
         "loyalty": 0.35,
         "ambition": 0.65
+      },
+      "sex": "male",
+      "faithId": "faith_veil",
+      "alignment": {
+        "law": -45,
+        "good": -30
+      },
+      "attributes": {
+        "physique": 13,
+        "agility": 14,
+        "intellect": 11,
+        "willpower": 12,
+        "perception": 13,
+        "charisma": 9
       }
     },
     {
@@ -369,6 +537,20 @@
         "caution": 0.65,
         "ambition": 0.45,
         "charisma": 0.6
+      },
+      "sex": "female",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 8,
+        "good": 5
+      },
+      "attributes": {
+        "physique": 7,
+        "agility": 9,
+        "intellect": 14,
+        "willpower": 13,
+        "perception": 14,
+        "charisma": 13
       }
     },
     {
@@ -389,6 +571,20 @@
         "authority": 0.7,
         "caution": 0.65,
         "ambition": 0.55
+      },
+      "sex": "male",
+      "faithId": "faith_dawn",
+      "alignment": {
+        "law": 22,
+        "good": 12
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 7,
+        "intellect": 14,
+        "willpower": 15,
+        "perception": 13,
+        "charisma": 13
       }
     },
     {
@@ -409,6 +605,20 @@
         "caution": 0.8,
         "loyalty": 0.6,
         "ambition": 0.3
+      },
+      "sex": "female",
+      "faithId": "faith_dawn",
+      "alignment": {
+        "law": 20,
+        "good": 18
+      },
+      "attributes": {
+        "physique": 8,
+        "agility": 8,
+        "intellect": 14,
+        "willpower": 13,
+        "perception": 14,
+        "charisma": 10
       }
     },
     {
@@ -429,6 +639,20 @@
         "authority": 0.75,
         "loyalty": 0.55,
         "caution": 0.5
+      },
+      "sex": "male",
+      "faithId": "faith_forge",
+      "alignment": {
+        "law": 20,
+        "good": 15
+      },
+      "attributes": {
+        "physique": 14,
+        "agility": 10,
+        "intellect": 12,
+        "willpower": 13,
+        "perception": 12,
+        "charisma": 11
       }
     },
     {
@@ -449,6 +673,20 @@
         "authority": 0.6,
         "charisma": 0.7,
         "caution": 0.6
+      },
+      "sex": "male",
+      "faithId": "faith_coin",
+      "alignment": {
+        "law": 15,
+        "good": 12
+      },
+      "attributes": {
+        "physique": 9,
+        "agility": 8,
+        "intellect": 13,
+        "willpower": 13,
+        "perception": 12,
+        "charisma": 15
       }
     },
     {
@@ -469,6 +707,20 @@
         "ambition": 0.75,
         "caution": 0.5,
         "charisma": 0.65
+      },
+      "sex": "female",
+      "faithId": "faith_veil",
+      "alignment": {
+        "law": -35,
+        "good": -15
+      },
+      "attributes": {
+        "physique": 9,
+        "agility": 14,
+        "intellect": 12,
+        "willpower": 11,
+        "perception": 13,
+        "charisma": 13
       }
     },
     {
@@ -488,6 +740,20 @@
         "caution": 0.6,
         "loyalty": 0.55,
         "ambition": 0.4
+      },
+      "sex": "female",
+      "faithId": "faith_tide",
+      "alignment": {
+        "law": 5,
+        "good": 10
+      },
+      "attributes": {
+        "physique": 9,
+        "agility": 10,
+        "intellect": 12,
+        "willpower": 12,
+        "perception": 13,
+        "charisma": 12
       }
     },
     {
@@ -508,6 +774,20 @@
         "ambition": 0.6,
         "caution": 0.35,
         "charisma": 0.55
+      },
+      "sex": "male",
+      "faithId": "faith_dawn",
+      "alignment": {
+        "law": 10,
+        "good": 8
+      },
+      "attributes": {
+        "physique": 11,
+        "agility": 12,
+        "intellect": 11,
+        "willpower": 10,
+        "perception": 10,
+        "charisma": 13
       }
     }
   ]

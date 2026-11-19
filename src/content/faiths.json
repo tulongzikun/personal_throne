@@ -1,0 +1,46 @@
+{
+  "faiths": [
+    {
+      "id": "faith_dawn",
+      "name": "黎明圣典",
+      "description": "信奉晨光与王权秩序，主张以律法与慈悲统御众生。",
+      "domains": ["秩序", "慈悲"],
+      "alignmentLean": { "law": 20, "good": 30 }
+    },
+    {
+      "id": "faith_tide",
+      "name": "潮汐母",
+      "description": "万物随潮起落，信众以施舍与共济安抚海与命运。",
+      "domains": ["慈悲", "自然"],
+      "alignmentLean": { "law": 0, "good": 25 }
+    },
+    {
+      "id": "faith_forge",
+      "name": "熔炉誓约",
+      "description": "誓言经炉火锻打方为真，工匠与兵士皆守其契。",
+      "domains": ["契约", "锻造"],
+      "alignmentLean": { "law": 25, "good": 5 }
+    },
+    {
+      "id": "faith_coin",
+      "name": "金币教会",
+      "description": "金钱如水流转，账目分明即是世间最大的公义。",
+      "domains": ["财富", "贸易"],
+      "alignmentLean": { "law": 5, "good": 0 }
+    },
+    {
+      "id": "faith_veil",
+      "name": "帷幕",
+      "description": "帷幕之后无王法，走私者与盗贼以此结社。",
+      "domains": ["阴影", "自由"],
+      "alignmentLean": { "law": -35, "good": -5 }
+    },
+    {
+      "id": "faith_ember",
+      "name": "余烬",
+      "description": "世界终将烧尽，唯有焚毁旧秩序的余烬值得追随。",
+      "domains": ["混沌", "毁灭"],
+      "alignmentLean": { "law": -30, "good": -35 }
+    }
+  ]
+}

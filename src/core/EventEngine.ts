@@ -104,11 +104,23 @@ function targetObject(state: WorldState, target: EventTarget): Record<string, un
   }
 }
 
-/** 读取数值路径；不存在返回 null。支持 `market.<goodId>.<field>` 与一级点路径。 */
+const PATH_CACHE = new Map<string, readonly string[]>();
+
+/** 路径切分结果缓存：事件抽样每月要读上万次特征，避免反复 split。 */
+function pathParts(path: string): readonly string[] {
+  let parts = PATH_CACHE.get(path);
+  if (!parts) {
+    parts = path.split('.');
+    PATH_CACHE.set(path, parts);
+  }
+  return parts;
+}
+
+/** 读取数值路径；不存在返回 null。支持  与一级点路径。 */
 export function readNumber(state: WorldState, target: EventTarget, path: string): number | null {
   if (path.startsWith('market.')) {
     if (target.scope !== 'region') return null;
-    const [, goodId, field] = path.split('.');
+    const [, goodId, field] = pathParts(path);
     if (!goodId || !field) return null;
     const market = state.markets[marketKeyOf(target.entityId, goodId)];
     if (!market) return null;
@@ -119,7 +131,7 @@ export function readNumber(state: WorldState, target: EventTarget, path: string)
   const object = targetObject(state, target);
   if (!object) return null;
 
-  const parts = path.split('.');
+  const parts = pathParts(path);
   let cursor: unknown = object;
   for (const part of parts) {
     if (cursor === null || typeof cursor !== 'object') return null;
@@ -143,7 +155,7 @@ export function writeNumber(
 
   if (path.startsWith('market.')) {
     if (target.scope !== 'region') return false;
-    const [, goodId, field] = path.split('.');
+    const [, goodId, field] = pathParts(path);
     if (!goodId || !field) return false;
     const market = state.markets[marketKeyOf(target.entityId, goodId)];
     if (!market) return false;
@@ -153,7 +165,7 @@ export function writeNumber(
   const object = targetObject(state, target);
   if (!object) return false;
 
-  const parts = path.split('.');
+  const parts = pathParts(path);
   let cursor: Record<string, unknown> = object;
   for (let index = 0; index < parts.length - 1; index += 1) {
     const part = parts[index] as string;
@@ -228,9 +240,8 @@ export function readFeature(state: WorldState, target: EventTarget, path: string
     case 'priceRatio': {
       if (target.scope !== 'region') return 0;
       let worst = 0;
-      for (const goodId of sortedIds(Object.fromEntries(Object.entries(state.markets)))) {
-        const market = state.markets[goodId];
-        if (!market || market.regionId !== target.entityId) continue;
+      for (const market of Object.values(state.markets)) {
+        if (market.regionId !== target.entityId) continue;
         const ratio = market.price / Math.max(1, market.floor);
         worst = Math.max(worst, Math.min(1, Math.max(0, ratio - 1)));
       }
@@ -296,9 +307,19 @@ export function collectCandidates(
 ): Candidate[] {
   const candidates: Candidate[] = [];
   const events = [...content.events].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  // 同一轮里各 scope 的实体列表复用，避免逐事件重排。
+  const entityCache = new Map<EventScope, readonly EntityId[]>();
+  const entitiesFor = (scope: EventScope): readonly EntityId[] => {
+    let list = entityCache.get(scope);
+    if (!list) {
+      list = entitiesOfScope(state, scope);
+      entityCache.set(scope, list);
+    }
+    return list;
+  };
 
   for (const def of events) {
-    for (const entityId of entitiesOfScope(state, def.scope)) {
+    for (const entityId of entitiesFor(def.scope)) {
       if ((state.tiers[entityId] ?? 3) > maxTier) continue;
       const cooldownKey = `${def.id}@${entityId}`;
       const until = state.cooldowns[cooldownKey] ?? 0;

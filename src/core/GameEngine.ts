@@ -30,10 +30,8 @@ import { monthlyOrganizationSettlement } from '../systems/organization/Organizat
 import { settleMonthlyProduction } from '../systems/economy/ProductionSystem';
 import { settleMonthlyMarket } from '../systems/economy/MarketSystem';
 import { settleMonthlyTrade } from '../systems/economy/TradeSystem';
-import {
-  settleMonthlyCharacters,
-  settleYearlyCharacters,
-} from '../systems/character/CharacterSystem';
+import { settleMonthlyCharacters } from '../systems/character/CharacterSystem';
+import { settleYearlyDemography } from '../systems/character/Demography';
 import { settleMonthlyCountry } from '../systems/country/CountrySystem';
 import { runPolicyRound } from '../systems/country/PolicySystem';
 import { settleMonthlyMilitary } from '../systems/military/WarSystem';
@@ -274,21 +272,34 @@ export class GameEngine {
       applyTiers(this.state, report);
     }
 
-    // 年度：衰老与死亡（含职位继承）。
+    // 年度：衰老、死亡、遗产、婚姻与出生（M4.1 人口学）。
     if (isYearEnd(ctx.day)) {
-      const yearly = settleYearlyCharacters(this.state, this.content, ctx);
+      const yearly = settleYearlyDemography(this.state, this.content, ctx);
       for (const id of yearly.deaths) {
         this.record('death', `${formatDate(ctx.day)} ${id} 去世`, [{ kind: 'character', id }]);
       }
-      for (const succession of yearly.successions) {
+      for (const estate of yearly.estates) {
+        const heirs = estate.heirs.length > 0 ? estate.heirs.join('、') : '所在国';
         this.record(
-          'milestone',
-          `${formatDate(ctx.day)} ${succession.orgId} 领袖由 ${succession.from} 变更为 ${succession.to}`,
-          [
-            { kind: 'organization', id: succession.orgId },
-            { kind: 'character', id: succession.to },
-          ],
+          'finance',
+          `${formatDate(ctx.day)} ${estate.characterId} 的遗产由 ${heirs} 接收（现金 ${Math.round(
+            estate.cash,
+          )}，股份 ${(estate.share * 100).toFixed(1)}%）`,
+          estate.heirs.map((id) => ({ kind: 'character' as const, id })),
         );
+      }
+      for (const marriage of yearly.marriages) {
+        this.record('milestone', `${formatDate(ctx.day)} ${marriage.a} 与 ${marriage.b} 成婚`, [
+          { kind: 'character', id: marriage.a },
+          { kind: 'character', id: marriage.b },
+        ]);
+      }
+      for (const id of yearly.births) {
+        const child = this.state.characters[id];
+        if (!child) continue;
+        this.record('milestone', `${formatDate(ctx.day)} ${child.name} 出生`, [
+          { kind: 'character', id },
+        ]);
       }
     }
 
@@ -346,7 +357,7 @@ export class GameEngine {
   }
 
   private syncCounters(): void {
-    this.state.rngCounters = this.rng.countersOf();
+    this.state.rngCounters = this.rng.counterStore();
   }
 }
 

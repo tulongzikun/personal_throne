@@ -1,0 +1,70 @@
+{
+  "backgrounds": [
+    {
+      "id": "bg_caravan",
+      "name": "商队学徒",
+      "description": "随商队穿行绿野，学会了看货、议价与辨认路匪。",
+      "classId": "merchant",
+      "regionId": "r_greenfield",
+      "faithId": "faith_tide",
+      "wealth": 1200,
+      "skills": { "trade": 3, "negotiation": 1 },
+      "attributes": { "charisma": 12, "perception": 11 }
+    },
+    {
+      "id": "bg_ledger",
+      "name": "账房先生",
+      "description": "在钱庄柜台后长大，算盘与契书比刀剑更让人安心。",
+      "classId": "merchant",
+      "regionId": "r_portlumen",
+      "faithId": "faith_coin",
+      "wealth": 1600,
+      "skills": { "appraisal": 3, "law": 2 },
+      "attributes": { "intellect": 13, "perception": 12 }
+    },
+    {
+      "id": "bg_veteran",
+      "name": "边境老兵",
+      "description": "在王国边关守了十年，身上的伤疤与军饷一样多。",
+      "classId": "mercenary",
+      "regionId": "r_silvermoon",
+      "faithId": "faith_forge",
+      "wealth": 500,
+      "skills": { "melee": 3, "tactics": 2 },
+      "attributes": { "physique": 13, "willpower": 12 }
+    },
+    {
+      "id": "bg_sellsword",
+      "name": "雇佣剑客",
+      "description": "潮汐市的码头养活了他，谁先付钱就为谁拔剑。",
+      "classId": "mercenary",
+      "regionId": "r_tidemarket",
+      "faithId": "faith_forge",
+      "wealth": 700,
+      "skills": { "melee": 3, "intimidation": 2 },
+      "attributes": { "agility": 13, "physique": 12 }
+    },
+    {
+      "id": "bg_fallen_noble",
+      "name": "落难贵族",
+      "description": "家道中落仍守着礼数，只剩姓氏与一副好口才。",
+      "classId": "politician",
+      "regionId": "r_silvermoon",
+      "faithId": "faith_dawn",
+      "wealth": 900,
+      "skills": { "persuasion": 2, "law": 2 },
+      "attributes": { "charisma": 13, "intellect": 12 }
+    },
+    {
+      "id": "bg_acolyte",
+      "name": "神庙侍从",
+      "description": "在潮汐母神庙里抄经施粥，见惯了港口的苦难。",
+      "classId": "politician",
+      "regionId": "r_portlumen",
+      "faithId": "faith_tide",
+      "wealth": 350,
+      "skills": { "insight": 3, "persuasion": 1 },
+      "attributes": { "willpower": 13, "perception": 12 }
+    }
+  ]
+}
