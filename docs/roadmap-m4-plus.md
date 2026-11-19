@@ -28,6 +28,8 @@
 | D2 | 抉择默认不中断：`stopAtChoices: false`，批量模拟不受影响 | 2026-11-19 | §2.5 |
 | D3 | M6 先做 L3 国家聚合（+4 人日并入 M6.1），预算分档「5 区 < 2 s / 14 区 < 3 s」 | 2026-11-19 | §3.2、§4.1 |
 | D4 | 人物档案增补：六维 1–20、阵营九宫格（双轴动态）、`location.site`、`faith` 可为 `null` | 2026-11-19 | §2.0.1、§2.1、§2.2、§3.1、§6.1 |
+| D5 | **人日不再作为上限**（用户拍板「不用管计划人日，无上限」），排期表仅作并行参考 | 2026-11-19 | §1.3、§8.5 |
+| D6 | 六维生成简化为「天赋标签 3 选」：默认 10，标签 +2，任一维 ≤16，取消 27 点点购 | 2026-11-19 | §2.0.1、§2.2 |
 
 ## 1. 总览与时间轴
 
@@ -69,7 +71,7 @@
 | M6 | M6.4 平衡与验收 | 8 | W19.5–W21 |
 | — | 缓冲 / 1.0 发布 | 6 | W21–W22 |
 
-**合计 96 人日开发 + 6 人日缓冲 = 102 人日 ≈ 21 自然周**（从 M3 收尾后的下一周起算，日历上约 5 个月）。
+**合计 96 人日开发 + 6 人日缓冲 = 102 人日 ≈ 21 自然周（参考值，按 D5 不设上限）**（从 M3 收尾后的下一周起算，日历上约 5 个月）。
 
 ### 1.4 依赖关系
 
@@ -151,7 +153,7 @@ export interface Character {
 | `perception` | 感知 | 洞察/识破、事件预警 |
 | `charisma` | 魅力 | 说服、招募、合法性加成 |
 
-- 生成：玩家 27 点购（每维 8–15 起、上限 18）；NPC 用命名流 `attr:<charId>:birth` 掷 3 组 4d6 取三高（均值 12.2）；子女 = `父母均值 ± 2`；最后按种族修正（human +1 任意、dwarf `physique +2 / agility −1`、elf `intellect +1 / perception +1 / physique −1`）并夹 1–20。
+- 生成：玩家用「天赋标签 3 选」——六维默认 10，从 6 个标签里挑 3 个（可重复）：强健 +2 体魄、灵巧 +2 敏捷、聪慧 +2 智识、坚毅 +2 意志、敏锐 +2 感知、煊赫 +2 魅力，任一维 ≤16；零算术、三个点击完成。NPC 用命名流 `attr:<charId>:birth` 掷 3 组 4d6 取三高（均值 12.2）；子女 = `父母均值 ± 2`；最后按种族修正（human +1 任意、dwarf `physique +2 / agility −1`、elf `intellect +1 / perception +1 / physique −1`）并夹 1–20。
 - 用途：技能上限 `skillCap = 3 + floor(attr / 3)`（即 12 → 7，18 → 9）；检定加值 `floor((attr − 10) / 4)` 加到 `2d6 + skill`（`SkillCheck.skillCheck` 已支持加值参数）；`mortalityRisk` 用 `physique` 修正基线。
 - 年龄曲线：≤16 每年 +1；17–44 稳定；45–64 每 5 年 `physique/agility −1`；65+ 每 5 年 `physique/agility/perception −1`，80+ 每 5 年再减 `intellect/willpower`。
 
@@ -189,7 +191,7 @@ export function alignmentLabel(a: { law: number; good: number }): AlignmentLabel
 
 **迁移**：`SCHEMA_VERSION` 2→3。`migrateV2toV3` 对 20 个固定人物按 `raceId` 给属性基线、`alignment` 默认 `{ law: 0, good: 0 }`（内容已写者例外：国王 `{ 20, 10 }`、走私女王 `{ −45, −25 }`）、`faith` 取 `world.json` 新增 `faithId` 缺省 `null`、`location` 由 `regionId` + `site:'city'` 推导、`sex/birthYear/generation:1/parentIds:[null,null]/spouseId:null/homeRegionId` 补默认。
 
-**测试**（并入 R9，`tests/character-model.test.ts`，6 例）：属性夹取 1–20；点购 27 点恰好用完；九宫格 9 个边界；单次变化 ≤ 20 且年度漂移收敛；`faith: null` 在条件与招募里被显式处理；非法 `site` 被 `validateWorld` 拒绝。
+**测试**（并入 R9，`tests/character-model.test.ts`，6 例）：属性夹取 1–20；默认 10 + 三标签各 +2 且上限 16；九宫格 9 个边界；单次变化 ≤ 20 且年度漂移收敛；`faith: null` 在条件与招募里被显式处理；非法 `site` 被 `validateWorld` 拒绝。
 
 **新增内容文件**：`content/faiths.json`、`content/backgrounds.json`（6 个背景：商队学徒 / 佣兵 / 书记官 / 走私犯 / 神庙侍从 / 矿工）、`content/names.json`（两种文化各 40 男 + 40 女名池）。
 
@@ -291,7 +293,7 @@ export function mortalityRiskFor(age: number, lifespan: number): number {
 
 ### 2.2 M4.2 生涯路径与开局人物创建（9 人日）
 
-**目标**：商人 / 佣兵 / 政治人物三条路径都能从"无名者"走到"有职位者"，且可交叉；职位带来真实的政策与组织影响力。另含**开局人物创建**：新游戏时玩家自选种族 / 职业 / 背景 / 信仰 / 六维点购 27 点 / 姓名与性别，生成 `c_player`；预设「艾伦·格雷」保留为快速开局。
+**目标**：商人 / 佣兵 / 政治人物三条路径都能从"无名者"走到"有职位者"，且可交叉；职位带来真实的政策与组织影响力。另含**开局人物创建**：新游戏时玩家自选种族 / 职业 / 背景 / 信仰 / 天赋标签 3 选 / 姓名与性别，生成 `c_player`；预设「艾伦·格雷」保留为快速开局。
 
 **改动文件/模块**
 
@@ -303,7 +305,7 @@ export function mortalityRiskFor(age: number, lifespan: number): number {
 | `src/systems/country/PolicySystem.ts` | `runPolicyRound(state, ctx, day, influence = 0)`：`influence` 来自玩家官职，参与 `support` 计算 |
 | `src/content/careers.json`（新） / `offices.json`（新） | 3 职业 × 5 级；2 国 × 6 官职 |
 | `src/ui/CharacterPanel.ts` / `src/ui/PlayerPanel.ts` | 生涯条、官职卡、可执行行动按钮 |
-| `src/ui/CharacterCreator.ts`（新） | 开局创建：种族 / 职业 / 背景 / 信仰 / 六维点购 / 姓名 / 性别；纯前端，提交后由 `start_game` 生成状态 |
+| `src/ui/CharacterCreator.ts`（新） | 开局创建：种族 / 职业 / 背景 / 信仰 / 天赋标签 3 选 / 姓名 / 性别；纯前端，提交后由 `start_game` 生成状态 |
 | `src/content/backgrounds.json` / `faiths.json` / `names.json`（新） | 6 背景（属性与技能加成）、5 信仰 + 无信仰、两种文化名字池 |
 
 **数据模型增量**
@@ -351,7 +353,7 @@ export interface Office {
 | B3 | 无资格时 `seek_office` 返回 `{ ok: false }` 且 `hash()` 不变 |
 | B4 | 官职薪资月结入 `character.wealth`，来源是国库/组织现金，且 `history` 记录 `refs` 指向该官职 |
 | B5 | 同一官职不能被两人同时持有（`validateWorld` 断言） |
-| B6 | 开局创建：27 点必须恰好用完、属性夹 8–18、`faith: null` 合法、生成的 `c_player` 通过 `validateWorld` |
+| B6 | 开局创建：六维默认 10、3 个标签各 +2、任一维 ≤16、未选维度保持 10、`faith: null` 合法、生成的 `c_player` 通过 `validateWorld` |
 
 **测试用例（`tests/career.test.ts`，6 例）**：XP 阈值边界（119/120）、交叉资格、官职唯一性、薪资守恒（国库减少 === 人物增加）、退休后不能再 `seek_office`、政策影响力差异。
 

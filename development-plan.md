@@ -680,9 +680,9 @@ interface EventDef {
 | D1 | M4 重新计价 | 15 → **36 人日**（7 周），拆 6 个子迭代 |
 | D2 | 抉择中断语义 | 默认 `stopAtChoices: false`，批量模拟不受影响 |
 | D3 | M6 性能 | 先做 L3 国家聚合（+4 人日并入 M6.1），预算分档「5 区 < 2 s、14 区 < 3 s」 |
-| D4 | 人物档案 | 六维 1–20；阵营九宫格（`law`/`good` 双轴 −100..100，随事件/抉择/命令动态调整、年度向 0 收敛）；`location.site`；`faith` 可为 `null` |
+| D4 | 人物档案 | 六维 1–20（生成用「天赋标签 3 选」：默认 10、标签 +2、上限 16）；阵营九宫格（`law`/`good` 双轴 −100..100，随事件/抉择/命令动态调整、年度向 0 收敛）；`location.site`；`faith` 可为 `null` |
 
-合计 **96 人日 + 6 人日缓冲 ≈ 21 周**。类型定义、迁移规则（`SCHEMA_VERSION` 2 → 3）与验收用例见 [docs/roadmap-m4-plus.md](docs/roadmap-m4-plus.md) §2.0.1。
+合计（参考值，**不设上限**）**96 人日 + 6 人日缓冲 ≈ 21 周**。类型定义、迁移规则（`SCHEMA_VERSION` 2 → 3）与验收用例见 [docs/roadmap-m4-plus.md](docs/roadmap-m4-plus.md) §2.0.1。
 
 ---
 
