@@ -279,7 +279,7 @@ export class GameEngine {
     );
 
     for (const trigger of triggered) {
-      const outcome = applyEvent(this.state, this.content, trigger);
+      const outcome = applyEvent(this.state, this.content, trigger, this.rng);
       this.record(
         'event',
         `${formatDate(ctx.day)} ${outcome.summary}`,
@@ -366,7 +366,9 @@ export class GameEngine {
       if (!def) continue;
       if (!scheduled.targetScope || !scheduled.targetEntityId) continue;
       const target = { scope: scheduled.targetScope, entityId: scheduled.targetEntityId };
-      const outcome = applyEvent(this.state, this.content, { def, target });
+      // 链条步序必须与内容声明一致，避免存档里残留的旧排程跳步执。
+      if (scheduled.chainStep !== undefined && def.chain?.step !== scheduled.chainStep) continue;
+      const outcome = applyEvent(this.state, this.content, { def, target }, this.rng);
       this.record(
         'event',
         `${formatDate(day)} ${outcome.summary}`,

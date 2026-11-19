@@ -5,14 +5,32 @@
     "scope": "character",
     "risk": {
       "lambda0": 0.04,
-      "terms": [{ "path": "traits.ambition", "coef": 1.2 }]
+      "terms": [
+        {
+          "path": "traits.ambition",
+          "coef": 1.2
+        }
+      ]
     },
     "cooldownDays": 120,
-    "effects": [{ "kind": "add", "path": "wealth", "value": 120 }],
+    "effects": [
+      {
+        "kind": "add",
+        "path": "wealth",
+        "value": 120
+      }
+    ],
     "text": {
       "title": "一桩好买卖",
       "body": "你在酒馆里听到一条消息：有人急着脱手一批货，价钱公道得可疑。"
-    }
+    },
+    "followUps": [
+      {
+        "eventId": "ev_adv_ambush",
+        "delayDays": 10,
+        "chance": 0.5
+      }
+    ]
   },
   {
     "id": "ev_adv_bandit",
@@ -20,10 +38,21 @@
     "scope": "character",
     "risk": {
       "lambda0": 0.03,
-      "terms": [{ "path": "traits.caution", "coef": -1.0 }]
+      "terms": [
+        {
+          "path": "traits.caution",
+          "coef": -1
+        }
+      ]
     },
     "cooldownDays": 150,
-    "effects": [{ "kind": "add", "path": "wealth", "value": -80 }],
+    "effects": [
+      {
+        "kind": "add",
+        "path": "wealth",
+        "value": -80
+      }
+    ],
     "text": {
       "title": "路遇剪径",
       "body": "回程的山道上，几个人影从石头后面站起来，手里握着短刀。"
@@ -35,13 +64,90 @@
     "scope": "character",
     "risk": {
       "lambda0": 0.012,
-      "terms": [{ "path": "traits.loyalty", "coef": 1.0 }]
+      "terms": [
+        {
+          "path": "traits.loyalty",
+          "coef": 1
+        }
+      ]
     },
     "cooldownDays": 400,
-    "effects": [{ "kind": "add", "path": "skills.trade", "value": 1 }],
+    "effects": [
+      {
+        "kind": "add",
+        "path": "skills.trade",
+        "value": 1
+      }
+    ],
     "text": {
       "title": "老行家点拨",
       "body": "一位退隐的老账房愿意教你如何从账本里看出人心，你受益不浅。"
+    }
+  },
+  {
+    "id": "ev_adv_ambush",
+    "domain": "adventure",
+    "scope": "character",
+    "risk": {
+      "lambda0": 0.01,
+      "terms": []
+    },
+    "chain": {
+      "id": "adv_road",
+      "step": 2
+    },
+    "cooldownDays": 60,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "wealth",
+        "value": -80
+      }
+    ],
+    "text": {
+      "title": "路遇伏击",
+      "body": "山道两侧的灌木动了一下——你只来得及按住刀柄。"
+    },
+    "followUps": [
+      {
+        "eventId": "ev_adv_loot",
+        "delayDays": 3,
+        "chance": 0.8,
+        "conditions": {
+          "any": [
+            {
+              "path": "skills.melee",
+              "op": ">=",
+              "value": 3
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "ev_adv_loot",
+    "domain": "adventure",
+    "scope": "character",
+    "risk": {
+      "lambda0": 0.01,
+      "terms": []
+    },
+    "chain": {
+      "id": "adv_road",
+      "step": 3
+    },
+    "cooldownDays": 60,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "wealth",
+        "value": 160
+      }
+    ],
+    "text": {
+      "title": "战利品",
+      "body": "刀口还热，你从匪首的腰袋里摸出一把成色不错的银币。"
     }
   }
 ]

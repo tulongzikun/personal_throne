@@ -26,6 +26,8 @@ import { marketKeyOf, sortedIds } from './WorldState';
 
 /** 默认抽样窗口（天）：月度抽样点，与 `balance.events.samplingDays` 对应。 */
 export const EVENT_WINDOW_DAYS = 30;
+/** 历史特征的回溯窗口（一年）。 */
+export const HISTORY_WINDOW_DAYS = 360;
 
 /**
  * 事件触发概率。
@@ -213,6 +215,18 @@ function sanitize(path: string, value: number): number {
 
 /** 风险项使用的归一化特征（0–1 或小数值），避免量纲差异。 */
 export function readFeature(state: WorldState, target: EventTarget, path: string): number {
+  // 历史窗口特征：history.<eventId> = 目标实体近一年内经历该事件的次数。
+  if (path.startsWith('history.')) {
+    const eventId = path.slice('history.'.length);
+    const since = state.clock.day - HISTORY_WINDOW_DAYS;
+    return state.history.filter(
+      (record) =>
+        record.causeEventId === eventId &&
+        record.day > since &&
+        record.refs.some((ref) => ref.id === target.entityId),
+    ).length;
+  }
+
   switch (path) {
     case 'cashRatio': {
       const cash = readNumber(state, target, 'cash') ?? 0;
@@ -319,6 +333,8 @@ export function collectCandidates(
   };
 
   for (const def of events) {
+    // 链条后续只允许由父事件排定，避免随机直接跳到第 2/3 步。
+    if ((def.chain?.step ?? 0) > 1) continue;
     for (const entityId of entitiesFor(def.scope)) {
       if ((state.tiers[entityId] ?? 3) > maxTier) continue;
       const cooldownKey = `${def.id}@${entityId}`;
@@ -426,12 +442,21 @@ export function selectTriggered(
 /* ------------------------------------------------------------------ */
 
 /** 应用一个已触发事件的全部效果，并设置冷却。 */
-export function applyEvent(state: WorldState, content: WorldContent, trigger: Triggered): Outcome {
+export function applyEvent(
+  state: WorldState,
+  content: WorldContent,
+  trigger: Triggered,
+  rng: Random | null = null,
+): Outcome {
   const { def, target } = trigger;
   const changes: string[] = [];
 
   for (const effect of def.effects) {
     changes.push(...applyEffect(state, content, target, effect, def.id));
+  }
+
+  if (rng) {
+    changes.push(...scheduleFollowUps(state, def, target, rng));
   }
 
   const cooldown =
@@ -444,6 +469,50 @@ export function applyEvent(state: WorldState, content: WorldContent, trigger: Tr
     summary: `${def.text.title}（${labelOf(state, target)}）`,
     changes,
   };
+}
+
+/**
+ * 事件链：父事件结算后按 followUps 排定后续事件。
+ * 条件用与候选相同的一套特征函数，因此可以写 `history.<eventId>`。
+ */
+export function scheduleFollowUps(
+  state: WorldState,
+  def: EventDef,
+  target: EventTarget,
+  rng: Random,
+): string[] {
+  const followUps = def.followUps;
+  if (!followUps || followUps.length === 0) return [];
+
+  const step = (def.chain?.step ?? 1) + 1;
+  const notes: string[] = [];
+  const resolver = (path: string): number => readFeature(state, target, path);
+
+  for (const followUp of followUps) {
+    if (followUp.conditions && !evaluate(followUp.conditions, resolver)) continue;
+    const chance = followUp.chance ?? 1;
+    if (
+      chance < 1 &&
+      !rng.chance({ stream: 'followup', entityId: target.entityId, periodKey: def.id }, chance)
+    )
+      continue;
+
+    state.scheduleSeq += 1;
+    state.pendingEvents.push({
+      day: state.clock.day + Math.max(1, Math.round(followUp.delayDays)),
+      phase: 4,
+      seq: state.scheduleSeq,
+      kind: 'event',
+      refId: followUp.eventId,
+      parentEventId: def.id,
+      targetScope: target.scope,
+      targetEntityId: target.entityId,
+      chainStep: step,
+    });
+    notes.push(`排定后续 ${followUp.eventId}（+${followUp.delayDays} 天）`);
+  }
+
+  return notes;
 }
 
 function applyEffect(

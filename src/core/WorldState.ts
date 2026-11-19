@@ -384,6 +384,23 @@ export interface EventDef {
   readonly weight?: number;
   readonly effects: readonly Effect[];
   readonly text: { readonly title: string; readonly body: string };
+  /** 所属事件链与步序：step>1 的只能由父事件排定，不参与随机候选。 */
+  readonly chain?: EventChainRef;
+  /** 事件发生后按延迟排定的后续事件（可带概率与条件）。 */
+  readonly followUps?: readonly FollowUpDef[];
+}
+
+export interface EventChainRef {
+  readonly id: string;
+  readonly step: number;
+}
+
+export interface FollowUpDef {
+  readonly eventId: string;
+  readonly delayDays: number;
+  /** 触发概率 0–1，缺省 1。 */
+  readonly chance?: number;
+  readonly conditions?: Expr;
 }
 
 export interface FaithDef {
@@ -723,6 +740,8 @@ export interface ScheduledEvent {
   /** 后续事件的作用对象（继承自父事件；跨对象调度时由内容指定）。 */
   targetScope: EventDef['scope'] | null;
   targetEntityId: string | null;
+  /** 事件链步序（排定时写入，执行时校验先后）。 */
+  chainStep?: number;
 }
 
 export interface WorldState {

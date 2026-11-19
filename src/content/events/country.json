@@ -41,7 +41,14 @@
     "text": {
       "title": "街市骚动",
       "body": "粮价与税负的传言在码头扩散，人群聚集，卫兵被调上街头。"
-    }
+    },
+    "followUps": [
+      {
+        "eventId": "ev_country_riot",
+        "delayDays": 20,
+        "chance": 0.65
+      }
+    ]
   },
   {
     "id": "ev_country_bumper",
@@ -393,6 +400,115 @@
     "text": {
       "title": "继位危机",
       "body": "继承顺序出现争议，几位远亲同时宣称拥有继承权，宫廷被迫花钱买安静。"
+    }
+  },
+  {
+    "id": "ev_country_riot",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "any": [
+        {
+          "path": "stability",
+          "op": "<",
+          "value": 0.6
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -1.2
+        },
+        {
+          "path": "legitimacy",
+          "coef": -0.6
+        }
+      ]
+    },
+    "chain": {
+      "id": "country_unrest",
+      "step": 2
+    },
+    "cooldownDays": 90,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.06
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.04
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -120
+      }
+    ],
+    "text": {
+      "title": "暴动",
+      "body": "骚动升级为暴动：粮仓被抢、税署被烧，地方官请求出兵。"
+    },
+    "followUps": [
+      {
+        "eventId": "ev_country_martial_law",
+        "delayDays": 15,
+        "chance": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ev_country_martial_law",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "any": [
+        {
+          "path": "stability",
+          "op": "<",
+          "value": 0.55
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.01,
+      "terms": []
+    },
+    "chain": {
+      "id": "country_unrest",
+      "step": 3
+    },
+    "cooldownDays": 180,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.08
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.05
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -80
+      },
+      {
+        "kind": "set",
+        "path": "cabinetAction",
+        "value": 1
+      }
+    ],
+    "text": {
+      "title": "戒严",
+      "body": "王命下，城门关闭、宵禁开始。秩序回来了，人心没有。"
     }
   }
 ]

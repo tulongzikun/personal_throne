@@ -448,5 +448,95 @@
       "title": "商路断绝",
       "body": "山口爆发冲突，车队被截在半途，押金与货银一起沉进了关隘。"
     }
+  },
+  {
+    "id": "ev_org_debt_spiral",
+    "domain": "organization",
+    "scope": "organization",
+    "conditions": {
+      "any": [
+        {
+          "path": "debtRatio",
+          "op": ">",
+          "value": 0.5
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.03,
+      "terms": [
+        {
+          "path": "debtRatio",
+          "coef": 2.2
+        },
+        {
+          "path": "cashRatio",
+          "coef": -1.2
+        }
+      ]
+    },
+    "cooldownDays": 120,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "liabilities",
+        "value": 150
+      },
+      {
+        "kind": "add",
+        "path": "cash",
+        "value": -100
+      }
+    ],
+    "text": {
+      "title": "债主上门",
+      "body": "利息吃掉最后一个月的现钱，出纳把账本翻了三遍。"
+    },
+    "followUps": [
+      {
+        "eventId": "ev_org_debt_default",
+        "delayDays": 30,
+        "chance": 0.6
+      }
+    ]
+  },
+  {
+    "id": "ev_org_debt_default",
+    "domain": "organization",
+    "scope": "organization",
+    "conditions": {
+      "any": [
+        {
+          "path": "cashRatio",
+          "op": "<",
+          "value": 0.2
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.01,
+      "terms": []
+    },
+    "chain": {
+      "id": "org_debt",
+      "step": 2
+    },
+    "cooldownDays": 180,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "conflict",
+        "value": 0.08
+      },
+      {
+        "kind": "add",
+        "path": "leadership.legitimacy",
+        "value": -0.05
+      }
+    ],
+    "text": {
+      "title": "违约",
+      "body": "约定还款日过去三天，商队没有出发，担保人开始回避你的目光。"
+    }
   }
 ]
