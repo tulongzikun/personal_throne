@@ -101,14 +101,14 @@ describe('领袖继承', () => {
     const world = makeWorld('succession');
     const order = successionOrder(world, 'o_grainwheel');
     // 继任顺序含在世股东，故领袖本人（最大股东）仍在首位；死亡后被过滤。
-    expect(order[0]).toBe('c_player');
-    expect(order.filter((id) => id !== 'c_player')[0]).toBe('c_grainwheel_hob');
+    expect(order[0]).toBe('c_grainwheel_hob');
+    expect(order.filter((id) => id !== 'c_grainwheel_hob')[0]).toBe('c_player');
 
-    const successions = handleDeath(world, 'c_player');
+    const successions = handleDeath(world, 'c_grainwheel_hob');
     expect(successions.some((item) => item.orgId === 'o_grainwheel')).toBe(true);
 
     const org = world.organizations['o_grainwheel'];
-    expect(org?.leadership.leaderId).toBe('c_grainwheel_hob');
+    expect(org?.leadership.leaderId).toBe('c_player');
 
     const leaders = Object.values(world.organizations).map((item) => item.leadership.leaderId);
     expect(new Set(leaders).size).toBe(leaders.length);

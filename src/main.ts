@@ -32,7 +32,10 @@ async function main(): Promise<void> {
 
   const { state, restored } = await initialState();
   const app = new App(root, new GameEngine(state, content));
-  app.start(restored ? '已载入浏览器存档' : `新世界已铸成 · 种子 ${FIXED_SEED}`);
+  app.start(restored ? '已载入浏览器存档' : `新世界已铸成 · 种子 ${FIXED_SEED}`, {
+    tour: restored,
+  });
+  if (!restored) app.offerStart();
 }
 
 void main().catch((error: unknown) => {

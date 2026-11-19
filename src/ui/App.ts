@@ -14,6 +14,7 @@ import { CharacterPanel } from './CharacterPanel';
 import type { NoticeTone, UiDeps } from './context';
 import { CountryPanel } from './CountryPanel';
 import { CreateCharacterDialog, creationErrorText } from './CreateCharacterDialog';
+import { StartDialog } from './StartDialog';
 import { EventDialog, type WorldSignal } from './EventDialog';
 import { CHOICE_WINDOW_DAYS } from '../core/EventEngine';
 import { HistoryPanel } from './HistoryPanel';
@@ -81,6 +82,7 @@ export class App {
   private readonly historyPanel: HistoryPanel;
   private readonly eventDialog: EventDialog;
   private readonly createDialog: CreateCharacterDialog;
+  private readonly startDialog: StartDialog;
   private readonly saveDialog: SaveDialog;
   private readonly tour: Tour;
   private readonly tabs = new Map<TabId, HTMLButtonElement>();
@@ -177,6 +179,7 @@ export class App {
 
     this.eventDialog = new EventDialog(this.shell);
     this.createDialog = new CreateCharacterDialog(this.shell);
+    this.startDialog = new StartDialog(this.shell);
     this.saveDialog = new SaveDialog(this.shell, {
       state: () => this.engine.state,
       onLoad: (state, message) => this.adopt(state, message),
@@ -187,7 +190,7 @@ export class App {
     this.root.append(this.shell);
   }
 
-  start(message?: string): void {
+  start(message?: string, options: { tour?: boolean } = {}): void {
     const state = this.engine.state;
     const player = state.characters[state.playerId];
     this.selectedRegionId = player?.regionId ?? Object.keys(state.regions).sort()[0] ?? null;
@@ -209,9 +212,17 @@ export class App {
     this.switchTab('region');
     this.refresh(true);
     if (message) this.notify(message, 'ok');
-    this.tour.maybeStart();
+    if (options.tour !== false) this.tour.maybeStart();
     this.labelButtons();
     this.watchButtons();
+  }
+
+  /** 首次开局：在有存档时跳过，由玩家决定沿用默认人物还是自建。 */
+  offerStart(): void {
+    this.startDialog.open({
+      onDefault: () => this.start('你是金穗行的少东家：持股 22%，掌柜是叔父霍布·金穗。'),
+      onCreate: () => this.openCreator(),
+    });
   }
 
   /* ------------------------------------------------------------------ */

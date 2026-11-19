@@ -206,7 +206,7 @@ describe('开局人物创建', () => {
     const org = world.organizations['o_grainwheel'];
     if (!org) throw new Error('测试夹具缺少 o_grainwheel');
     const sharesBefore = org.shares.reduce((sum, share) => sum + share.share, 0);
-    expect(org.leadership.leaderId).toBe('c_player');
+    expect(org.leadership.leaderId).toBe('c_grainwheel_hob');
 
     const { character, retired } = createPlayerCharacter(world, content, {
       backgroundId: background.id,
@@ -215,7 +215,7 @@ describe('开局人物创建', () => {
     });
 
     expect(retired?.sharesRemoved).toBe(1);
-    expect(retired?.leadershipsHanded).toBe(1);
+    expect(retired?.leadershipsHanded).toBe(0);
     const sharesAfter = org.shares.reduce((sum, share) => sum + share.share, 0);
     expect(sharesAfter).toBeCloseTo(sharesBefore, 6);
     expect(org.shares.some((share) => share.characterId === character.id)).toBe(false);

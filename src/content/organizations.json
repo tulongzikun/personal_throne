@@ -12,7 +12,7 @@
     "liabilities": 900,
     "members": 90,
     "payrollMonthly": 195,
-    "leaderId": "c_player",
+    "leaderId": "c_grainwheel_hob",
     "legitimacy": 0.62,
     "conflict": 0.18,
     "governance": 0.55,
@@ -21,11 +21,11 @@
     "lifecycle": "stable",
     "shares": [
       {
-        "characterId": "c_player",
-        "share": 0.38
+        "characterId": "c_grainwheel_hob",
+        "share": 0.34
       },
       {
-        "characterId": "c_grainwheel_hob",
+        "characterId": "c_player",
         "share": 0.22
       },
       {
