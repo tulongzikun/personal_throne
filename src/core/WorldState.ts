@@ -22,7 +22,64 @@ export type ContractId = string;
 export type ArmyId = string;
 export type EntityId = string;
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
+
+/* ------------------------------------------------------------------ */
+/* 人物档案（schema，M4）                                               */
+/* ------------------------------------------------------------------ */
+
+/** 六维属性：1–20 整数，人类均值 10。 */
+export const ATTRIBUTE_KEYS = [
+  'physique',
+  'agility',
+  'intellect',
+  'willpower',
+  'perception',
+  'charisma',
+] as const;
+export type AttributeKey = (typeof ATTRIBUTE_KEYS)[number];
+export type Attributes = Record<AttributeKey, number>;
+
+/** 人物所在地点的粒度（M5 再细化到城区）。 */
+export const SITE_KINDS = ['city', 'town', 'village', 'road', 'court', 'camp', 'sea'] as const;
+export type SiteKind = (typeof SITE_KINDS)[number];
+
+/** 阵营双轴：`law` 守序(+)↔混乱(−)，`good` 善良(+)↔邪恶(−)，各 −100..100。 */
+export interface Alignment {
+  law: number;
+  good: number;
+}
+
+export type FamilyId = string;
+
+/** 家族：只承载姓氏与文化，继承判定走 `parentIds`/`spouseId`。 */
+export interface Family {
+  id: FamilyId;
+  name: string;
+  culture: string;
+  memberIds: CharacterId[];
+}
+
+export interface CharacterLocation {
+  regionId: RegionId;
+  site: SiteKind;
+  sinceDay: number;
+}
+
+/** 人物担任的公职；`CountryOffice` 是国家侧视图，这里是人物侧履历。 */
+export interface CharacterOffice {
+  id: string;
+  countryId: CountryId | null;
+  orgId: OrgId | null;
+  title: string;
+  /** 0 最高（君主/执政），3 最低（文书）。 */
+  rank: number;
+  salaryMonthly: number;
+  sinceDay: number;
+}
+
+/** 人物性别：只影响婚姻与生育结算，不参与数值。 */
+export type Sex = 'male' | 'female';
 
 /* ------------------------------------------------------------------ */
 /* 静态内容（schema）                                                   */
@@ -95,6 +152,21 @@ export interface CharacterDef {
   readonly wealth: number;
   readonly skills: Readonly<Record<string, number>>;
   readonly traits: Readonly<Record<string, number>>;
+  /* ---- 档案字段（全部可选，缺省由 createWorld 补齐） ---- */
+  readonly sex?: Sex;
+  readonly faithId?: string | null;
+  readonly alignment?: Alignment;
+  readonly attributes?: Partial<Attributes>;
+  readonly familyId?: FamilyId | null;
+  readonly generation?: number;
+  readonly parentIds?: readonly [CharacterId | null, CharacterId | null];
+  readonly spouseId?: CharacterId | null;
+  readonly location?: {
+    readonly regionId: RegionId;
+    readonly site?: SiteKind;
+    readonly sinceDay?: number;
+  };
+  readonly offices?: readonly CharacterOffice[];
 }
 
 export interface OrganizationDef {
@@ -345,6 +417,22 @@ export interface Character {
   wealth: number;
   skills: Record<string, number>;
   traits: Record<string, number>;
+  /* ---- 档案（M4）：六维、阵营、信仰、地点、家系 ---- */
+  sex: Sex;
+  /** 出生年份（相对纪元，`0` 为开局年）。`age` 是派生缓存，年末与出生时同步。 */
+  birthYear: number;
+  generation: number;
+  familyId: FamilyId | null;
+  parentIds: [CharacterId | null, CharacterId | null];
+  spouseId: CharacterId | null;
+  attributes: Attributes;
+  alignment: Alignment;
+  /** 信仰 ID；`null` 表示无信仰（合法值，不是缺失）。 */
+  faith: string | null;
+  /** 故乡地区，用于"返乡/流亡"类事件。 */
+  homeRegionId: RegionId;
+  location: CharacterLocation;
+  offices: CharacterOffice[];
 }
 
 export interface Organization {
@@ -624,6 +712,8 @@ export interface WorldState {
   orgSeq: number;
   /** 无继承人时补位的统治者序号，只增不减。 */
   characterSeq: number;
+  /** 家族表：M4 出生/婚姻时写入。 */
+  families: Record<FamilyId, Family>;
   stats: WorldStats;
 }
 
@@ -649,24 +739,72 @@ export function marketKeyOf(regionId: RegionId, goodId: GoodId): MarketKey {
   return `${regionId}:${goodId}`;
 }
 
+/** 六维缺省值：人类均值 10。 */
+export function neutralAttributes(): Attributes {
+  return { physique: 10, agility: 10, intellect: 10, willpower: 10, perception: 10, charisma: 10 };
+}
+
+function clampToRange(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+/**
+ * 由人物定义补齐档案字段。
+ * 内容作者只写关心的字段，其余取缺省：属性 10、阵营 (0,0)、无信仰、地点 = 所属地区。
+ */
+export function buildCharacter(def: CharacterDef): Character {
+  const regionId = def.location?.regionId ?? def.regionId;
+  const attributes = neutralAttributes();
+  if (def.attributes) {
+    for (const key of ATTRIBUTE_KEYS) {
+      const value = def.attributes[key];
+      if (value !== undefined) attributes[key] = clampToRange(value, 1, 20);
+    }
+  }
+  const alignment = def.alignment ?? { law: 0, good: 0 };
+  const age = Math.max(0, Math.round(def.age));
+  return {
+    id: def.id,
+    name: def.name,
+    raceId: def.raceId,
+    classId: def.classId,
+    age,
+    alive: true,
+    regionId,
+    organizationId: def.organizationId,
+    wealth: Math.max(0, Math.round(def.wealth)),
+    skills: { ...def.skills },
+    traits: { ...def.traits },
+    sex: def.sex ?? (fnv1a64(def.id) % 2n === 0n ? 'male' : 'female'),
+    birthYear: -age,
+    generation: def.generation ?? 1,
+    familyId: def.familyId ?? null,
+    parentIds: [def.parentIds?.[0] ?? null, def.parentIds?.[1] ?? null],
+    spouseId: def.spouseId ?? null,
+    attributes,
+    alignment: {
+      law: clampToRange(alignment.law, -100, 100),
+      good: clampToRange(alignment.good, -100, 100),
+    },
+    faith: def.faithId ?? null,
+    homeRegionId: regionId,
+    location: {
+      regionId,
+      site: def.location?.site ?? 'city',
+      sinceDay: def.location?.sinceDay ?? 0,
+    },
+    offices: def.offices ? def.offices.map((office) => ({ ...office })) : [],
+  };
+}
+
 /** 由静态内容生成初始世界。纯函数：同内容 + 同种子 → 同状态。 */
 export function createWorld(content: WorldContent, options: CreateWorldOptions): WorldState {
   const characters: Record<CharacterId, Character> = {};
   for (const def of content.world.characters) {
-    characters[def.id] = {
-      id: def.id,
-      name: def.name,
-      raceId: def.raceId,
-      classId: def.classId,
-      age: def.age,
-      alive: true,
-      regionId: def.regionId,
-      organizationId: def.organizationId,
-      wealth: def.wealth,
-      skills: { ...def.skills },
-      traits: { ...def.traits },
-    };
+    characters[def.id] = buildCharacter(def);
   }
+  const families: Record<FamilyId, Family> = {};
 
   const organizations: Record<OrgId, Organization> = {};
   for (const def of content.organizations) {
@@ -809,6 +947,7 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
     clock: { day: content.world.startDay },
     playerId: content.world.playerId,
     characters,
+    families,
     organizations,
     countries,
     regions,
@@ -880,6 +1019,45 @@ export function validateWorld(state: WorldState): string[] {
       problems.push(`人物 ${character.id} 的组织 ${character.organizationId} 不存在`);
     }
     if (character.wealth < 0) problems.push(`人物 ${character.id} 财富为负`);
+    for (const key of ATTRIBUTE_KEYS) {
+      const value = character.attributes?.[key];
+      if (!Number.isInteger(value) || value < 1 || value > 20) {
+        problems.push(`人物 ${character.id} 的属性 ${key} 越界`);
+      }
+    }
+    if (!SITE_KINDS.includes(character.location.site)) {
+      problems.push(`人物 ${character.id} 的地点类型 ${String(character.location.site)} 非法`);
+    }
+    if (!state.regions[character.location.regionId]) {
+      problems.push(`人物 ${character.id} 的地点地区 ${character.location.regionId} 不存在`);
+    }
+    if (!state.regions[character.homeRegionId]) {
+      problems.push(`人物 ${character.id} 的故乡 ${character.homeRegionId} 不存在`);
+    }
+    if (Math.abs(character.alignment.law) > 100 || Math.abs(character.alignment.good) > 100) {
+      problems.push(`人物 ${character.id} 的阵营越界`);
+    }
+    if (character.faith !== null && typeof character.faith !== 'string') {
+      problems.push(`人物 ${character.id} 的信仰不是字符串或 null`);
+    }
+    if (character.spouseId !== null && !state.characters[character.spouseId]) {
+      problems.push(`人物 ${character.id} 的配偶 ${character.spouseId} 不存在`);
+    }
+    for (const parentId of character.parentIds) {
+      if (parentId !== null && !state.characters[parentId]) {
+        problems.push(`人物 ${character.id} 的亲属 ${parentId} 不存在`);
+      }
+    }
+    if (character.familyId !== null && !state.families?.[character.familyId]) {
+      problems.push(`人物 ${character.id} 的家族 ${character.familyId} 不存在`);
+    }
+  }
+
+  for (const [key, family] of Object.entries(state.families ?? {})) {
+    if (key !== family.id) problems.push(`家族键 ${key} 与 id ${family.id} 不一致`);
+    for (const memberId of family.memberIds) {
+      if (!state.characters[memberId]) problems.push(`家族 ${family.id} 的成员 ${memberId} 不存在`);
+    }
   }
 
   for (const [key, org] of Object.entries(state.organizations)) {

@@ -200,6 +200,38 @@ function migrateV2toV3(raw: Record<string, unknown>): void {
   raw['characterSeq'] ??= 0;
 }
 
+/** v3 → v4（M4 人物档案）：补齐六维、阵营、信仰、地点、家系与家族表。 */
+function migrateV3toV4(raw: Record<string, unknown>): void {
+  raw['families'] ??= {};
+  const characters = (raw['characters'] ?? {}) as Record<string, Record<string, unknown>>;
+  for (const character of Object.values(characters)) {
+    const age = Number(character['age'] ?? 0);
+    character['sex'] ??= 'male';
+    character['birthYear'] ??= -age;
+    character['generation'] ??= 1;
+    character['familyId'] ??= null;
+    character['parentIds'] ??= [null, null];
+    character['spouseId'] ??= null;
+    character['attributes'] ??= {
+      physique: 10,
+      agility: 10,
+      intellect: 10,
+      willpower: 10,
+      perception: 10,
+      charisma: 10,
+    };
+    character['alignment'] ??= { law: 0, good: 0 };
+    character['faith'] ??= null;
+    character['homeRegionId'] ??= character['regionId'] ?? '';
+    character['location'] ??= {
+      regionId: character['regionId'] ?? '',
+      site: 'city',
+      sinceDay: 0,
+    };
+    character['offices'] ??= [];
+  }
+}
+
 /** 把 `WorldState` 从它的 `schemaVersion` 升到当前版本。 */
 export function migrateWorldState(raw: unknown): WorldState {
   if (typeof raw !== 'object' || raw === null) {
@@ -223,6 +255,11 @@ export function migrateWorldState(raw: unknown): WorldState {
     if (version === 2) {
       migrateV2toV3(state);
       version = 3;
+      continue;
+    }
+    if (version === 3) {
+      migrateV3toV4(state);
+      version = 4;
       continue;
     }
     throw new SaveError(`缺少 v${version} → v${SCHEMA_VERSION} 的迁移步骤`);

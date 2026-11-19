@@ -10,7 +10,7 @@
  */
 
 import type { CharacterId, Country, Polity, WorldState } from '../../core/WorldState';
-import { sortedIds } from '../../core/WorldState';
+import { buildCharacter, sortedIds } from '../../core/WorldState';
 
 function scoreOf(state: WorldState, id: CharacterId, polity: Polity): number {
   const character = state.characters[id];
@@ -84,19 +84,18 @@ function spawnRegent(state: WorldState, country: Country): CharacterId {
   state.characterSeq += 1;
   const id = `c_regent_${String(state.characterSeq).padStart(3, '0')}`;
   const regionId = country.regionIds[0] ?? sortedIds(state.regions)[0] ?? 'r_unknown';
-  state.characters[id] = {
+  state.characters[id] = buildCharacter({
     id,
     name: `${country.name}摄政`,
     raceId: 'human',
     classId: 'politician',
     age: 40,
-    alive: true,
     regionId,
     organizationId: null,
     wealth: 4000,
     skills: { law: 5, persuasion: 5, insight: 4 },
     traits: { authority: 0.6, charisma: 0.5, caution: 0.5, loyalty: 0.6 },
-  };
+  });
   return id;
 }
 
