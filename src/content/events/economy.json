@@ -3,12 +3,12 @@
     "id": "ev_econ_famine",
     "domain": "economy",
     "scope": "region",
-    "conditions": { "any": [{ "path": "market.grain.price", "op": ">", "value": 13 }] },
+    "conditions": { "any": [{ "path": "market.grain.stock", "op": "<", "value": 20 }] },
     "risk": {
-      "lambda0": 0.04,
+      "lambda0": 0.02,
       "terms": [{ "path": "priceRatio", "coef": 2.5 }]
     },
-    "cooldownDays": 120,
+    "cooldownDays": 240,
     "effects": [
       { "kind": "add", "path": "market.grain.price", "value": 2 },
       { "kind": "add", "path": "market.grain.stock", "value": -40 }

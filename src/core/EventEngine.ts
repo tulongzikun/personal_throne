@@ -440,6 +440,15 @@ function applyEffect(
     return [`排定后续事件 ${effect.eventId}（+${effect.inDays} 天）`];
   }
 
+  if (effect.kind === 'merge') {
+    return mergeIntoCompetitor(state, target);
+  }
+
+  if (effect.kind === 'stat') {
+    state.stats[effect.key] += Math.round(effect.value);
+    return [`统计 ${effect.key} +${Math.round(effect.value)}`];
+  }
+
   const current = readNumber(state, target, effect.path);
   if (current === null) return [`忽略未知路径 ${effect.path}`];
 
@@ -467,6 +476,72 @@ function applyEffect(
 
 function round(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+/**
+ * 并购：被作用组织并入同地区同行业资产最大的竞争者。
+ * 资产、负债、成员、工资随之归并；被并方注销并留下清算快照，
+ * 其成员与领袖改挂到收购方，避免出现悬空引用。
+ */
+function mergeIntoCompetitor(state: WorldState, target: EventTarget): string[] {
+  if (target.scope !== 'organization') return ['并购仅适用于组织'];
+  const victim = state.organizations[target.entityId];
+  if (!victim || victim.lifecycle === 'dissolved') return ['目标组织已不存在'];
+
+  let acquirer: WorldState['organizations'][string] | undefined;
+  for (const id of sortedIds(state.organizations)) {
+    const org = state.organizations[id];
+    if (!org || org.id === victim.id || org.lifecycle === 'dissolved') continue;
+    if (org.homeRegionId !== victim.homeRegionId || org.industry !== victim.industry) continue;
+    if (!acquirer || org.assets > acquirer.assets) acquirer = org;
+  }
+  if (!acquirer) return [`${victim.name} 没有可并购的同业竞争者`];
+
+  const shortfall = Math.max(0, victim.liabilities - victim.cash - victim.assets);
+  acquirer.cash += victim.cash;
+  acquirer.assets += victim.assets;
+  acquirer.liabilities += victim.liabilities;
+  acquirer.members += victim.members;
+  acquirer.payrollMonthly += victim.payrollMonthly;
+  acquirer.scale = Math.max(acquirer.scale, victim.scale);
+
+  const day = state.clock.day;
+  victim.cash = 0;
+  victim.assets = 0;
+  victim.liabilities = 0;
+  victim.unpaidWages = 0;
+  victim.members = 0;
+  victim.payrollMonthly = 0;
+  victim.lifecycle = 'dissolved';
+  victim.liquidation = {
+    day,
+    proceeds: 0,
+    creditorPaid: 0,
+    wagePaid: 0,
+    shareholderPaid: 0,
+    shortfall,
+  };
+  state.stats.mergers += 1;
+  state.stats.dissolved += 1;
+
+  for (const characterId of sortedIds(state.characters)) {
+    const character = state.characters[characterId];
+    if (character?.organizationId === victim.id) character.organizationId = acquirer.id;
+  }
+  for (const contractId of sortedIds(state.contracts)) {
+    const contract = state.contracts[contractId];
+    if (!contract || contract.status !== 'open') continue;
+    if (contract.fromOrgId === victim.id) contract.fromOrgId = acquirer.id;
+    if (contract.toOrgId === victim.id) contract.toOrgId = acquirer.id;
+  }
+  for (const marketId of sortedIds(state.markets)) {
+    const market = state.markets[marketId];
+    if (market) delete market.shareByOrg[victim.id];
+  }
+
+  return [
+    `${victim.name} 被 ${acquirer.name} 并购（承接负债 ${victim.liabilities}，差额 ${shortfall}）`,
+  ];
 }
 
 export function labelOf(state: WorldState, target: EventTarget): string {

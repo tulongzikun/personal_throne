@@ -22,7 +22,7 @@ export type ContractId = string;
 export type ArmyId = string;
 export type EntityId = string;
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /* ------------------------------------------------------------------ */
 /* 静态内容（schema）                                                   */
@@ -167,6 +167,55 @@ export interface BalanceConfig {
     readonly scaleWeight: number;
     readonly focusWeight: number;
   };
+  /**
+   * 四类组织风险的系数表（GDD §7.3）。代码只读表，不写死系数：
+   *   hazard = lambda0 × exp(Σ coef × feature)，risk = clamp01(hazard × scale)
+   * feature 由 EventEngine.readFeature 提供（conflict、legitimacy、cashRatio…）。
+   */
+  readonly risk: {
+    readonly split: RiskTable;
+    readonly bankruptcy: RiskTable;
+    readonly corruption: RiskTable;
+    readonly unrest: RiskTable;
+  };
+  readonly contract: {
+    /** 违约时按未履行金额收取的违约金比例。 */
+    readonly defaultPenaltyRate: number;
+    /** 资不抵债后的宽限月数（宽限期内仍可融资自救）。 */
+    readonly graceMonths: number;
+    /** 重组期最长月数，逾期仍不清偿则进入清算。 */
+    readonly restructureMonths: number;
+    /** 清算时资产的变现折扣（0–1）。 */
+    readonly liquidationHaircut: number;
+    /** 新增贷款月利率（在 take_loan 中写入契约）。 */
+    readonly loanRateMonthly: number;
+    readonly maxLoanMonths: number;
+    readonly minPenalty: number;
+  };
+  readonly market: {
+    /** 吸引力 = (0.5+质量)^w · (0.5+商誉)^w / 价格指数^w。 */
+    readonly qualityWeight: number;
+    readonly reputationWeight: number;
+    readonly priceWeight: number;
+    /** 价格高于基准价该倍数时，NPC 竞争者可能进入。 */
+    readonly entryPriceRatio: number;
+    readonly maxOrgsPerMarket: number;
+    readonly entryCapital: number;
+  };
+  readonly trade: {
+    readonly unitTransportCost: number;
+    /** 在途损耗比例（0–1）。 */
+    readonly lossRate: number;
+    readonly tariffEnabled: boolean;
+  };
+}
+
+export interface RiskTable {
+  /** 基准月度风险率。 */
+  readonly lambda0: number;
+  readonly terms: readonly RiskTerm[];
+  /** 风险率 → 0–1 展示指数的放大倍数。 */
+  readonly scale: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -191,11 +240,24 @@ export interface RiskTerm {
   readonly coef: number;
 }
 
+export type StatKey =
+  | 'bankruptcies'
+  | 'restructurings'
+  | 'splits'
+  | 'mergers'
+  | 'founded'
+  | 'dissolved'
+  | 'contractDefaults';
+
 export type Effect =
   | { readonly kind: 'add'; readonly path: string; readonly value: number }
   | { readonly kind: 'mul'; readonly path: string; readonly value: number }
   | { readonly kind: 'set'; readonly path: string; readonly value: number }
-  | { readonly kind: 'schedule'; readonly eventId: string; readonly inDays: number };
+  | { readonly kind: 'schedule'; readonly eventId: string; readonly inDays: number }
+  /** 并购：被作用组织并入同地区同行业资产最大的竞争者，随后注销。 */
+  | { readonly kind: 'merge' }
+  /** 统计计数（分裂、并购等），供 sim 与 UI 观测。 */
+  | { readonly kind: 'stat'; readonly key: StatKey; readonly value: number };
 
 export interface EventDef {
   readonly id: string;
@@ -254,6 +316,8 @@ export interface Organization {
   industry: GoodId | 'service';
   foundedDay: number;
   homeRegionId: RegionId;
+  /** 来源：内容初始 / 玩家创建 / NPC 进入。 */
+  origin: 'content' | 'player' | 'npc';
   scale: number;
   cash: number;
   assets: number;
@@ -270,8 +334,46 @@ export interface Organization {
   /** 最近一个月结算出的经营数据，供 UI 与再投资决策使用。 */
   lastMonthRevenue: number;
   lastMonthCost: number;
+  lastMonthProfit: number;
+  lastMonthTax: number;
   /** 上月运输成本（由贸易系统写入，财务结算后清零），避免与损益重复记账。 */
   lastMonthTransport: number;
+  /** 上月关税（由贸易系统写入，财务结算后清零）。 */
+  lastMonthTariff: number;
+  /** 欠薪：现金不足以发工资时转入负债，清算时优先于股东受偿。 */
+  unpaidWages: number;
+  /** 已连续处于危机/宽限的月数。 */
+  distressMonths: number;
+  /** 宽限期截止日（0 表示没有宽限期）。 */
+  graceUntilDay: number;
+  /** 重组期截止日（0 表示未进入重组）。 */
+  restructureUntilDay: number;
+  /** 本月在同地区同行业的市场份额（0–1）。 */
+  marketShare: number;
+  /** 相对市场价的定价指数（1 = 随行就市）。 */
+  priceIndex: number;
+  /** 四类风险指数（0–1），由 balance.risk 系数表计算。 */
+  risk: { split: number; bankruptcy: number; corruption: number; unrest: number };
+  /** 商路累计投入与收益，用于计算 open_route 的投资回报。 */
+  tradeInvestment: number;
+  tradeRevenue: number;
+  tradeCost: number;
+  /** 解散清算的审计快照；未解散为 null。 */
+  liquidation: LiquidationRecord | null;
+}
+
+export interface LiquidationRecord {
+  day: number;
+  /** 资产变现所得。 */
+  proceeds: number;
+  /** 清偿债主（含贷款、供应商）的金额。 */
+  creditorPaid: number;
+  /** 清偿员工欠薪的金额。 */
+  wagePaid: number;
+  /** 分配给股东的金额。 */
+  shareholderPaid: number;
+  /** 资不抵债、由股东承担的损失（进历史，不允许凭空消失）。 */
+  shortfall: number;
 }
 
 export interface Country {
@@ -314,18 +416,92 @@ export interface Market {
   ceiling: number;
   importCapacity: number;
   exportCapacity: number;
+  /** 本月同地区同行业各组织的市场份额，按吸引力归一化，份额和 = 1。 */
+  shareByOrg: Record<OrgId, number>;
+  /** 开通该地区商路的组织；货到后由其收取贸易收益并承担关税。 */
+  routeOwnerId: OrgId | null;
 }
 
 export type ContractStatus = 'open' | 'fulfilled' | 'defaulted' | 'cancelled';
+export type ContractKind =
+  | 'supply'
+  | 'transport'
+  | 'loan'
+  | 'employment'
+  /** M1 遗留值，保留以兼容旧存档。 */
+  | 'trade'
+  | 'service';
 
 export interface Contract {
   id: ContractId;
-  kind: 'trade' | 'loan' | 'service';
+  kind: ContractKind;
+  /** [付款方/义务方, 收款方/权利方]；雇佣契约第二项是人物 ID。 */
   parties: string[];
+  fromOrgId: OrgId;
+  toOrgId: OrgId | CharacterId;
   startDay: number;
   endDay: number;
+  /** 合同总额（贷款为本金 + 利息上限）。 */
   value: number;
   status: ContractStatus;
+  goodId: GoodId | null;
+  /** 每期数量（供货/运输）或 1（贷款/雇佣）。 */
+  quantity: number;
+  unitPrice: number;
+  penaltyRate: number;
+  /** 贷款月利率。 */
+  rateMonthly: number;
+  principal: number;
+  collateral: number;
+  nextDueDay: number;
+  installments: number;
+  paidInstallments: number;
+}
+
+export type ShipmentId = string;
+
+/** 在途货物：离港时扣减来源库存，抵港时才进入目的地库存。 */
+export interface Shipment {
+  id: ShipmentId;
+  fromRegionId: RegionId;
+  toRegionId: RegionId;
+  goodId: GoodId;
+  units: number;
+  lost: number;
+  ownerOrgId: OrgId | null;
+  departDay: number;
+  arriveDay: number;
+  transportCost: number;
+  tariffDue: number;
+  status: 'in_transit' | 'arrived';
+}
+
+export interface TradeFlow {
+  readonly from: RegionId;
+  readonly to: RegionId;
+  readonly goodId: GoodId;
+  readonly units: number;
+  readonly transportCost: number;
+  readonly tariff: number;
+  readonly arriveDay: number;
+  readonly ownerOrgId: OrgId | null;
+}
+
+export interface WorldStats {
+  bankruptcies: number;
+  restructurings: number;
+  splits: number;
+  mergers: number;
+  founded: number;
+  dissolved: number;
+  contractDefaults: number;
+  priceDeviationSum: number;
+  priceSamples: number;
+  tariffRevenue: number;
+  tradeRevenue: number;
+  tradeCost: number;
+  orgCountSum: number;
+  orgCountSamples: number;
 }
 
 export interface Relation {
@@ -369,6 +545,7 @@ export interface WorldState {
   /** 键为 `${regionId}:${goodId}`。 */
   markets: Record<MarketKey, Market>;
   contracts: Record<ContractId, Contract>;
+  shipments: Record<ShipmentId, Shipment>;
   relations: Relation[];
   armies: Record<ArmyId, Army>;
   tiers: Record<EntityId, 1 | 2 | 3>;
@@ -379,6 +556,11 @@ export interface WorldState {
   history: HistoryRecord[];
   /** 已入队的调度序号，只增不减。 */
   scheduleSeq: number;
+  /** 契约 ID 序号，只增不减。 */
+  contractSeq: number;
+  /** NPC 新建组织 ID 序号，只增不减。 */
+  orgSeq: number;
+  stats: WorldStats;
 }
 
 export interface SettleContext {
@@ -431,6 +613,7 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
       industry: def.industry,
       foundedDay: def.foundedDay,
       homeRegionId: def.homeRegionId,
+      origin: 'content',
       scale: def.scale,
       cash: def.cash,
       assets: def.assets,
@@ -446,7 +629,21 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
       shares: def.shares.map((share) => ({ ...share })),
       lastMonthRevenue: 0,
       lastMonthCost: 0,
+      lastMonthProfit: 0,
+      lastMonthTax: 0,
       lastMonthTransport: 0,
+      lastMonthTariff: 0,
+      unpaidWages: 0,
+      distressMonths: 0,
+      graceUntilDay: 0,
+      restructureUntilDay: 0,
+      marketShare: 0,
+      priceIndex: 1,
+      risk: { split: 0, bankruptcy: 0, corruption: 0, unrest: 0 },
+      tradeInvestment: 0,
+      tradeRevenue: 0,
+      tradeCost: 0,
+      liquidation: null,
     };
   }
 
@@ -511,6 +708,8 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
         ceiling: Math.round(good.basePrice * good.ceilingRatio),
         importCapacity: 0,
         exportCapacity: 0,
+        shareByOrg: {},
+        routeOwnerId: null,
       };
     }
   }
@@ -542,6 +741,7 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
     regions,
     markets,
     contracts: {},
+    shipments: {},
     relations: [],
     armies: {},
     tiers,
@@ -550,6 +750,24 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
     cooldowns: {},
     history: [],
     scheduleSeq: 0,
+    contractSeq: 0,
+    orgSeq: 0,
+    stats: {
+      bankruptcies: 0,
+      restructurings: 0,
+      splits: 0,
+      mergers: 0,
+      founded: 0,
+      dissolved: 0,
+      contractDefaults: 0,
+      priceDeviationSum: 0,
+      priceSamples: 0,
+      tariffRevenue: 0,
+      tradeRevenue: 0,
+      tradeCost: 0,
+      orgCountSum: 0,
+      orgCountSamples: 0,
+    },
   };
 }
 
@@ -638,6 +856,39 @@ export function validateWorld(state: WorldState): string[] {
   for (const scheduled of state.pendingEvents) {
     if (!Number.isInteger(scheduled.day) || scheduled.day < 1) {
       problems.push(`待办事件 ${scheduled.refId} 的日期非法`);
+    }
+  }
+
+  for (const [key, contract] of Object.entries(state.contracts)) {
+    if (key !== contract.id) problems.push(`契约键 ${key} 与 id ${contract.id} 不一致`);
+    if (!state.organizations[contract.fromOrgId]) {
+      problems.push(`契约 ${key} 的义务方 ${contract.fromOrgId} 不存在`);
+    }
+    if (contract.kind === 'employment') {
+      if (!state.characters[contract.toOrgId]) {
+        problems.push(`雇佣契约 ${key} 的雇员 ${contract.toOrgId} 不存在`);
+      }
+    } else if (!state.organizations[contract.toOrgId]) {
+      problems.push(`契约 ${key} 的权利方 ${contract.toOrgId} 不存在`);
+    }
+    if (contract.endDay < contract.startDay) problems.push(`契约 ${key} 的到期日早于起始日`);
+    if (contract.value < 0 || contract.principal < 0 || contract.collateral < 0) {
+      problems.push(`契约 ${key} 的金额为负`);
+    }
+  }
+
+  for (const [key, shipment] of Object.entries(state.shipments)) {
+    if (key !== shipment.id) problems.push(`货运键 ${key} 与 id ${shipment.id} 不一致`);
+    if (!state.regions[shipment.fromRegionId] || !state.regions[shipment.toRegionId]) {
+      problems.push(`货运 ${key} 的地区不存在`);
+    }
+    if (!state.markets[marketKeyOf(shipment.toRegionId, shipment.goodId)]) {
+      problems.push(`货运 ${key} 的目的地没有该商品市场`);
+    }
+    if (shipment.units < 0 || shipment.lost < 0) problems.push(`货运 ${key} 的数量为负`);
+    if (shipment.arriveDay < shipment.departDay) problems.push(`货运 ${key} 的抵达日早于离港日`);
+    if (shipment.ownerOrgId !== null && !state.organizations[shipment.ownerOrgId]) {
+      problems.push(`货运 ${key} 的所有者 ${shipment.ownerOrgId} 不存在`);
     }
   }
 

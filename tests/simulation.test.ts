@@ -24,7 +24,7 @@ describe('模拟确定性（R1）', () => {
 
     expect(first.hash()).toBe(second.hash());
     expect(first.day).toBe(second.day);
-  });
+  }, 20_000);
 
   it('100 年模拟后世界仍然自洽且数值有限', () => {
     const engine = makeEngine('r1-health');

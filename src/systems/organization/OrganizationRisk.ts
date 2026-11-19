@@ -1,15 +1,16 @@
 /**
- * 组织风险：合法性、冲突、治理、效率的月度演化。
+ * 组织风险：冲突、合法性、治理、效率的月度漂移，以及四类风险的强度函数。
  *
- * 这些指标都在 0–1 之间，演化带均值回归与随机扰动：
- *   x' = x + θ(μ − x) + σ·ε     ε ~ N(0,1)（用两个均匀分布近似，走命名流）
- * 规模越大，治理越难（目标治理值随成员数下降），冲突越容易累积——
- * 这是"组织分裂/政变"事件的输入，而不是结果（结果由 EventEngine 判定）。
+ * 风险强度只读 `balance.risk` 的系数表：
+ *   hazard = lambda0 × exp(Σ coef × feature)
+ *   risk   = clamp01(hazard × scale)
+ * 代码里没有写死的系数——调整 balance.json 就会改变风险与事件触发率。
  */
 
-import type { SettleContext } from '../../core/WorldState';
-import type { WorldContent, WorldState } from '../../core/WorldState';
+import type { SettleContext, WorldContent, WorldState } from '../../core/WorldState';
 import { sortedIds } from '../../core/WorldState';
+import { readFeature } from '../../core/EventEngine';
+import type { RiskTable } from '../../core/WorldState';
 
 export interface RiskDelta {
   readonly orgId: string;
@@ -17,25 +18,14 @@ export interface RiskDelta {
   readonly legitimacy: number;
   readonly governance: number;
   readonly efficiency: number;
-  /** 分裂风险指数（GDD §11 示例公式的归一化版本）。 */
-  readonly splitRisk: number;
+  readonly split: number;
+  readonly bankruptcy: number;
+  readonly corruption: number;
+  readonly unrest: number;
 }
 
 const MEAN_REVERSION = 0.18;
 const NOISE = 0.03;
-
-function gaussian(rng: SettleContext['rng'], key: string): number {
-  const u1 = Math.max(
-    1e-9,
-    rng.nextFloat({ stream: 'orgrisk', entityId: `${key}:a`, periodKey: 'p' }),
-  );
-  const u2 = rng.nextFloat({ stream: 'orgrisk', entityId: `${key}:b`, periodKey: 'p' });
-  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-}
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, Number(value.toFixed(4))));
-}
 
 export function settleMonthlyRisk(
   state: WorldState,
@@ -43,6 +33,7 @@ export function settleMonthlyRisk(
   ctx: SettleContext,
 ): RiskDelta[] {
   const deltas: RiskDelta[] = [];
+  const tables = content.balance.risk;
 
   for (const orgId of sortedIds(state.organizations)) {
     const org = state.organizations[orgId];
@@ -51,68 +42,77 @@ export function settleMonthlyRisk(
     if (org.lifecycle === 'dissolved') continue;
 
     const sizePressure = Math.min(1, org.members / 400);
-    const wealthPressure = org.cash > 0 && org.liabilities > org.assets ? 1 : 0;
-    const governanceTarget = clamp01(0.85 - sizePressure * 0.35 - wealthPressure * 0.2);
-    const conflictTarget = clamp01(
-      0.1 + sizePressure * 0.35 + wealthPressure * 0.25 - org.leadership.legitimacy * 0.2,
-    );
-    const efficiencyTarget = clamp01(0.45 + org.governance * 0.4 - org.conflict * 0.3);
+    const wealthPressure = org.liabilities > org.assets ? 1 : 0;
+    const profitable = org.lastMonthProfit >= 0;
+    const target = {
+      governance: 0.85 - sizePressure * 0.35 - wealthPressure * 0.2,
+      conflict: 0.1 + sizePressure * 0.35 + wealthPressure * 0.25 - org.leadership.legitimacy * 0.2,
+      efficiency: 0.45 + org.governance * 0.4 - org.conflict * 0.3,
+      legitimacy: 0.5 + (profitable ? 0.15 : -0.1) + org.governance * 0.3 - org.conflict * 0.4,
+    };
 
-    const before = {
+    const noise = (suffix: string): number =>
+      (ctx.rng.nextFloat({
+        stream: 'orgrisk',
+        entityId: `${org.id}:${suffix}`,
+        periodKey: 'p',
+      }) -
+        0.5) *
+      2 *
+      NOISE;
+
+    org.governance = clamp01(
+      org.governance + (target.governance - org.governance) * MEAN_REVERSION + noise('g'),
+    );
+    org.conflict = clamp01(
+      org.conflict + (target.conflict - org.conflict) * MEAN_REVERSION + noise('c'),
+    );
+    org.efficiency = clamp01(
+      org.efficiency + (target.efficiency - org.efficiency) * MEAN_REVERSION + noise('e'),
+    );
+    org.leadership.legitimacy = clamp01(
+      org.leadership.legitimacy +
+        (target.legitimacy - org.leadership.legitimacy) * MEAN_REVERSION +
+        noise('l'),
+    );
+
+    const targetEntity = { scope: 'organization' as const, entityId: org.id };
+    org.risk = {
+      split: riskOf(state, targetEntity, tables.split),
+      bankruptcy: riskOf(state, targetEntity, tables.bankruptcy),
+      corruption: riskOf(state, targetEntity, tables.corruption),
+      unrest: riskOf(state, targetEntity, tables.unrest),
+    };
+
+    deltas.push({
+      orgId: org.id,
       conflict: org.conflict,
       legitimacy: org.leadership.legitimacy,
       governance: org.governance,
       efficiency: org.efficiency,
-    };
-
-    org.conflict = clamp01(
-      org.conflict +
-        MEAN_REVERSION * (conflictTarget - org.conflict) +
-        NOISE * gaussian(ctx.rng, `${org.id}:c`),
-    );
-    org.governance = clamp01(
-      org.governance +
-        MEAN_REVERSION * (governanceTarget - org.governance) +
-        NOISE * gaussian(ctx.rng, `${org.id}:g`),
-    );
-    org.efficiency = clamp01(
-      org.efficiency +
-        MEAN_REVERSION * (efficiencyTarget - org.efficiency) +
-        NOISE * 0.5 * gaussian(ctx.rng, `${org.id}:e`),
-    );
-    // 合法性：盈利与治理提升合法性，冲突与亏损侵蚀它。
-    const legitimacyTarget = clamp01(
-      0.5 +
-        (org.lastMonthRevenue > org.lastMonthCost ? 0.15 : -0.1) +
-        org.governance * 0.3 -
-        org.conflict * 0.4,
-    );
-    org.leadership.legitimacy = clamp01(
-      org.leadership.legitimacy +
-        MEAN_REVERSION * (legitimacyTarget - org.leadership.legitimacy) +
-        NOISE * gaussian(ctx.rng, `${org.id}:l`),
-    );
-
-    // 分裂风险：冲突、低合法性、治理差、缺钱；规模提供缓冲。
-    const splitRisk = clamp01(
-      1.5 * org.conflict +
-        0.8 * (1 - org.leadership.legitimacy) -
-        1.0 * org.governance -
-        1.1 * (org.cash > org.payrollMonthly * 3 ? 1 : 0) +
-        0.5 * (org.members > 200 ? 1 : 0),
-    );
-
-    deltas.push({
-      orgId: org.id,
-      conflict: Number((org.conflict - before.conflict).toFixed(4)),
-      legitimacy: Number((org.leadership.legitimacy - before.legitimacy).toFixed(4)),
-      governance: Number((org.governance - before.governance).toFixed(4)),
-      efficiency: Number((org.efficiency - before.efficiency).toFixed(4)),
-      splitRisk,
+      split: org.risk.split,
+      bankruptcy: org.risk.bankruptcy,
+      corruption: org.risk.corruption,
+      unrest: org.risk.unrest,
     });
-
-    void content;
   }
 
   return deltas;
+}
+
+export function riskOf(
+  state: WorldState,
+  target: { scope: 'organization'; entityId: string },
+  table: RiskTable,
+): number {
+  let exponent = 0;
+  for (const term of table.terms) {
+    exponent += term.coef * readFeature(state, target, term.path);
+  }
+  const hazard = table.lambda0 * Math.exp(exponent);
+  return Number(clamp01(hazard * table.scale).toFixed(4));
+}
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, Number(value.toFixed(4))));
 }

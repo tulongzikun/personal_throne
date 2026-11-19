@@ -57,6 +57,10 @@ export function settleMonthlyMarket(state: WorldState, content: WorldContent): M
     market.stock = Math.max(0, Math.round(available - Math.min(demand, available)));
     market.production = 0;
 
+    // 价格偏离基准价的可观测指标（sim 报告用，0 = 恰好等于基准价）。
+    state.stats.priceDeviationSum += Math.abs(market.price - good.basePrice) / good.basePrice;
+    state.stats.priceSamples += 1;
+
     moves.push({
       regionId: market.regionId,
       goodId: market.goodId,

@@ -60,3 +60,13 @@ export function valuation(org: Organization): number {
 export function isSolvent(org: Organization): boolean {
   return org.liabilities <= org.assets * 1.5 && org.cash >= 0;
 }
+
+/** 面向玩家/验收的四态口径：其余经营状态统一视为 active。 */
+export type OrgStage = 'active' | 'crisis' | 'restructuring' | 'dissolved';
+
+export function stageOf(org: Organization): OrgStage {
+  if (org.lifecycle === 'dissolved') return 'dissolved';
+  if (org.lifecycle === 'restructuring') return 'restructuring';
+  if (org.lifecycle === 'crisis') return 'crisis';
+  return 'active';
+}

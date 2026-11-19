@@ -5,23 +5,32 @@
 ## 文档
 
 - 玩法与世界观：[design.md](design.md)（GDD v1.0）
-- 工程计划与排期：[development-plan.md](development-plan.md)（v0.2，含 §5.2 实现偏差记录与 §8.1 当前进度）
+- 工程计划与排期：[development-plan.md](development-plan.md)（v0.2，含 §5.2 实现偏差记录、§8.1 当前进度、§8.2–8.4 各阶段记录）
 
 ## 当前状态
 
-**M0 工程基线：完成（v0.1.0）。** TypeScript 严格模式、单文件构建、ESLint 架构约束、
-Vitest 与 GitHub Actions CI 均已就绪；`release/index.html` 已入仓，当前 2,730 字节（体积预算占用 0.17%）。
+**M0 工程基线：完成。** TypeScript 严格模式、单文件构建、ESLint 架构约束、Vitest 与 GitHub Actions CI 均已就绪。
 
-**M1 模拟核心：完成（v0.1.0）。** 已落地：
+**M1 模拟核心：完成。** `src/core/` 8 个模块（世界状态、历法、随机、命令、事件、历史、分层、引擎）+
+`src/systems/` 16 个结算文件；`pnpm sim --years 100 --seed demo --check` 实测 1.4–1.7 s、哈希稳定。
 
-- `src/core/` 8 个模块：`WorldState` / `GameClock` / `Random` / `CommandBus` / `EventEngine` / `History` / `SimulationTier` / `GameEngine`；
-- `src/systems/` 14 个文件（角色 3、组织 4、国家 2、经济 3、NPC 1、军事 1），均已接入月度结算；
-- 内容装配：2 国、5 区、20 人、10 组织、4 商品、**14 条事件**（组织 4 / 国家 4 / 经济 3 / 冒险 3）；
-- 存档：信封 + 哈希校验 + IndexedDB 槽位 + 文件导入导出（`SaveManager` / `Migration`）；
-- 开发期 CLI `pnpm sim` 与 5 个测试文件 / 34 个用例；`pnpm sim --years 100 --seed demo --check` 实测 1.3 s、哈希稳定。
+**M2 组织与经济：完成。** 组织生命周期（active → crisis → restructuring → dissolved，清算顺序 债主 → 欠薪 → 股东）、
+契约（供货 / 运输 / 贷款 / 雇佣）、市场份额竞争、在途货运与关税、四类风险系数表、10 条组织事件；
+验收 B（商业干预）与 D（财务危机）已由 `tests/acceptance.test.ts` 断言。三 seed 100 年实测：
+破产率 22.2–31.6%、分裂率 5.6–10.5%（目标区间 15–35% / 5–15%）。
 
-**尚未完成**：`src/ui/` 只有 `styles/base.css`，`src/main.ts` 仍是引导页；人口世代更替未实现（100 年后 20 位 NPC 全部死亡）；
-M2–M4 只有代码骨架，验收 A–E 均未达成。详见 [development-plan.md §8.1](development-plan.md)。
+**薄 UI：可用。** `src/ui/` 12 个文件——SVG 地图、人物 / 组织 / 国家面板、事件弹窗、历史、暂停 / 1× / 7× / 30× /
+跳下一事件、存档（IndexedDB 槽位 + 导出导入）。原生 DOM，零依赖。
+
+**在线试玩**：<https://tulongzikun.github.io/personal_throne/>（GitHub Pages，发布 `release/index.html）。
+离线也可以直接双击 `release/index.html`。
+
+**测试与产物**：8 个测试文件 / 58 个用例；单文件 `release/index.html` 145,259 字节（体积预算 9.2%），
+无 `<script src>`、无 `<link href>`，`file://` 下可运行（Edge 探针 6 面板 / 69 按钮 / 0 控制台错误）。
+
+**尚未完成**：人口世代更替（100 年后 20 位 NPC 全部老死）、验收 C（政策传导对照实验）、验收 A 的人工审阅、
+四种地图图层与完整美术（M5）、战争（M6）。已知问题：同盟的粮食与铁矿长期顶在价格上限，
+根因是"本地无生产 + 进口运力不足"，留给 M3 解决。详见 [development-plan.md §8](development-plan.md)。
 
 ## 环境要求
 
@@ -38,10 +47,10 @@ pnpm release        # build + 校验（无外链 / ≤ 1,572,864 字节）+ 复�
 pnpm preview        # 预览构建产物
 pnpm typecheck      # 仅类型检查
 pnpm lint           # ESLint（架构依赖方向、Math.random 与 new Date 禁令）
-pnpm test           # vitest run：5 个文件 / 33 个用例
+pnpm test           # vitest run：8 个文件 / 58 个用例
 pnpm test:watch     # 监听模式
 pnpm format         # Prettier
-pnpm sim --years 100 --seed demo-seed            # 无界面快进，打印哈希 / 耗时 / 实体统计
+pnpm sim --years 100 --seed demo-seed            # 无界面快进，打印哈希 / 耗时 / 破产率 / 分裂率 / 价格偏离 / 关税
 pnpm sim --years 100 --seed demo-seed --check    # 复跑并比对状态哈希，不一致则退出码 1
 ```
 

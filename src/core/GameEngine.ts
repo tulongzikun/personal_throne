@@ -140,7 +140,8 @@ export class GameEngine {
   private onMarketPhase(ctx: SettleContext): void {
     settleMonthlyProduction(this.state, this.content);
     const moves = settleMonthlyMarket(this.state, this.content);
-    const flows = settleMonthlyTrade(this.state, this.content);
+    const trade = settleMonthlyTrade(this.state, this.content);
+    const flows = trade.flows;
 
     const spiking = moves.filter((move) => move.priceAfter >= move.priceBefore * 1.1);
     for (const move of spiking) {
@@ -153,11 +154,18 @@ export class GameEngine {
     for (const flow of flows) {
       this.record(
         'trade',
-        `${formatDate(ctx.day)} ${flow.from} → ${flow.to} 调运 ${flow.goodId} ×${flow.units}（运费 ${flow.transportCost}）`,
+        `${formatDate(ctx.day)} ${flow.from} → ${flow.to} 发运 ${flow.goodId} ×${flow.units}（运费 ${flow.transportCost}，关税 ${flow.tariff}，${flow.arriveDay} 到港）`,
         [
           { kind: 'region', id: flow.from },
           { kind: 'region', id: flow.to },
         ],
+      );
+    }
+    for (const arrival of trade.arrivals) {
+      this.record(
+        'trade',
+        `${formatDate(ctx.day)} ${arrival.goodId} ×${arrival.units} 到港（损耗 ${arrival.lost}，货款 ${arrival.revenue}，关税 ${arrival.tariff}）`,
+        arrival.orgId ? [{ kind: 'organization', id: arrival.orgId }] : [],
       );
     }
   }
@@ -181,10 +189,16 @@ export class GameEngine {
         [{ kind: 'organization', id: decision.orgId }],
       );
     }
-    for (const id of settlement.dissolved) {
-      this.record('milestone', `${formatDate(ctx.day)} ${id} 正式解散`, [
-        { kind: 'organization', id },
-      ]);
+    for (const event of settlement.events) {
+      const kind =
+        event.kind === 'trade'
+          ? 'trade'
+          : event.kind === 'finance'
+            ? 'finance'
+            : event.kind === 'command'
+              ? 'command'
+              : 'milestone';
+      this.record(kind, event.summary, event.refs);
     }
     void stipends;
   }
@@ -260,9 +274,14 @@ export class GameEngine {
     }
 
     // 月度摘要：一行总览，方便 UI 与 100 年快进后的"年年有记录"。
+    const activeOrgs = Object.values(this.state.organizations).filter(
+      (org) => org.lifecycle !== 'dissolved',
+    ).length;
+    this.state.stats.orgCountSum += activeOrgs;
+    this.state.stats.orgCountSamples += 1;
     this.record(
       'milestone',
-      `${formatDate(ctx.day)} 月度结算：人口 ${totalPopulation(this.state)}，组织 ${Object.keys(this.state.organizations).length}，历史 ${this.state.history.length} 条`,
+      `${formatDate(ctx.day)} 月度结算：人口 ${totalPopulation(this.state)}，组织 ${activeOrgs}，历史 ${this.state.history.length} 条`,
       [],
     );
   }

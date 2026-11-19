@@ -1,17 +1,18 @@
 /**
- * 可复现随机数（PCG32 + 命名流）。
+ * 可复现随机数（命名流）。
  *
  * 设计要点：
  * - 每一次抽样都是 `(seed, stream, entityId, periodKey, counter)` 的纯函数，
  *   与调用顺序、对象遍历顺序无关 —— 这是"逐月快进 == 一次快进"的根本保证。
  * - 计数器落在 `WorldState.rngCounters`，随存档一起序列化。
  * - 禁止 `Math.random()`（ESLint 强制）。
+ * - 抽样热路径使用 32 位整数混合（splitmix32），避免每次抽样构造 BigInt；
+ *   存档哈希仍用 64 位 FNV，二者互不影响。
  */
 
 const MASK64 = (1n << 64n) - 1n;
-const PCG_MULTIPLIER = 6364136223846793005n;
 
-/** FNV-1a 64 位哈希：字符串 → 64 位无符号整数。 */
+/** FNV-1a 64 位哈希：字符串 → 64 位无符号整数（存档哈希用）。 */
 export function fnv1a64(input: string): bigint {
   let hash = 0xcbf29ce484222325n;
   for (let i = 0; i < input.length; i += 1) {
@@ -19,6 +20,24 @@ export function fnv1a64(input: string): bigint {
     hash = (hash * 0x100000001b3n) & MASK64;
   }
   return hash;
+}
+
+/** FNV-1a 32 位哈希：抽样派生用，比 BigInt 版本快一个数量级。 */
+function fnv1a32(input: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+/** splitmix32 终结混合：把派生值与计数器打散成 32 位输出。 */
+function mix32(value: number): number {
+  let x = value >>> 0;
+  x = Math.imul(x ^ (x >>> 16), 0x21f0aaad);
+  x = Math.imul(x ^ (x >>> 15), 0x735a2d97);
+  return (x ^ (x >>> 15)) >>> 0;
 }
 
 export interface RngSnapshot {
@@ -35,26 +54,6 @@ export interface DrawKey {
 /** 命名流键：`stream:entityId:periodKey`。 */
 export function keyOf(key: DrawKey): string {
   return `${key.stream}:${key.entityId}:${key.periodKey}`;
-}
-
-/** 单步 PCG32：返回 32 位输出与新状态。 */
-function pcg32Step(state: bigint, increment: bigint): { value: number; state: bigint } {
-  const old = state;
-  const next = (old * PCG_MULTIPLIER + increment) & MASK64;
-  const xorshifted = Number((((old >> 18n) ^ old) >> 27n) & 0xffffffffn);
-  const rot = Number((old >> 59n) & 31n);
-  const value = ((xorshifted >>> rot) | (xorshifted << ((32 - rot) & 31))) >>> 0;
-  return { value, state: next };
-}
-
-/** 由一个 64 位派生值构造 PCG32 状态并预热两轮。 */
-function seedStream(derived: bigint): { state: bigint; increment: bigint } {
-  const increment = ((derived >> 1n) << 1n) | 1n;
-  let state = 0n;
-  state = pcg32Step(state, increment).state;
-  state = (state + derived) & MASK64;
-  state = pcg32Step(state, increment).state;
-  return { state, increment };
 }
 
 export class Random {
@@ -89,9 +88,8 @@ export class Random {
     const id = keyOf(key);
     const counter = this.counters[id] ?? 0;
     this.counters[id] = counter + 1;
-    const derived = fnv1a64(`${this.seed}|${id}|${counter}`);
-    const { state, increment } = seedStream(derived);
-    return pcg32Step(state, increment).value;
+    const base = fnv1a32(`${this.seed}|${id}`);
+    return mix32(base ^ Math.imul(counter + 1, 0x9e3779b9));
   }
 
   /** [0, 1) 均匀分布。 */

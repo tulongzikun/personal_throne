@@ -1,6 +1,6 @@
 {
   "economy": {
-    "consumptionPerCapitaScale": 1.0,
+    "consumptionPerCapitaScale": 1,
     "productionPerWorker": 8,
     "stockMonthsTarget": 1.5,
     "priceAdjustFloor": 0.05,
@@ -23,5 +23,93 @@
     "relationWeight": 0.35,
     "scaleWeight": 0.2,
     "focusWeight": 0.3
+  },
+  "risk": {
+    "split": {
+      "lambda0": 0.00018,
+      "terms": [
+        {
+          "path": "conflict",
+          "coef": 3.2
+        },
+        {
+          "path": "legitimacy",
+          "coef": -1.6
+        },
+        {
+          "path": "governance",
+          "coef": -1.2
+        }
+      ],
+      "scale": 900
+    },
+    "bankruptcy": {
+      "lambda0": 0.0006,
+      "terms": [
+        {
+          "path": "debtRatio",
+          "coef": 2.4
+        },
+        {
+          "path": "cashRatio",
+          "coef": -2
+        }
+      ],
+      "scale": 700
+    },
+    "corruption": {
+      "lambda0": 0.0012,
+      "terms": [
+        {
+          "path": "governance",
+          "coef": -2.2
+        },
+        {
+          "path": "conflict",
+          "coef": 1.4
+        }
+      ],
+      "scale": 700
+    },
+    "unrest": {
+      "lambda0": 0.001,
+      "terms": [
+        {
+          "path": "legitimacy",
+          "coef": -2.4
+        },
+        {
+          "path": "conflict",
+          "coef": 2
+        },
+        {
+          "path": "cashRatio",
+          "coef": -1.2
+        }
+      ],
+      "scale": 700
+    }
+  },
+  "contract": {
+    "defaultPenaltyRate": 0.1,
+    "graceMonths": 2,
+    "restructureMonths": 4,
+    "liquidationHaircut": 0.35,
+    "loanRateMonthly": 0.012,
+    "maxLoanMonths": 24,
+    "minPenalty": 40
+  },
+  "market": {
+    "qualityWeight": 1.1,
+    "reputationWeight": 0.9,
+    "priceWeight": 2.2,
+    "entryPriceRatio": 1.35,
+    "maxOrgsPerMarket": 3,
+    "entryCapital": 2400
+  },
+  "trade": {
+    "unitTransportCost": 1,
+    "lossRate": 0.03,
+    "tariffEnabled": true
   }
 }

@@ -107,7 +107,7 @@
       ]
     },
     "exclusivity": "org_power",
-    "cooldownDays": 240,
+    "cooldownDays": 480,
     "effects": [
       {
         "kind": "add",
@@ -134,12 +134,17 @@
         {
           "path": "conflict",
           "op": ">",
-          "value": 0.45
+          "value": 0.5
+        },
+        {
+          "path": "governance",
+          "op": "<",
+          "value": 0.6
         }
       ]
     },
     "risk": {
-      "lambda0": 0.025,
+      "lambda0": 0.006,
       "terms": [
         {
           "path": "conflict",
@@ -152,7 +157,7 @@
       ]
     },
     "exclusivity": "org_power",
-    "cooldownDays": 300,
+    "cooldownDays": 720,
     "effects": [
       {
         "kind": "add",
@@ -168,11 +173,280 @@
         "kind": "add",
         "path": "scale",
         "value": -0.05
+      },
+      {
+        "kind": "stat",
+        "key": "splits",
+        "value": 1
       }
     ],
     "text": {
       "title": "分裂",
       "body": "一批骨干带着客户另立门户，组织的根基被硬生生掰下一角。"
+    }
+  },
+  {
+    "id": "ev_org_inheritance",
+    "domain": "organization",
+    "scope": "organization",
+    "conditions": {
+      "all": [
+        {
+          "path": "leadership.legitimacy",
+          "op": "<",
+          "value": 0.62
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": [
+        {
+          "path": "leadership.legitimacy",
+          "coef": -2
+        }
+      ]
+    },
+    "cooldownDays": 300,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "leadership.legitimacy",
+        "value": -0.12
+      },
+      {
+        "kind": "add",
+        "path": "conflict",
+        "value": 0.1
+      },
+      {
+        "kind": "add",
+        "path": "cash",
+        "value": -300
+      }
+    ],
+    "text": {
+      "title": "继承纠纷",
+      "body": "老领袖的遗嘱被两个支系各执一词，账房与护卫各自效忠，生意停摆。"
+    }
+  },
+  {
+    "id": "ev_org_bank_run",
+    "domain": "organization",
+    "scope": "organization",
+    "conditions": {
+      "all": [
+        {
+          "path": "cashRatio",
+          "op": "<",
+          "value": 0.25
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.03,
+      "terms": [
+        {
+          "path": "cashRatio",
+          "coef": -3
+        },
+        {
+          "path": "debtRatio",
+          "coef": 1.2
+        }
+      ]
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "cash",
+        "value": -600
+      },
+      {
+        "kind": "add",
+        "path": "liabilities",
+        "value": 300
+      },
+      {
+        "kind": "add",
+        "path": "leadership.legitimacy",
+        "value": -0.08
+      }
+    ],
+    "text": {
+      "title": "挤兑",
+      "body": "存户听说账上现银不足，天没亮就堵在门口，柜上只能拆东墙补西墙。"
+    }
+  },
+  {
+    "id": "ev_org_strike",
+    "domain": "organization",
+    "scope": "organization",
+    "conditions": {
+      "any": [
+        {
+          "path": "unpaidWages",
+          "op": ">",
+          "value": 0
+        },
+        {
+          "path": "cashRatio",
+          "op": "<",
+          "value": 0.1
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.03,
+      "terms": [
+        {
+          "path": "conflict",
+          "coef": 1.6
+        },
+        {
+          "path": "efficiency",
+          "coef": -1.4
+        }
+      ]
+    },
+    "cooldownDays": 300,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "efficiency",
+        "value": -0.12
+      },
+      {
+        "kind": "add",
+        "path": "cash",
+        "value": -180
+      },
+      {
+        "kind": "add",
+        "path": "members",
+        "value": -6
+      }
+    ],
+    "text": {
+      "title": "罢工",
+      "body": "欠薪传开以后，工坊的炉子冷了三天，管事只能拿现钱安抚。"
+    }
+  },
+  {
+    "id": "ev_org_merger",
+    "domain": "organization",
+    "scope": "organization",
+    "conditions": {
+      "all": [
+        {
+          "path": "cashRatio",
+          "op": "<",
+          "value": 0.2
+        },
+        {
+          "path": "debtRatio",
+          "op": ">",
+          "value": 0.8
+        }
+      ]
+    },
+    "risk": {
+      "lambda0": 0.03,
+      "terms": [
+        {
+          "path": "debtRatio",
+          "coef": 2.2
+        },
+        {
+          "path": "cashRatio",
+          "coef": -2
+        }
+      ]
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "merge"
+      }
+    ],
+    "text": {
+      "title": "并购",
+      "body": "债主们失去了耐心，同业最大的对手趁夜递来契约，整间行号换了招牌。"
+    }
+  },
+  {
+    "id": "ev_org_smuggle_bust",
+    "domain": "organization",
+    "scope": "organization",
+    "risk": {
+      "lambda0": 0.025,
+      "terms": [
+        {
+          "path": "conflict",
+          "coef": 1.2
+        },
+        {
+          "path": "governance",
+          "coef": -1.5
+        }
+      ]
+    },
+    "cooldownDays": 180,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "cash",
+        "value": -520
+      },
+      {
+        "kind": "add",
+        "path": "liabilities",
+        "value": 160
+      },
+      {
+        "kind": "add",
+        "path": "leadership.legitimacy",
+        "value": -0.05
+      }
+    ],
+    "text": {
+      "title": "走私被查",
+      "body": "税关在一批「陶器」里翻出了上等香料，货被扣押，罚单连夜送到。"
+    }
+  },
+  {
+    "id": "ev_org_route_severed",
+    "domain": "organization",
+    "scope": "organization",
+    "conditions": {
+      "all": []
+    },
+    "risk": {
+      "lambda0": 0.006,
+      "terms": []
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "tradeInvestment",
+        "value": -80
+      },
+      {
+        "kind": "add",
+        "path": "cash",
+        "value": -260
+      },
+      {
+        "kind": "add",
+        "path": "tradeCost",
+        "value": 120
+      }
+    ],
+    "text": {
+      "title": "商路断绝",
+      "body": "山口爆发冲突，车队被截在半途，押金与货银一起沉进了关隘。"
     }
   }
 ]

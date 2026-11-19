@@ -59,9 +59,25 @@ function main(): void {
   const alive = Object.values(state.characters).filter((character) => character.alive).length;
   const events = state.history.filter((record) => record.kind === 'event').length;
   const deaths = state.history.filter((record) => record.kind === 'death').length;
-  const dissolved = state.history.filter(
-    (record) => record.kind === 'milestone' && record.summary.includes('解散'),
-  ).length;
+  const dissolved = state.stats.dissolved;
+  const everOrgs = 10 + state.stats.founded;
+  const bankruptRate = everOrgs > 0 ? state.stats.bankruptcies / everOrgs : 0;
+  const splitOrgs = new Set<string>();
+  for (const record of state.history) {
+    if (record.causeEventId !== 'ev_org_split') continue;
+    const ref = record.refs[0];
+    if (ref) splitOrgs.add(ref.id);
+  }
+  const splitRate = everOrgs > 0 ? splitOrgs.size / everOrgs : 0;
+  const avgOrgs =
+    state.stats.orgCountSamples > 0 ? state.stats.orgCountSum / state.stats.orgCountSamples : 0;
+  const priceDeviation =
+    state.stats.priceSamples > 0 ? state.stats.priceDeviationSum / state.stats.priceSamples : 0;
+  const eventCounts = new Map<string, number>();
+  for (const record of state.history) {
+    if (!record.causeEventId) continue;
+    eventCounts.set(record.causeEventId, (eventCounts.get(record.causeEventId) ?? 0) + 1);
+  }
 
   console.log('王座与黄金 · 模拟摘要');
   console.log('──────────────────────────────');
@@ -70,7 +86,22 @@ function main(): void {
   console.log(`结束日期    第 ${state.clock.day} 天`);
   console.log(`状态哈希    ${first.hash}`);
   console.log(`耗时        ${first.elapsed.toFixed(0)} ms`);
-  console.log(`组织        ${orgs} 家（解散 ${dissolved}）`);
+  console.log(`组织        ${orgs} 家（平均组织数 ${avgOrgs.toFixed(2)}，解散 ${dissolved}）`);
+  console.log(
+    `破产/重组    ${state.stats.bankruptcies} / ${state.stats.restructurings}（破产率 ${(bankruptRate * 100).toFixed(1)}%）`,
+  );
+  console.log(
+    `分裂/并购    ${splitOrgs.size} 家分裂 / ${state.stats.mergers} 起并购（分裂率 ${(splitRate * 100).toFixed(1)}%）`,
+  );
+  console.log(
+    `新进入       ${state.stats.founded} 家 / 价格偏离基准 ${(priceDeviation * 100).toFixed(1)}% / 关税 ${state.stats.tariffRevenue}`,
+  );
+  console.log(
+    `事件分布    ${[...eventCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([id, count]) => `${id}×${count}`)
+      .join('，')}`,
+  );
   console.log(`存活人物    ${alive}`);
   console.log(`事件记录    ${events} 条 / 死亡 ${deaths} 人`);
   console.log(`历史总条数  ${state.history.length}`);
