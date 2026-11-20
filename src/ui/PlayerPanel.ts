@@ -6,7 +6,7 @@
 
 import type { Organization } from '../core/WorldState';
 import type { UiDeps } from './context';
-import { clear, el, fmtMoney, fmtPct } from './dom';
+import { button, clear, el, fmtMoney, fmtPct } from './dom';
 import { alignmentLabel } from '../systems/character/Profile';
 import { CAREER_CLASSES, careerTitle, canSwitchCareer } from '../systems/character/Career';
 import { CLASS_LABELS, RACE_LABELS, SKILL_LABELS, SEX_LABELS, labelOf } from './labels';
@@ -78,6 +78,33 @@ export class PlayerPanel {
       rows.append(this.row('持股', fmtPct(this.shareOf(org, state.playerId))));
     }
     this.host.append(rows);
+
+    // 训练：花铜币把主技能练到天赋上限，是玩家开局最直接的自我提升。
+    const skills = Object.entries(player.skills)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+    if (skills.length > 0) {
+      const train = el('div', 'player-card__train');
+      train.append(el('p', 'player-card__train-title', '花铜币训练（每次 +1，受天赋上限）'));
+      for (const [skill, level] of skills) {
+        const cost = 150 + level * 120;
+        const action = button(
+          `${labelOf(SKILL_LABELS, skill)} Lv.${level} · ${cost}`,
+          () => {
+            const result = deps.dispatch({ kind: 'train', skill });
+            deps.notify(
+              result.ok ? (result.summary ?? '训练完成') : (result.error ?? '训练失败'),
+              result.ok ? 'ok' : 'error',
+            );
+            deps.refresh();
+          },
+          'small',
+        );
+        action.disabled = player.wealth < cost;
+        train.append(action);
+      }
+      this.host.append(train);
+    }
 
     const skillEntries = Object.entries(player.skills)
       .sort((a, b) => b[1] - a[1])

@@ -77,8 +77,8 @@ export function settleShipments(state: WorldState, content: WorldContent): Shipm
       owner.cash += revenue;
       owner.tradeRevenue += revenue;
       owner.lastMonthTradeRevenue += revenue;
-      owner.tradeCost += shipment.transportCost + tariff;
-      owner.lastMonthTransport += shipment.transportCost;
+      // 运费在发船时已计入 tradeCost（现金也已在当时扣掉），到港只补关税。
+      owner.tradeCost += tariff;
       state.stats.tradeRevenue += revenue;
       state.stats.tradeCost += shipment.transportCost + tariff;
     }
@@ -165,7 +165,7 @@ function planFlows(state: WorldState, content: WorldContent): TradeFlow[] {
         if (owner) {
           owner.cash -= purchase + transportCost;
           owner.tradeInvestment += purchase;
-          owner.tradeCost += transportCost;
+          owner.tradeCost += purchase + transportCost;
           owner.lastMonthTransport += transportCost;
         }
         source.stock = Math.max(0, source.stock - units);

@@ -19,7 +19,7 @@ describe('组织财务', () => {
     expect(entries.length).toBeGreaterThan(0);
 
     for (const entry of entries) {
-      const expected = entry.equityBefore + entry.profit - entry.tax;
+      const expected = entry.equityBefore + entry.profit - entry.tax - entry.dividends;
       expect(Math.abs(entry.equityAfter - expected), entry.orgId).toBeLessThanOrEqual(1);
     }
   });

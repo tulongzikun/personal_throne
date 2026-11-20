@@ -2377,3 +2377,18 @@ select.input {
 .modal__digest-item:last-child {
   margin-bottom: 2px;
 }
+
+/* 阶段 2：玩家训练 */
+.player-card__train {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.player-card__train-title {
+  width: 100%;
+  margin: 0 0 2px;
+  font-size: 0.78em;
+  color: var(--muted, #9a8f7c);
+}

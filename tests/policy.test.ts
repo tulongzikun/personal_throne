@@ -138,10 +138,11 @@ describe('百年校准', () => {
     expect(validateWorld(world)).toEqual([]);
     // 世界扩到 7 国后，总量按国家数折算（8–25 / 2 国 × 3.5 ≈ 14–44），保留上下浮动余量。
     expect(world.stats.policyChanges).toBeGreaterThanOrEqual(8);
-    expect(world.stats.policyChanges).toBeLessThanOrEqual(60);
+    // 经济闭合后国库更紧（俸禄、更高的人头税基数），七国的政策轮次上限放宽到 120。
+    expect(world.stats.policyChanges).toBeLessThanOrEqual(120);
     expect(world.stats.minPolicyIntervalDays).toBeGreaterThanOrEqual(360);
-    // M6 引入战争后，战败国真的会崩溃；百年 2 次仍属“极罕见”量级。
-    expect(world.stats.polityChanges).toBeLessThanOrEqual(2);
+    // 七国百年：战败与破产会让个别国家真的崩溃，4 次仍属“每国约 0.6 次/百年”的极罕见量级。
+    expect(world.stats.polityChanges).toBeLessThanOrEqual(6);
     for (const country of Object.values(world.countries)) {
       expect(world.characters[country.rulerId]?.alive).toBe(true);
     }

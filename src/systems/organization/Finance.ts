@@ -27,6 +27,8 @@ export interface FinanceEntry {
   readonly transport: number;
   readonly profit: number;
   readonly unpaid: number;
+  /** 本月按股份派发的现金分红（权益流出，不属于费用）。 */
+  readonly dividends: number;
   readonly marketShare: number;
   readonly equityBefore: number;
   readonly equityAfter: number;
@@ -68,17 +70,17 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     const rate = interestRateMonthly + org.risk.bankruptcy * 0.005;
     const interest = Math.round(org.liabilities * rate);
 
-    // 运输与关税只来自本月贸易登记；结算后清零，避免与损益重复记账。
-    const transportCost = Math.max(0, org.lastMonthTransport);
-    const tariff = Math.max(0, org.lastMonthTariff);
-    // 贸易收入在到港时登记，属于本月经营成果；采购成本已通过现金投入体现。
+    // 贸易口径：tradeCost 由 TradeSystem 汇总（发船时 采购+运费，到港补关税），
+    // 现金已在发生时扣过，这里只做损益归集，避免运费/关税重复计。
     const tradeRevenue = Math.max(0, org.lastMonthTradeRevenue);
+    const tradeCogs = Math.max(0, org.tradeCost);
+    org.tradeCost = 0;
     org.lastMonthTransport = 0;
     org.lastMonthTariff = 0;
     org.lastMonthTradeRevenue = 0;
 
     const grossProfit =
-      revenue + tradeRevenue - materialCost - payroll - admin - interest - transportCost - tariff;
+      revenue + tradeRevenue - tradeCogs - materialCost - payroll - admin - interest;
     // 有效税率随国家税制变化：政策税率 0.1 → 基准的 75%，0.35 → 基准的 137.5%。
     const homeRegion = state.regions[org.homeRegionId];
     const taxCountry = homeRegion ? state.countries[homeRegion.countryId] : undefined;
@@ -90,7 +92,8 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     const tax = grossProfit > 0 ? Math.round(grossProfit * effectiveTaxRate) : 0;
 
     const equityBefore = equityOf(org);
-    const net = org.cash + revenue - materialCost - admin - interest - transportCost - tariff - tax;
+    const net =
+      org.cash + revenue + tradeRevenue - tradeCogs - materialCost - admin - interest - tax;
     let wagesPaid = payroll;
     let unpaid = 0;
     let arrears = 0;
@@ -107,8 +110,9 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     org.liabilities += unpaid + arrears;
 
     org.lastMonthRevenue = revenue + tradeRevenue;
-    org.lastMonthCost = materialCost + payroll + admin + interest + transportCost + tariff + tax;
+    org.lastMonthCost = tradeCogs + materialCost + payroll + admin + interest + tax;
     org.lastMonthProfit = grossProfit - tax;
+    state.stats.profitTotal += org.lastMonthProfit;
     org.lastMonthTax = tax;
     org.marketShare = position?.share ?? 0;
 
@@ -137,6 +141,30 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
       org.assets += invest;
     }
 
+    // 分红：盈利且现金厚于三个月工资时，把当月净利润的 30% 按股份分给在世股东。
+    // 现金与损益同时减少，权益不变；未登记股份对应的分红留在组织里。
+    const profitAfterTax = grossProfit - tax;
+    let dividends = 0;
+    if (profitAfterTax > 0 && org.cash > payroll * 3) {
+      const pool = Math.round(profitAfterTax * 0.3);
+      let paid = 0;
+      if (pool > 0) {
+        for (const holder of org.shares) {
+          const character = state.characters[holder.characterId];
+          if (!character || !character.alive) continue;
+          const amount = Math.round(pool * holder.share);
+          if (amount <= 0) continue;
+          character.wealth += amount;
+          paid += amount;
+        }
+      }
+      if (paid > 0) {
+        org.cash = Math.max(0, org.cash - paid);
+        state.stats.dividendsPaid += paid;
+        dividends = paid;
+      }
+    }
+
     entries.push({
       orgId: org.id,
       revenue,
@@ -145,10 +173,11 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
       admin,
       interest,
       tax,
-      tariff,
-      transport: transportCost,
+      tariff: 0,
+      transport: 0,
       profit: grossProfit,
       unpaid,
+      dividends,
       marketShare: org.marketShare,
       equityBefore,
       equityAfter: equityOf(org),

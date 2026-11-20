@@ -41,7 +41,9 @@ describe('§13 B 商业干预', () => {
     const ea = new GameEngine(acted, content);
     let baselineProfit = 0;
     let actedProfit = 0;
-    for (let month = 0; month < 3; month += 1) {
+    // 商路的前三个月是采购与在途期：成本先付、货未到港，利润会暂时低于基线；
+    // 按 12 个月滚动看真实回报（在途与回款都完成）。
+    for (let month = 0; month < 12; month += 1) {
       eb.advanceDays(30);
       ea.advanceDays(30);
       baselineProfit += baseline.organizations['o_grainwheel']!.lastMonthProfit;

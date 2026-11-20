@@ -12,6 +12,7 @@
  */
 
 import type {
+  AttributeKey,
   Contract,
   CountryId,
   GoodId,
@@ -86,6 +87,10 @@ export type Command =
       kind: 'change_career';
       characterId: CharacterId;
       classId: 'merchant' | 'mercenary' | 'politician';
+    })
+  | (CommandBase & {
+      kind: 'train';
+      skill: string;
     })
   /** 对挂起的玩家事件做出抉择；不传 choiceId 表示按效用择优。 */
   | (CommandBase & { kind: 'choose'; choiceId?: string })
@@ -483,6 +488,26 @@ export function applyCommand(
       };
     }
 
+    case 'train': {
+      if (command.actorId && command.actorId !== state.playerId) return fail('只能训练自己');
+      const player = state.characters[state.playerId];
+      if (!player) return fail('玩家不存在');
+      if (!player.alive) return fail('你已经不在人世');
+      const current = player.skills[command.skill] ?? 0;
+      const attr = player.attributes[skillAttribute(command.skill)] ?? 10;
+      const cap = 3 + Math.floor(attr / 3);
+      if (current >= cap) return fail(`${command.skill} 已到天赋上限（${cap}）`);
+      const cost = 150 + current * 120;
+      if (player.wealth < cost) return fail(`学费不足：需要 ${cost}，现有 ${player.wealth}`);
+      player.wealth -= cost;
+      player.skills[command.skill] = current + 1;
+      return {
+        ok: true,
+        summary: `你花 ${cost} 铜币训练 ${command.skill}，提升到 ${current + 1}`,
+        refs: [{ kind: 'character', id: player.id }],
+      };
+    }
+
     case 'change_career': {
       if (command.characterId !== state.playerId) return fail('只能为自己转行');
       const result = switchCareer(state, command.characterId, command.classId, state.clock.day);
@@ -758,6 +783,25 @@ export function regionHasPath(state: WorldState, from: RegionId, to: RegionId): 
   return false;
 }
 
+/** 技能对应的主属性（六维），用于训练上限。 */
+const SKILL_ATTRIBUTE: Readonly<Record<string, AttributeKey>> = {
+  trade: 'intellect',
+  negotiation: 'charisma',
+  persuasion: 'charisma',
+  intimidation: 'willpower',
+  insight: 'perception',
+  law: 'intellect',
+  melee: 'physique',
+  tactics: 'intellect',
+  stealth: 'agility',
+  appraisal: 'perception',
+  craft: 'agility',
+};
+
+function skillAttribute(skill: string): AttributeKey {
+  return SKILL_ATTRIBUTE[skill] ?? 'intellect';
+}
+
 /** 命令的可读描述，供 UI 按钮与日志使用。 */
 export function describeCommand(command: Command): string {
   switch (command.kind) {
@@ -787,6 +831,8 @@ export function describeCommand(command: Command): string {
       return `出售资产 ${command.amount}`;
     case 'change_career':
       return `转行为 ${command.classId}`;
+    case 'train':
+      return `训练 ${command.skill}`;
     case 'choose':
       return command.choiceId ? `抉择 ${command.choiceId}` : '做出抉择';
     case 'declare_war':

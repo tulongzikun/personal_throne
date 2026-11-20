@@ -746,6 +746,10 @@ export interface WorldStats {
   tariffRevenue: number;
   tradeRevenue: number;
   tradeCost: number;
+  /** 组织税后净利润累计（经济闭合校验：Δ权益/净利润 应接近 1）。 */
+  profitTotal: number;
+  /** 累计分红（权益的合法流出，校验时加回）。 */
+  dividendsPaid: number;
   orgCountSum: number;
   orgCountSamples: number;
   /** 政策三阶段的可观测统计（M3）。 */
@@ -1127,6 +1131,8 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
       tariffRevenue: 0,
       tradeRevenue: 0,
       tradeCost: 0,
+      profitTotal: 0,
+      dividendsPaid: 0,
       orgCountSum: 0,
       orgCountSamples: 0,
       policyProposals: 0,

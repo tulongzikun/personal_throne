@@ -26,7 +26,7 @@ export interface CountryBudget {
 }
 
 const ADMIN_RATE = 0.12;
-const HEAD_TAX_PER_CAPITA = 0.02;
+const HEAD_TAX_PER_CAPITA = 0.1;
 
 export function settleMonthlyCountry(
   state: WorldState,
@@ -49,15 +49,30 @@ export function settleMonthlyCountry(
     // 两套口径并存会导致"同一笔贸易被征两次税"，账目无法对平。
     const revenue = headTax;
 
+    // 公职俸禄：官职表里的月薪由国库支付给在任者；国库付不出时当月欠俸（记入债务压力）。
+    let salaries = 0;
+    for (const office of country.offices) {
+      const holder = state.characters[office.holderId];
+      if (!holder || !holder.alive) continue;
+      salaries += office.salaryMonthly;
+    }
     const military = Math.round(country.policies.militaryShare * (revenue + 100));
     // 管制越重，行政成本越高（审批、稽查、价格管制）。
     const admin = Math.round(revenue * (ADMIN_RATE + 0.04 * country.policies.regulation));
     const interest = Math.round(country.debt * interestRateMonthly);
-    const baseExpense = military + admin + interest;
+    const baseExpense = military + admin + interest + salaries;
 
     // 刚性收支：公共工程属于"有余钱才做"的可选支出，不参与赤字判定。
     const balance = revenue - baseExpense;
     country.treasury += balance;
+    if (balance >= 0) {
+      for (const office of country.offices) {
+        const holder = state.characters[office.holderId];
+        if (!holder || !holder.alive) continue;
+        holder.wealth += office.salaryMonthly;
+        country.treasury -= office.salaryMonthly;
+      }
+    }
     if (country.treasury < 0) {
       country.debt += -country.treasury;
       country.treasury = 0;
@@ -69,7 +84,7 @@ export function settleMonthlyCountry(
 
     // 公共工程：国库超过 6 个月刚性开支的部分，一半用于道路/水利/赈济，
     // 既是财政泄压阀，也让"长期盈余 → 国库无限膨胀"不发生。
-    const reserveTarget = baseExpense * 6;
+    const reserveTarget = baseExpense * 30;
     const publicWorks =
       country.treasury > reserveTarget ? Math.round((country.treasury - reserveTarget) * 0.5) : 0;
     country.treasury -= publicWorks;

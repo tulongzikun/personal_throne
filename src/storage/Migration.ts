@@ -97,6 +97,8 @@ function emptyStats(): Record<string, number> {
     tariffRevenue: 0,
     tradeRevenue: 0,
     tradeCost: 0,
+    profitTotal: 0,
+    dividendsPaid: 0,
     orgCountSum: 0,
     orgCountSamples: 0,
     policyProposals: 0,
