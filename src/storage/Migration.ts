@@ -53,7 +53,13 @@ export function migrateSave(raw: unknown, savedAt = 0): SaveEnvelope {
     );
     const state = migrateWorldState(record['state']);
     // 发生过跨版本迁移时，旧哈希对应的已经不是同一份状态，丢弃它而不是报"文件损坏"。
-    const hash = rawSchema === SCHEMA_VERSION ? String(record['hash'] ?? '') : '';
+    // 但没有发生迁移、又没有哈希的存档无法证明未被篡改，一律拒绝：
+    // 早期实现里"空哈希跳过校验"等于给了一条免检通道。
+    const rawHash = typeof record['hash'] === 'string' ? record['hash'] : '';
+    if (rawSchema === SCHEMA_VERSION && rawHash.length === 0) {
+      throw new SaveError('存档缺少完整性校验，无法确认未被修改');
+    }
+    const hash = rawSchema === SCHEMA_VERSION ? rawHash : '';
     return {
       format: SAVE_FORMAT,
       formatVersion: SAVE_FORMAT_VERSION,
@@ -144,12 +150,23 @@ function migrateV1toV2(raw: Record<string, unknown>): void {
     market['routeOwnerId'] ??= null;
   }
 
+  // 早期存档把 contracts 写成数组：只补字段不换容器的话，读档后非空数组读不进、
+  // 空数组又会在第一次签约时丢掉新契约。这里先归一化成以 id 为键的对象。
   const rawContracts = raw['contracts'] ?? {};
-  const contracts = (
-    Array.isArray(rawContracts)
-      ? rawContracts
-      : Object.values(rawContracts as Record<string, unknown>)
-  ) as Record<string, unknown>[];
+  let contracts: Record<string, unknown>[];
+  if (Array.isArray(rawContracts)) {
+    const normalized: Record<string, unknown> = {};
+    rawContracts.forEach((item, index) => {
+      const contract = (item ?? {}) as Record<string, unknown>;
+      const id = typeof contract['id'] === 'string' ? contract['id'] : `contract_${index}`;
+      contract['id'] = id;
+      normalized[id] = contract;
+    });
+    raw['contracts'] = normalized;
+    contracts = Object.values(normalized) as Record<string, unknown>[];
+  } else {
+    contracts = Object.values(rawContracts as Record<string, unknown>) as Record<string, unknown>[];
+  }
   for (const contract of contracts) {
     contract['principal'] ??= contract['value'] ?? 0;
     contract['collateral'] ??= 0;
@@ -308,6 +325,20 @@ function migrateV4toV5(raw: Record<string, unknown>): void {
 }
 
 /** 把 `WorldState` 从它的 `schemaVersion` 升到当前版本。 */
+/** 契约容器归一化：数组 → 以 id 为键的对象（不改写已有对象的键）。 */
+function normalizeContracts(state: Record<string, unknown>): void {
+  const rawContracts = state['contracts'];
+  if (!Array.isArray(rawContracts)) return;
+  const normalized: Record<string, unknown> = {};
+  rawContracts.forEach((item, index) => {
+    const contract = (item ?? {}) as Record<string, unknown>;
+    const id = typeof contract['id'] === 'string' ? contract['id'] : `contract_${index}`;
+    contract['id'] = id;
+    normalized[id] = contract;
+  });
+  state['contracts'] = normalized;
+}
+
 export function migrateWorldState(raw: unknown): WorldState {
   if (typeof raw !== 'object' || raw === null) {
     throw new SaveError('存档中缺少世界状态');
@@ -320,6 +351,7 @@ export function migrateWorldState(raw: unknown): WorldState {
   if (version > SCHEMA_VERSION) {
     throw new SaveError(`存档 schemaVersion ${version} 高于当前 ${SCHEMA_VERSION}`);
   }
+  normalizeContracts(state);
 
   while (version < SCHEMA_VERSION) {
     if (version === 1) {

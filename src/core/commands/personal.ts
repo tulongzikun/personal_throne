@@ -31,7 +31,7 @@ import {
 } from '../../systems/organization/Shares';
 import { settleTravelEncounter } from '../../systems/region/RegionNews';
 import { marketKeyOf } from '../WorldState';
-import { SKILL_ATTRIBUTE, fail, ownCountryOf, skillAttribute } from '../commandHelpers';
+import { SKILL_ATTRIBUTE, fail, isAmount, ownCountryOf, skillAttribute } from '../commandHelpers';
 
 export function train(state: WorldState, command: CommandOf<'train'>): CommandResult {
   if (command.actorId && command.actorId !== state.playerId) return fail('只能训练自己');
@@ -198,8 +198,9 @@ export function tradeGoods(
   const blocked = actionBlocker(state, state.playerId);
   if (blocked) return fail(blocked);
   const player = state.characters[state.playerId]!;
+  if (!isAmount(command.units)) return fail('贩运数量必须是正整数');
   const capacity = tradeCarryCapacity(player);
-  const units = Math.max(1, Math.round(command.units));
+  const units = command.units;
   if (units > capacity) {
     return fail(`一次最多贩 ${capacity} 单位（贸易每级 +1）`);
   }
