@@ -31,6 +31,7 @@ import { applyTiers, computeTiers } from './SimulationTier';
 import {
   hashWorld,
   monthKeyOf,
+  type CharacterId,
   type EventDef,
   type SettleContext,
   type WorldContent,
@@ -88,6 +89,62 @@ export class GameEngine {
 
   get day(): number {
     return this.state.clock.day;
+  }
+
+  /** 玩家是否仍在世；死亡后 UI 会暂停时间并进入结算。 */
+  get playerAlive(): boolean {
+    return this.state.characters[this.state.playerId]?.alive === true;
+  }
+
+  /**
+   * 玩家可选的继承人：配偶 → 子女 → 兄弟姐妹 → 同家族其他在世成员。
+   * 只返回在世、且不是玩家本人的角色，按亲疏排序。
+   */
+  heirs(): CharacterId[] {
+    const player = this.state.characters[this.state.playerId];
+    if (!player) return [];
+    const alive = (id: CharacterId): boolean => this.state.characters[id]?.alive === true;
+    const picked = new Set<CharacterId>();
+    const push = (id: CharacterId | null | undefined): void => {
+      if (id && id !== player.id && alive(id)) picked.add(id);
+    };
+
+    push(player.spouseId);
+    for (const character of Object.values(this.state.characters)) {
+      if (character.parentIds.includes(player.id)) push(character.id);
+    }
+    if (player.familyId) {
+      const family = this.state.families[player.familyId];
+      for (const memberId of family?.memberIds ?? []) {
+        const member = this.state.characters[memberId];
+        if (!member || memberId === player.id || !member.alive) continue;
+        const shared = member.parentIds.filter(
+          (id) => id !== null && player.parentIds.includes(id),
+        );
+        if (shared.length > 0) push(memberId);
+      }
+    }
+    return [...picked];
+  }
+
+  /** 以指定继承人继续；要求目标在世且存在于世界中。 */
+  continueAs(characterId: CharacterId): CommandResult {
+    const next = this.state.characters[characterId];
+    if (!next) return { ok: false, error: '继承人不存在' };
+    if (!next.alive) return { ok: false, error: '继承人已经不在人世' };
+    const previous = this.state.playerId;
+    this.state.playerId = characterId;
+    this.record(
+      'milestone',
+      `${formatDate(this.day)} ${next.name} 继承了 ${this.state.characters[previous]?.name ?? '前任'} 的家业`,
+      [{ kind: 'character', id: characterId }],
+    );
+    this.syncCounters();
+    return {
+      ok: true,
+      summary: `你现在是 ${next.name}`,
+      refs: [{ kind: 'character', id: characterId }],
+    };
   }
 
   /** 玩家在当前所在国的公职影响力（0–1），政策支持度与命令权限共用。 */

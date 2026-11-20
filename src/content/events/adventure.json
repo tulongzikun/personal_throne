@@ -204,5 +204,173 @@
       "title": "善缘",
       "body": "你在路边帮了朝圣者一把，对方临别时塞来一小袋钱。"
     }
+  },
+  {
+    "id": "ev_adv_merchant_offer",
+    "domain": "adventure",
+    "scope": "character",
+    "risk": {
+      "lambda0": 0.02,
+      "terms": [
+        {
+          "path": "skills.trade",
+          "coef": 0.12
+        }
+      ]
+    },
+    "cooldownDays": 260,
+    "effects": [],
+    "text": {
+      "title": "行商邀约",
+      "body": "一位行商在酒馆里拦住你：一趟短途贩运，缺个懂行的人押货。"
+    },
+    "choices": [
+      {
+        "id": "join",
+        "label": "押这一趟",
+        "hint": "现金 +120，贸易 +1",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": 120
+          },
+          {
+            "kind": "add",
+            "path": "skills.trade",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "decline",
+        "label": "留在城里",
+        "hint": "洞察 +1",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "skills.insight",
+            "value": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ev_adv_family_quarrel",
+    "domain": "adventure",
+    "scope": "character",
+    "risk": {
+      "lambda0": 0.018,
+      "terms": [
+        {
+          "path": "traits.loyalty",
+          "coef": 0.6
+        }
+      ]
+    },
+    "cooldownDays": 300,
+    "effects": [],
+    "text": {
+      "title": "家族争执",
+      "body": "族中两位长辈为一块祖产吵到你面前，要你评理。"
+    },
+    "choices": [
+      {
+        "id": "mediate",
+        "label": "各让一步",
+        "hint": "花费 40 铜，善良 +2",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -40
+          },
+          {
+            "kind": "add",
+            "path": "alignment.good",
+            "value": 2
+          }
+        ]
+      },
+      {
+        "id": "elder",
+        "label": "站在长房这边",
+        "hint": "现金 +60，守序 +2",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": 60
+          },
+          {
+            "kind": "add",
+            "path": "alignment.law",
+            "value": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ev_adv_civic_duty",
+    "domain": "adventure",
+    "scope": "character",
+    "risk": {
+      "lambda0": 0.016,
+      "terms": [
+        {
+          "path": "traits.authority",
+          "coef": 0.7
+        }
+      ]
+    },
+    "cooldownDays": 280,
+    "effects": [],
+    "text": {
+      "title": "市政征召",
+      "body": "市政厅贴出告示，缺一名临时税吏，管事的人正四处找人。"
+    },
+    "choices": [
+      {
+        "id": "serve",
+        "label": "接下差事",
+        "hint": "花费 60 铜，守序 +2，说服 +1",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -60
+          },
+          {
+            "kind": "add",
+            "path": "alignment.law",
+            "value": 2
+          },
+          {
+            "kind": "add",
+            "path": "skills.persuasion",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "id": "bribe",
+        "label": "花钱免役",
+        "hint": "花费 150 铜，善良 −3",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -150
+          },
+          {
+            "kind": "add",
+            "path": "alignment.good",
+            "value": -3
+          }
+        ]
+      }
+    ]
   }
 ]

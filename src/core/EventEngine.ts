@@ -356,7 +356,8 @@ export function entitiesOfScope(state: WorldState, scope: EventScope): EntityId[
     case 'region':
       return sortedIds(state.regions);
     case 'character':
-      return sortedIds(state.characters);
+      // 死者不再成为事件目标：否则百年模拟里过半事件落在已故人物身上。
+      return sortedIds(state.characters).filter((id) => state.characters[id]?.alive === true);
   }
 }
 

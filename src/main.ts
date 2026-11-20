@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   if (!root) throw new Error('挂载点 #app 不存在');
 
   const { state, restored } = await initialState();
-  const app = new App(root, new GameEngine(state, content));
+  const app = new App(root, new GameEngine(state, content, { stopAtChoices: true }));
   app.start(restored ? '已载入浏览器存档' : `新世界已铸成 · 种子 ${FIXED_SEED}`, {
     tour: restored,
   });

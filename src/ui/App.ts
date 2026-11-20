@@ -8,15 +8,16 @@
 import { describeCommand, type Command, type CommandResult } from '../core/CommandBus';
 import { formatDate, nextBoundary, Phase, toDateParts } from '../core/GameClock';
 import { GameEngine } from '../core/GameEngine';
-import type { ScheduledEvent, WorldState } from '../core/WorldState';
-import { downloadSave, readSaveFile } from '../storage/SaveManager';
+import type { CharacterId, ScheduledEvent, WorldState } from '../core/WorldState';
+import { AUTO_SLOT, downloadSave, readSaveFile, writeSlot } from '../storage/SaveManager';
 import { CharacterPanel } from './CharacterPanel';
 import type { NoticeTone, UiDeps } from './context';
 import { ArmyPanel } from './ArmyPanel';
 import { CountryPanel } from './CountryPanel';
 import { CreateCharacterDialog, creationErrorText } from './CreateCharacterDialog';
 import { StartDialog } from './StartDialog';
-import { EventDialog, type WorldSignal } from './EventDialog';
+import { EventDialog, type DigestItem, type WorldSignal } from './EventDialog';
+import { RELATION_LABELS, isRelated, relationOf, subjectOf } from './signals';
 import { CHOICE_WINDOW_DAYS } from '../core/EventEngine';
 import { HistoryPanel } from './HistoryPanel';
 import { MapView, countryPalette } from './MapView';
@@ -103,6 +104,9 @@ export class App {
   private seenPending = new Set<string>();
   private shownChoices = new Set<string>();
   private lastHashDay = 0;
+  private deathShown = false;
+  private lastAutoSaveDay = 0;
+  private autoSaveBusy = false;
 
   constructor(root: HTMLElement, engine: GameEngine) {
     this.root = root;
@@ -213,6 +217,8 @@ export class App {
     this.seenPending = new Set(state.pendingEvents.map(signalKey));
     this.shownChoices = new Set();
     this.lastHashDay = 0;
+    this.deathShown = false;
+    this.lastAutoSaveDay = state.clock.day;
 
     this.switchTab('region');
     this.refresh(true);
@@ -566,6 +572,7 @@ export class App {
     this.refresh();
     this.drainSignals();
     this.pumpChoices();
+    this.afterAdvance();
   }
 
   private advanceToDay(day: number): void {
@@ -579,6 +586,7 @@ export class App {
     this.refresh();
     this.drainSignals();
     this.pumpChoices();
+    this.afterAdvance();
   }
 
   private jumpToNextEvent(): void {
@@ -646,18 +654,30 @@ export class App {
 
   private drainSignals(): void {
     const state = this.engine.state;
-    const signals: WorldSignal[] = [];
+    const related: WorldSignal[] = [];
+    const digest: DigestItem[] = [];
 
     for (const record of state.history) {
       if (record.id <= this.lastHistoryId || record.kind !== 'event') continue;
       const def = record.causeEventId
         ? this.engine.content.events.find((event) => event.id === record.causeEventId)
         : undefined;
-      signals.push({
-        title: def?.text.title ?? '世界事件',
-        body: def?.text.body ?? record.summary,
-        meta: `${formatDate(record.day)} · ${record.summary}`,
+      const subject = subjectOf(state, record);
+      const relation = relationOf(state, record);
+      const title = def?.text.title ?? '世界事件';
+      const text = def?.text.body ?? record.summary;
+
+      if (!isRelated(relation)) {
+        digest.push({ title, subject: subject?.label ?? '远方', body: text });
+        continue;
+      }
+      related.push({
+        title,
+        body: text,
+        meta: formatDate(record.day),
         tone: 'event',
+        relation: RELATION_LABELS[relation],
+        ...(subject ? { subject: subject.label } : {}),
       });
     }
     const latest = state.history.at(-1);
@@ -670,15 +690,110 @@ export class App {
       this.seenPending.add(key);
       if (scheduled.day <= state.clock.day) continue;
       const def = this.engine.content.events.find((event) => event.id === scheduled.refId);
-      signals.push({
+      related.push({
         title: `预兆 · ${def?.text.title ?? '未明之事'}`,
         body: `风声正在流传：这件事预计在 ${formatDate(scheduled.day)} 前后见分晓，没有人知道它会以何种面目到来。`,
         meta: `待办 ${formatDate(scheduled.day)} · ${this.entityLabel(scheduled.targetScope, scheduled.targetEntityId)}`,
         tone: 'omen',
+        relation: '与你或你身边的人有关',
       });
     }
 
-    if (signals.length > 0) this.eventDialog.pushMany(signals);
+    const signals: WorldSignal[] = [...related];
+    if (digest.length > 0) {
+      const shown = digest.slice(0, 8);
+      signals.push({
+        title: `${digest.length} 条远方见闻`,
+        body: '这些消息与你没有直接关系，已折叠成一页，等你得空时扫一眼。',
+        meta: `${formatDate(state.clock.day)} · 世界在别处继续`,
+        tone: 'digest',
+        items: shown,
+      });
+    }
+    if (signals.length === 0) return;
+    if (related.length > 0) this.pauseForPlayer();
+    const dropped = this.eventDialog.pushMany(signals);
+    if (dropped > 0) this.notify(`另有 ${dropped} 条已收入编年史`, 'info');
+  }
+
+  /** 与你相关的事发生时暂停时间，避免 30× 下把抉择与死讯冲过去。 */
+  private pauseForPlayer(): void {
+    if (this.speed === 0) return;
+    this.setSpeed(0);
+    this.notify('有与你相关的事发生，时间已暂停', 'info');
+  }
+
+  /** 每次推进后检查死讯与自动存档。 */
+  private afterAdvance(): void {
+    this.checkPlayerDeath();
+    this.maybeAutoSave();
+  }
+
+  private checkPlayerDeath(): void {
+    if (this.deathShown || this.engine.playerAlive) return;
+    this.deathShown = true;
+    this.setSpeed(0);
+
+    const state = this.engine.state;
+    const player = state.characters[state.playerId];
+    const orgNames = Object.values(state.organizations)
+      .filter(
+        (org) =>
+          org.shares.some((share) => share.characterId === state.playerId) ||
+          org.leadership.leaderId === state.playerId,
+      )
+      .map((org) => org.name);
+    const heirs = this.engine.heirs();
+    const options = heirs.slice(0, 3).map((id: CharacterId) => ({
+      id,
+      label: `以 ${state.characters[id]?.name ?? id} 继续`,
+    }));
+    options.push({ id: '__end__', label: '就此落幕，看着世界继续' });
+
+    this.eventDialog.pushMany([
+      {
+        title: `${player?.name ?? '你'} 去世了`,
+        body: `${formatDate(state.clock.day)}，${player?.name ?? '你'}在${state.regions[player?.location.regionId ?? '']?.name ?? '异乡'}去世，享年 ${player?.age ?? '?'} 岁。留下的现金 ${fmtMoney(player?.wealth ?? 0)}，股份涉及 ${orgNames.join('、') || '无'}，由继承人按遗嘱分派。你可以选择以某位继承人的身份继续，也可以让故事停在这里。`,
+        meta: '讣告 · 世界不会停下来',
+        tone: 'choice',
+        options,
+        onPick: (choiceId) => this.inherit(choiceId),
+      },
+    ]);
+  }
+
+  private inherit(characterId: string): void {
+    if (characterId === '__end__') {
+      this.setSpeed(0);
+      this.notify('故事到此为止；你可以继续翻看这座世界的编年史。', 'info');
+      return;
+    }
+    const result = this.engine.continueAs(characterId);
+    if (!result.ok) {
+      this.notify(result.error ?? '无法继承', 'error');
+      this.deathShown = false;
+      return;
+    }
+    this.deathShown = false;
+    this.lastHistoryId = this.engine.state.history.at(-1)?.id ?? this.lastHistoryId;
+    this.refresh(true);
+    this.notify(result.summary ?? '你继承了家业', 'ok');
+  }
+
+  /** 每 30 天写一次自动存档；失败只提示一次，不阻塞推进。 */
+  private maybeAutoSave(): void {
+    const day = this.engine.state.clock.day;
+    if (this.autoSaveBusy || day - this.lastAutoSaveDay < 30) return;
+    this.lastAutoSaveDay = day;
+    this.autoSaveBusy = true;
+    void writeSlot(AUTO_SLOT, this.engine.state, '自动存档', Date.now())
+      .then(() => {
+        this.autoSaveBusy = false;
+      })
+      .catch((error: unknown) => {
+        this.autoSaveBusy = false;
+        this.notify(`自动存档失败：${messageOf(error)}`, 'error');
+      });
   }
 
   private entityLabel(scope: string | null, entityId: string | null): string {
@@ -733,6 +848,8 @@ export class App {
     this.lastHistoryId = state.history.at(-1)?.id ?? 0;
     this.seenPending = new Set(state.pendingEvents.map(signalKey));
     this.lastHashDay = 0;
+    this.deathShown = false;
+    this.lastAutoSaveDay = state.clock.day;
     this.refresh(true);
     this.notify(message, 'ok');
   }

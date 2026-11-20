@@ -2338,3 +2338,42 @@ select.input {
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
 }
+
+/* 阶段 1：信号分级与「本月见闻」摘要 */
+.modal__digest {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 32vh;
+  overflow-y: auto;
+  margin: 6px 0 14px;
+  padding-right: 4px;
+}
+
+.modal__digest-item {
+  padding: 8px 12px;
+  border-left: 2px solid var(--line, rgba(255, 255, 255, 0.14));
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.modal__digest-title {
+  font-weight: 600;
+  color: var(--ink, #f1e6cf);
+  margin-right: 8px;
+}
+
+.modal__digest-subject {
+  font-size: 0.78em;
+  color: var(--muted, #9a8f7c);
+}
+
+.modal__digest-body {
+  margin: 4px 0 0;
+  font-size: 0.9em;
+  line-height: 1.6;
+  color: var(--ink-soft, #d7cbb2);
+}
+
+.modal__digest-item:last-child {
+  margin-bottom: 2px;
+}

@@ -26,7 +26,7 @@ interface SaveSlotSpec {
 }
 
 export const SAVE_SLOTS: readonly SaveSlotSpec[] = [
-  { slot: AUTO_SLOT, label: '自动存档', note: '开局时自动读取', auto: true },
+  { slot: AUTO_SLOT, label: '自动存档', note: '每 30 天自动保存', auto: true },
   { slot: 'manual-1', label: '手动槽 1', note: '关键决策前留一份', auto: false },
   { slot: 'manual-2', label: '手动槽 2', note: '', auto: false },
   { slot: 'manual-3', label: '手动槽 3', note: '', auto: false },
