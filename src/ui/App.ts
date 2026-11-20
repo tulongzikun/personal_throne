@@ -16,6 +16,8 @@ import { ArmyPanel } from './ArmyPanel';
 import { CountryPanel } from './CountryPanel';
 import { CreateCharacterDialog, creationErrorText } from './CreateCharacterDialog';
 import { StartDialog } from './StartDialog';
+import { SuggestionsPanel } from './SuggestionsPanel';
+import { ambitionOf, chapterOf } from '../systems/goals/Ambition';
 import { EventDialog, type DigestItem, type WorldSignal } from './EventDialog';
 import { RELATION_LABELS, isRelated, relationOf, subjectOf } from './signals';
 import { CHOICE_WINDOW_DAYS } from '../core/EventEngine';
@@ -107,6 +109,8 @@ export class App {
   private deathShown = false;
   private lastAutoSaveDay = 0;
   private autoSaveBusy = false;
+  private suggestionsPanel!: SuggestionsPanel;
+  private firstReportShown = false;
 
   constructor(root: HTMLElement, engine: GameEngine) {
     this.root = root;
@@ -175,6 +179,7 @@ export class App {
       openCharacter: (characterId) => this.openCharacter(characterId),
     };
     this.playerPanel = new PlayerPanel(playerRail, this.deps);
+    this.suggestionsPanel = new SuggestionsPanel(playerRail, this.deps);
     this.regionPanel = new RegionPanel(this.sectionOf('region'), this.deps);
     this.characterPanel = new CharacterPanel(this.sectionOf('character'), this.deps);
     this.organizationPanel = new OrganizationPanel(this.sectionOf('organization'), this.deps);
@@ -394,6 +399,7 @@ export class App {
 
     this.mapView.update(state);
     this.playerPanel.update();
+    this.suggestionsPanel.render();
     this.panelFor(this.activeTab).update();
     this.timeHint.textContent = `第 ${state.clock.day} 天 · 每周市场 / 每月组织·国家·事件 / 每年人口`;
     for (const [speed, node] of this.speedButtons) {
@@ -728,6 +734,27 @@ export class App {
   private afterAdvance(): void {
     this.checkPlayerDeath();
     this.maybeAutoSave();
+    this.maybeFirstReport();
+  }
+
+  /** 玩满一个月时给第一份财报：钱从哪来、花到哪去、下一步看什么。 */
+  private maybeFirstReport(): void {
+    if (this.firstReportShown) return;
+    const state = this.engine.state;
+    if (state.clock.day < 30) return;
+    this.firstReportShown = true;
+    const player = state.characters[state.playerId];
+    if (!player) return;
+    const ambition = ambitionOf(state);
+    const chapter = chapterOf(state);
+    this.eventDialog.pushMany([
+      {
+        title: '第一份财报',
+        body: `一个月过去了，你的现金是 ${player.wealth} 铜币，身上有 ${player.actionPoints} 点行动力、健康 ${Math.round(player.health)}。${ambition ? `你的野心是「${ambition.name}」——${ambition.goal}，现在走到 ${Math.round(ambition.progress * 100)}%（${ambition.hint}）。` : ''}左下角的三条建议会随局势换，照着做就行；想看事情怎么发生，翻右下角的编年史。`,
+        meta: `${formatDate(state.clock.day)} · 第 ${chapter.index} 章「${chapter.title}」`,
+        tone: 'digest',
+      },
+    ]);
   }
 
   private checkPlayerDeath(): void {

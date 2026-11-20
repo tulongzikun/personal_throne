@@ -2427,3 +2427,77 @@ select.input {
   font-size: 0.78em;
   color: var(--muted, #9a8f7c);
 }
+
+/* 建议事项：左下角常驻，给出「下一步做什么」的三条真实建议。 */
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.suggestions__title {
+  margin: 0;
+  color: var(--gold);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+
+.suggestions__subtitle {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.suggestions__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suggestions__item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: start;
+  padding: var(--space-2);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.suggestions__order {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-strong);
+  font-size: 0.68rem;
+  background: var(--gold-soft);
+  border-radius: 50%;
+}
+
+.suggestions__name {
+  font-size: 0.8rem;
+  color: var(--ink-strong);
+}
+
+.suggestions__detail {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.suggestions__empty {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.suggestions__go {
+  align-self: center;
+}

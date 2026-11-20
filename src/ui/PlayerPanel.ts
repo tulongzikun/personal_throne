@@ -11,6 +11,7 @@ import type { UiDeps } from './context';
 import { button, clear, el, fmtMoney, fmtPct } from './dom';
 import { alignmentLabel } from '../systems/character/Profile';
 import { CAREER_CLASSES, careerTitle, canSwitchCareer } from '../systems/character/Career';
+import { ambitionOf, chapterOf } from '../systems/goals/Ambition';
 import { CLASS_LABELS, RACE_LABELS, SKILL_LABELS, SEX_LABELS, labelOf } from './labels';
 
 export class PlayerPanel {
@@ -73,6 +74,16 @@ export class PlayerPanel {
         `${careerTitle(player.classId, player.careerRank)}（${player.careerRank}/3）`,
       ),
     );
+    const ambition = ambitionOf(state);
+    const chapter = chapterOf(state);
+    if (ambition) {
+      rows.append(
+        this.row(
+          '野心',
+          `${ambition.name} ${Math.round(ambition.progress * 100)}% · 第 ${chapter.index} 章「${chapter.title}」`,
+        ),
+      );
+    }
     if (country) rows.append(this.row('归属', country.name));
     if (org) {
       rows.append(this.row('组织', org.name));
