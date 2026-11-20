@@ -107,6 +107,10 @@ export class App {
   private activeTab: TabId = 'region';
   private selectedRegionId: string | null = null;
   private speed: Speed = 1;
+  /** 打开中的模态框（事件、存档）；有任一打开就暂停时间。 */
+  private readonly openModals = new Set<string>();
+  /** 打开模态框前的速度；全部关闭后恢复，手动暂停过则为 null。 */
+  private modalResume: Speed | null = null;
   private lastSpeed: Speed = 1;
   private observing = false;
   private timer: number | null = null;
@@ -114,6 +118,7 @@ export class App {
   private lastHistoryId = 0;
   private seenPending = new Set<string>();
   private shownChoices = new Set<string>();
+  private pendingButton!: HTMLButtonElement;
   private lastHashDay = 0;
   private deathShown = false;
   private lastAutoSaveDay = 0;
@@ -200,13 +205,16 @@ export class App {
     this.timeHint = timebar.hint;
     this.shell.append(timebar.element);
 
-    this.eventDialog = new EventDialog(this.shell);
+    this.eventDialog = new EventDialog(this.shell, {
+      onVisibilityChange: (visible) => this.holdForModal('event', visible),
+    });
     this.createDialog = new CreateCharacterDialog(this.shell);
     this.startDialog = new StartDialog(this.shell);
     this.saveDialog = new SaveDialog(this.shell, {
       state: () => this.engine.state,
       onLoad: (state, message) => this.adopt(state, message),
       notify: (message, tone) => this.notify(message, tone),
+      onVisibilityChange: (visible) => this.holdForModal('save', visible),
     });
     this.tour = new Tour(this.shell);
     document.addEventListener('keydown', this.onKeyDown, true);
@@ -291,11 +299,16 @@ export class App {
     const saveButton = button('存档', () => this.saveDialog.open(), 'small');
     saveButton.dataset.tour = 'save';
     saveButton.title = '存档管理（自动槽 + 三个手动槽）';
+    this.pendingButton = button('待决抉择', () => this.reopenChoices(), 'small');
+    this.pendingButton.hidden = true;
+    this.pendingButton.title = '你还没决定的抉择；点开可以继续处理';
+    this.pendingButton.dataset.tour = 'pending';
     const helpButton = button('?', () => this.tour.restart(), 'small');
     helpButton.title = '重新查看新手引导（快捷键 ?）';
     helpButton.setAttribute('aria-label', '打开新手引导');
     helpButton.classList.add('topbar__help');
     actions.append(
+      this.pendingButton,
       saveButton,
       button('导出', () => this.exportGame(), 'small'),
       button('创建人物', () => this.openCreator(), 'small'),
@@ -396,6 +409,9 @@ export class App {
     this.topbar.player.textContent = player?.name ?? '未知';
     this.topbar.cash.textContent = player ? fmtMoney(player.wealth) : '—';
     this.topbar.speed.textContent = this.speed === 0 ? '暂停' : `${this.speed}×`;
+    const pendingCount = state.pendingChoices.length;
+    this.pendingButton.hidden = pendingCount === 0;
+    this.pendingButton.textContent = pendingCount > 0 ? `待决抉择 ${pendingCount}` : '待决抉择';
 
     if (
       forceHash ||
@@ -489,6 +505,25 @@ export class App {
       this.timer = window.setInterval(() => this.tick(config.days), config.interval);
     }
     this.refresh();
+  }
+
+  /**
+   * 看弹窗时暂停时间：任一模态框打开就把速度归零，记下原速度；
+   * 全部关闭后恢复到打开前的速度（默认 1×）。手动暂停时不恢复。
+   */
+  private holdForModal(name: string, open: boolean): void {
+    if (open) this.openModals.add(name);
+    else this.openModals.delete(name);
+    if (this.openModals.size > 0) {
+      if (this.speed !== 0) {
+        this.modalResume = this.speed;
+        this.setSpeed(0);
+      }
+      return;
+    }
+    const resume = this.modalResume;
+    this.modalResume = null;
+    if (resume !== null) this.setSpeed(resume);
   }
 
   /** 空格暂停 / 继续；恢复时回到上一次非零速度。 */
@@ -636,6 +671,13 @@ export class App {
       this.notify(result.error ?? '命令失败', 'error');
     }
     return result;
+  }
+
+  /** 重新打开挂起的抉择（关掉弹窗后还能回来处理）。 */
+  private reopenChoices(): void {
+    for (const pending of this.engine.state.pendingChoices) this.shownChoices.delete(pending.id);
+    this.pumpChoices();
+    this.refresh(true);
   }
 
   /** 把等待中的玩家抉择弹出来；同一条只弹一次。 */

@@ -36,6 +36,8 @@ export interface SaveDialogHooks {
   readonly state: () => WorldState;
   readonly onLoad: (state: WorldState, message: string) => void;
   readonly notify: (message: string, tone?: NoticeTone) => void;
+  /** 存档界面打开/关闭：App 用它暂停/恢复时间。 */
+  readonly onVisibilityChange?: (visible: boolean) => void;
 }
 
 type SlotAction = 'write' | 'delete';
@@ -136,6 +138,7 @@ export class SaveDialog {
     this.card.scrollTop = 0;
     this.root.hidden = false;
     this.root.setAttribute('aria-hidden', 'false');
+    this.hooks.onVisibilityChange?.(true);
     window.requestAnimationFrame(() => this.root.classList.add('is-open'));
     this.render();
     this.card.focus({ preventScroll: true });
@@ -150,6 +153,7 @@ export class SaveDialog {
     this.root.classList.remove('is-open');
     this.root.hidden = true;
     this.root.setAttribute('aria-hidden', 'true');
+    this.hooks.onVisibilityChange?.(false);
   }
 
   private async load(): Promise<void> {

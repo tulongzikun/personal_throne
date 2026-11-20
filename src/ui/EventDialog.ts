@@ -3,6 +3,10 @@
 import { el } from './dom';
 
 /** 模态队列上限：超出的信号直接折叠进编年史，避免 30× 下无限堆积。 */
+export interface EventDialogOptions {
+  /** 打开/关闭时通知外层：App 用它在看弹窗时暂停时间，关闭后恢复。 */
+  readonly onVisibilityChange?: (visible: boolean) => void;
+}
 const QUEUE_LIMIT = 5;
 
 export interface ChoiceOption {
@@ -44,7 +48,10 @@ export class EventDialog {
   private readonly queue: WorldSignal[] = [];
   private visible = false;
 
-  constructor(parent: HTMLElement) {
+  constructor(
+    parent: HTMLElement,
+    private readonly options: EventDialogOptions = {},
+  ) {
     this.root = el('div', 'modal');
     this.root.hidden = true;
     this.root.setAttribute('aria-hidden', 'true');
@@ -95,11 +102,16 @@ export class EventDialog {
 
   dismiss(): void {
     if (!this.visible) return;
-    this.visible = false;
     this.root.classList.remove('is-open');
     this.root.hidden = true;
     this.root.setAttribute('aria-hidden', 'true');
-    this.next();
+    // 队列里还有下一条时，弹窗整体仍然可见，不通知外层恢复时间。
+    if (this.queue.length > 0) {
+      this.next();
+      return;
+    }
+    this.visible = false;
+    this.options.onVisibilityChange?.(false);
   }
 
   private next(): void {
@@ -147,6 +159,7 @@ export class EventDialog {
 
     this.root.hidden = false;
     this.root.setAttribute('aria-hidden', 'false');
+    if (!this.visible) this.options.onVisibilityChange?.(true);
     this.visible = true;
     window.requestAnimationFrame(() => this.root.classList.add('is-open'));
   }
