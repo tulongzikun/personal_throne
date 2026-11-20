@@ -22,6 +22,7 @@ import {
   skillEffectSummary,
   tradeCarryCapacity,
 } from '../systems/character/SkillEffects';
+import { monthlyUpkeep } from '../systems/character/Upkeep';
 import { ambitionOf, chapterOf } from '../systems/goals/Ambition';
 import { bestTradeRoute } from '../systems/goals/Goals';
 import { CLASS_LABELS, RACE_LABELS, SKILL_LABELS, SEX_LABELS, labelOf } from './labels';
@@ -125,6 +126,8 @@ export class PlayerPanel {
 
     rows.append(this.row('行动力', `${player.actionPoints} / 3`));
     rows.append(this.row('健康', `${Math.round(player.health)} / 100`));
+    const upkeep = monthlyUpkeep(player.wealth);
+    rows.append(this.row('每月开销', `${fmtMoney(upkeep)} 铜（身家的 0.4%，钱越多越贵）`));
 
     // 训练：花铜币把主技能练到天赋上限，是玩家开局最直接的自我提升。
     const skills = Object.entries(player.skills)

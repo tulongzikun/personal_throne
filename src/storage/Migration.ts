@@ -20,7 +20,7 @@ export class SaveError extends Error {
 }
 
 /** 当前信封结构版本。 */
-export const SAVE_FORMAT_VERSION = 9;
+export const SAVE_FORMAT_VERSION = 10;
 export const SAVE_FORMAT = 'throne-and-gold-save';
 
 interface LegacyState extends Record<string, unknown> {
@@ -235,6 +235,16 @@ function migrateV3toV4(raw: Record<string, unknown>): void {
 }
 
 /** v4 → v5：补生涯阶梯字段（关系网不需要新字段，复用现有 relations）。 */
+function migrateV9toV10(raw: Record<string, unknown>): void {
+  // v10 引入"在岗"判定：记录最近一次亲自出手的日期（0 = 从未出手）。
+  const characters = raw['characters'];
+  if (characters && typeof characters === 'object') {
+    for (const character of Object.values(characters as Record<string, Record<string, unknown>>)) {
+      if (typeof character['lastActionDay'] !== 'number') character['lastActionDay'] = 0;
+    }
+  }
+}
+
 function migrateV8toV9(raw: Record<string, unknown>): void {
   // v9 引入市场考察：记录的是一次性情报到期日。
   if (raw['inspections'] === undefined) raw['inspections'] = {};
@@ -340,6 +350,11 @@ export function migrateWorldState(raw: unknown): WorldState {
     if (version === 8) {
       migrateV8toV9(state);
       version = 9;
+      continue;
+    }
+    if (version === 9) {
+      migrateV9toV10(state);
+      version = 10;
       continue;
     }
     throw new SaveError(`缺少 v${version} → v${SCHEMA_VERSION} 的迁移步骤`);

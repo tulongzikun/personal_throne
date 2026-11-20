@@ -1087,6 +1087,29 @@ interface EventDef {
 
 > 以下 §8.30–§8.39 按「最新在前」记录，编号与出现顺序**故意相反**；里程碑汇总见 §8.1。
 
+### 8.41 阶段 1：让「做事」成为最优解（2026-11-20）
+
+审计口径：`docs/audit-2026-11-20-independent.md` 的「躺平 40 年 ×107、主动只 +17%，89% 收入来自生涯俸禄」。
+本阶段只改「收入从哪来」，不动账本闭合（留给阶段 2）。
+
+| 项 | 改动 | 文件 |
+| --- | --- | --- |
+| 在岗判定 | `Character.lastActionDay`；玩家的月俸只在 60 天内亲自出手时发放，NPC 不受影响 | `core/schema/character.ts`、`systems/character/Career.ts`、`systems/organization/Finance.ts` |
+| 晋升门槛 | 玩家 180 天内没出手就不晋升（财富/技能达标也不再自动升级） | `systems/character/Career.ts` |
+| 生活开销 | 每月扣身家的 0.4%（最低 10 铜），钱越多躺着越贵；玩家卡显示「每月开销」 | `systems/character/Upkeep.ts`、`ui/PlayerPanel.ts` |
+| 商路视野 | 贩货从「相邻地区」扩到「两跳以内」，边城市场进入商队视野 | `systems/character/Activity.ts` 的 `tradeReach` |
+| 贸易系数 | 采购 1.05→1.02、出售 0.95→0.98 基准；载货量 = 5 + 贸易等级 + 生涯等级×2 | `systems/character/SkillEffects.ts` |
+| 存档 | `SCHEMA_VERSION` 9→10、`SAVE_FORMAT_VERSION` 9→10，v9→v10 补 `lastActionDay` | `core/schema/ids.ts`、`storage/Migration.ts` |
+
+实测（`.tmp/stage1-check.ts`，同一世界、同一 20 年、只差「每月是否出手」）：
+
+- 躺平：1,500 → **3,222**（只剩分红与利息）；主动：1,500 → **6,681**（生涯 2 级）——**2.07×**，达到验收线 ≥2×。
+- 三 seed 100 年（`--check` 全部一致）：demo `493d8d578bd84712` 3.26 s、破产率 43.5%、分裂 8.7%、均价偏离 11.2%、56/56 在 70–140%；
+  alpha `5a46429f14a2d9cc` 3.23 s、41.7%、12.5%、12.5%、56/56；beta `1351ca77ff8f2d1c` 3.15 s、45.8%、16.7%、13.3%、53/56。
+- 破产率仍高于 20–30% 目标：属阶段 2（账本闭合）与阶段 4（僵尸国）的整改范围，本阶段只记录基线。
+- 测试：新增 `tests/stage1-incentives.test.ts` 5 例（月俸在岗/脱岗、晋升门槛、开销与下限、两跳商路、路线受现货与本钱约束），全套 **34 文件 212 例**。
+- 产物：`release/index.html` **375,627 字节（23.9%）**。
+
 ### 8.40 远方见闻改为地区局势、旅途遭遇力量检定（2026-11-20）
 
 | 项 | 内容 |

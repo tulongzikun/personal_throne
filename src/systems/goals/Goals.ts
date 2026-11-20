@@ -10,7 +10,7 @@
 import type { Command } from '../../core/CommandBus';
 import type { WorldContent, WorldState } from '../../core/WorldState';
 import { careerTitle, nextCareerStep } from '../character/Career';
-import { neighborsOf } from '../character/Activity';
+import { neighborsOf, tradeReach } from '../character/Activity';
 import { officeIdOf, officeScore, officeSeatsFor } from '../country/Offices';
 import { sharePrice } from '../organization/Shares';
 import { valuation } from '../organization/Organization';
@@ -30,7 +30,12 @@ interface TradeRoute {
   readonly profit: number;
 }
 
-/** 找一条当前最划算的短途贩运：本地买入价 ×1.05，邻区卖出价 ×0.95，扣运费。 */
+/**
+ * 找一条当前最划算的短途贩运：本地买入价 ×1.05，邻区卖出价 ×0.95，扣运费。
+ *
+ * 数量取三者最小值：可携带量、本地现货、买得起的量——所以它给的是"现在真能走的一趟"，
+ * 而不是"行情上存在的一趟"。
+ */
 export function bestTradeRoute(
   state: WorldState,
   content: WorldContent,
@@ -39,15 +44,18 @@ export function bestTradeRoute(
   const player = state.characters[state.playerId];
   if (!player) return null;
   let best: TradeRoute | null = null;
-  for (const neighbor of neighborsOf(state, player.regionId)) {
-    const freight = Math.max(1, Math.round(neighbor.days * units * 0.05));
+  for (const neighbor of tradeReach(state, player.regionId)) {
     for (const good of content.goods) {
       const here = state.markets[`${player.regionId}:${good.id}`];
       const there = state.markets[`${neighbor.id}:${good.id}`];
       if (!here || !there) continue;
-      const profit = Math.round(there.price * 0.95 * units - here.price * 1.05 * units - freight);
+      const affordable = Math.floor(player.wealth / Math.max(1, here.price * 1.05));
+      const loads = Math.min(units, Math.floor(here.stock), affordable);
+      if (loads < 1) continue;
+      const freight = Math.max(1, Math.round(neighbor.days * loads * 0.05));
+      const profit = Math.round(there.price * 0.95 * loads - here.price * 1.05 * loads - freight);
       if (profit > 0 && (!best || profit > best.profit)) {
-        best = { goodId: good.id, units, target: neighbor.id, days: neighbor.days, profit };
+        best = { goodId: good.id, units: loads, target: neighbor.id, days: neighbor.days, profit };
       }
     }
   }
@@ -77,7 +85,12 @@ export function suggestGoals(state: WorldState, content: WorldContent, limit = 3
       id: 'trade',
       title: `贩 ${route.units} ${good?.name ?? route.goodId} 到${state.regions[route.target]?.name ?? route.target}`,
       detail: `这条线一趟净赚约 ${route.profit} 铜币，路上 ${route.days} 天，花 1 点行动力与 1 点健康。`,
-      command: { kind: 'trade_goods', goodId: route.goodId, units: route.units },
+      command: {
+        kind: 'trade_goods',
+        goodId: route.goodId,
+        units: route.units,
+        targetRegionId: route.target,
+      },
     });
   }
 

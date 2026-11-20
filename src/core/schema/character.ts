@@ -67,6 +67,8 @@ export interface CharacterDef {
   /** 生涯阶梯等级（0 起步 … 3 顶尖），见 systems/character/Career.ts。 */
   readonly careerRank?: number;
   readonly careerSinceDay?: number;
+  /** 最近一次亲自出手（玩家命令）的日期；用于月俸与晋升的"在岗"判定。 */
+  readonly lastActionDay?: number;
   readonly health?: number;
   readonly actionPoints?: number;
   readonly deposits?: Record<string, number>;
@@ -106,6 +108,8 @@ export interface Character {
   careerRank: number;
   /** 进入当前阶梯的日期（天）。 */
   careerSinceDay: number;
+  /** 最近一次亲自出手（玩家命令）的日期；NPC 恒为 0，表示"一直在岗"。 */
+  lastActionDay: number;
   /* ---- 阶段 3：个人行动（健康、行动力、存款） ---- */
   /** 健康 0–100；低于 40 时死亡率上升、事件更可能走坏结局。 */
   health: number;

@@ -15,6 +15,7 @@
 import type { OrgId, WorldContent, WorldState } from '../../core/WorldState';
 import { marketKeyOf, sortedIds } from '../../core/WorldState';
 import { careerSalary } from '../character/SkillEffects';
+import { isOnDuty } from '../character/Career';
 
 export interface FinanceEntry {
   readonly orgId: OrgId;
@@ -80,7 +81,7 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     org.lastMonthTariff = 0;
     org.lastMonthTradeRevenue = 0;
 
-    const careerWages = careerWageBill(state, org);
+    const careerWages = careerWageBill(state, org, state.clock.day);
     const totalWages = payroll + careerWages;
     const grossProfit =
       revenue + tradeRevenue - tradeCogs - materialCost - totalWages - admin - interest;
@@ -129,6 +130,7 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     if (careerWages > 0 && wagesPaid >= totalWages) {
       for (const member of Object.values(state.characters)) {
         if (!member?.alive || member.organizationId !== org.id) continue;
+        if (!isOnDuty(state, member, state.clock.day)) continue;
         const salary = careerSalary(member.careerRank);
         if (salary > 0) member.wealth += salary;
       }
@@ -291,10 +293,11 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /** 组织里所有有生涯等级的成员，每月该拿的月俸合计。 */
-function careerWageBill(state: WorldState, org: { id: string }): number {
+function careerWageBill(state: WorldState, org: { id: string }, day: number): number {
   let total = 0;
   for (const member of Object.values(state.characters)) {
     if (!member?.alive || member.organizationId !== org.id) continue;
+    if (!isOnDuty(state, member, day)) continue;
     total += careerSalary(member.careerRank);
   }
   return total;

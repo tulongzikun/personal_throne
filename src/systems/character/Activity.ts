@@ -75,3 +75,23 @@ export function neighborsOf(state: WorldState, regionId: string): { id: string; 
     .filter((link) => state.regions[link.to] !== undefined)
     .map((link) => ({ id: link.to, days: Math.max(1, link.days) }));
 }
+
+/**
+ * 商队能到的市场：两跳以内，取最短天数。
+ * 贩货允许"经一个中转地"，这样小地区的货也能卖到隔壁国的边城，
+ * 而不是只有一条邻街的价格可比。
+ */
+export function tradeReach(state: WorldState, regionId: string): { id: string; days: number }[] {
+  const best = new Map<string, number>();
+  for (const hop of neighborsOf(state, regionId)) {
+    best.set(hop.id, Math.min(best.get(hop.id) ?? Infinity, hop.days));
+    for (const second of neighborsOf(state, hop.id)) {
+      if (second.id === regionId) continue;
+      const days = hop.days + second.days;
+      best.set(second.id, Math.min(best.get(second.id) ?? Infinity, days));
+    }
+  }
+  return [...best.entries()]
+    .map(([id, days]) => ({ id, days }))
+    .sort((x, y) => (x.id < y.id ? -1 : 1));
+}

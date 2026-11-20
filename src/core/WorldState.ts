@@ -114,6 +114,7 @@ export function buildCharacter(def: CharacterDef): Character {
     offices: def.offices ? def.offices.map((office) => ({ ...office })) : [],
     careerRank: clampToRange(Math.round(def.careerRank ?? 0), 0, 3),
     careerSinceDay: Math.max(0, Math.round(def.careerSinceDay ?? 0)),
+    lastActionDay: Math.max(0, Math.round(def.lastActionDay ?? 0)),
     health: clampToRange(Math.round(def.health ?? 100), 0, 100),
     actionPoints: clampToRange(Math.round(def.actionPoints ?? 3), 0, 6),
     deposits: { ...(def.deposits ?? {}) },
@@ -407,6 +408,9 @@ export function validateWorld(state: WorldState): string[] {
       character.actionPoints > 6
     ) {
       problems.push(`人物 ${character.id} 的行动力越界`);
+    }
+    if (!Number.isFinite(character.lastActionDay) || character.lastActionDay < 0) {
+      problems.push(`人物 ${character.id} 的最近行动日越界`);
     }
     for (const key of ATTRIBUTE_KEYS) {
       const value = character.attributes?.[key];

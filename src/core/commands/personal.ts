@@ -11,6 +11,7 @@ import {
   heal,
   neighborsOf,
   spendAction,
+  tradeReach,
 } from '../../systems/character/Activity';
 import { switchCareer } from '../../systems/character/Career';
 import { bumpRelation, setRelation } from '../../systems/character/Relations';
@@ -206,7 +207,7 @@ export function tradeGoods(
   const source = state.markets[sourceKey];
   if (!source) return fail('本地没有这种货');
   if (source.stock < units) return fail(`本地库存只有 ${source.stock} 单位`);
-  const links = neighborsOf(state, player.regionId);
+  const links = tradeReach(state, player.regionId);
   const candidates = (
     command.targetRegionId ? links.filter((link) => link.id === command.targetRegionId) : links
   )

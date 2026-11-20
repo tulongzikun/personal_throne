@@ -83,11 +83,12 @@ describe('生涯路径', () => {
     expect(nextCareerStep(player)?.rank).toBe(1);
   });
 
-  it('财富与技能达标就年度晋升，跌破 30% 会降级', () => {
+  it('财富与技能达标且在岗就年度晋升，跌破 30% 会降级', () => {
     const world = makeWorld();
     const player = world.characters[world.playerId]!;
     player.wealth = 1000;
     player.skills.trade = 3;
+    player.lastActionDay = 300;
     const changes = settleYearlyCareer(world, 360);
     expect(
       changes.some((change) => change.characterId === player.id && change.direction === 'up'),

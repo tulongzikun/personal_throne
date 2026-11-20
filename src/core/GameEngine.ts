@@ -47,6 +47,7 @@ import { settleMonthlyMarket } from '../systems/economy/MarketSystem';
 import { settleMonthlyTrade } from '../systems/economy/TradeSystem';
 import { settleMonthlyCharacters } from '../systems/character/CharacterSystem';
 import { refreshMonthlyActions } from '../systems/character/Activity';
+import { settleMonthlyUpkeep } from '../systems/character/Upkeep';
 import { settleYearlyDemography } from '../systems/character/Demography';
 import { settleYearlyCareer } from '../systems/character/Career';
 import { decayRelations } from '../systems/character/Relations';
@@ -179,6 +180,8 @@ export class GameEngine {
     }
     const result = applyCommand(this.state, command, this.content);
     if (result.ok) {
+      const actor = this.state.characters[this.state.playerId];
+      if (actor?.alive) actor.lastActionDay = this.state.clock.day;
       const summary = result.summary ?? command.kind;
       this.record('command', `${formatDate(this.day)} ${summary}`, result.refs ?? []);
     } else {
@@ -302,6 +305,7 @@ export class GameEngine {
 
   private onOrganizationPhase(ctx: SettleContext): void {
     refreshMonthlyActions(this.state);
+    settleMonthlyUpkeep(this.state);
     const settlement = monthlyOrganizationSettlement(this.state, this.content, ctx);
     const decisions = settleMonthlyDecisions(this.state, ctx);
     const stipends = settleMonthlyCharacters(this.state, this.content, ctx);

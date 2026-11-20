@@ -33,19 +33,19 @@ export function tradeDiscount(character: Character): number {
   return Math.min(TRADE_MAX_DISCOUNT, levelOf(character, 'trade') * TRADE_PER_LEVEL);
 }
 
-/** 采购价系数：贸易 6 级时 1.05 − 0.06 = 0.99。 */
+/** 采购价系数：贸易 6 级时 1.02 − 0.06 = 0.96。 */
 export function purchaseFactor(character: Character): number {
-  return Math.max(0.9, 1.05 - tradeDiscount(character));
+  return Math.max(0.9, 1.02 - tradeDiscount(character));
 }
 
-/** 出售价系数：贸易 6 级时 0.95 + 0.06 = 1.01。 */
+/** 出售价系数：贸易 6 级时 0.98 + 0.06 = 1.04。 */
 export function saleFactor(character: Character): number {
-  return Math.min(1.1, 0.95 + tradeDiscount(character));
+  return Math.min(1.12, 0.98 + tradeDiscount(character));
 }
 
-/** 单次贩货上限：基础 5 + 贸易等级。 */
+/** 单次贩货上限：基础 5 + 贸易等级 + 生涯等级 ×2（摊子越大，一次走得越多）。 */
 export function tradeCarryCapacity(character: Character): number {
-  return TRADE_CARRY_BASE + levelOf(character, 'trade');
+  return TRADE_CARRY_BASE + levelOf(character, 'trade') + character.careerRank * 2;
 }
 
 /** 契约利率系数：谈判 5 级 → 0.9，下限 0.5。 */

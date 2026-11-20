@@ -11,6 +11,20 @@
 import type { Character, CharacterId, WorldState } from '../../core/WorldState';
 import { formatDate } from '../../core/GameClock';
 
+/** 玩家多少天没亲自出手，月俸停发（NPC 不受影响）。 */
+export const SALARY_DUTY_DAYS = 60;
+/** 玩家多少天没亲自出手，就不再晋升。 */
+export const PROMOTION_DUTY_DAYS = 180;
+
+/**
+ * 在岗判定：NPC 一直在岗；玩家要"亲手做事"才算在岗。
+ * 这是阶段 1 的核心杠杆——躺平不再自动涨薪升职。
+ */
+export function isOnDuty(state: WorldState, character: Character, day: number): boolean {
+  if (character.id !== state.playerId) return true;
+  return day - character.lastActionDay <= SALARY_DUTY_DAYS;
+}
+
 export interface CareerStep {
   readonly rank: number;
   readonly title: string;
@@ -98,7 +112,14 @@ export function settleYearlyCareer(state: WorldState, day: number): CareerChange
     const target = ladder[character.careerRank + 1];
     const skill = primarySkill(character);
     const officeBonus = character.offices.length > 0 ? 1 : 0;
-    if (target && character.wealth >= target.minWealth && skill + officeBonus >= target.minSkill) {
+    const active =
+      character.id !== state.playerId || day - character.lastActionDay <= PROMOTION_DUTY_DAYS;
+    if (
+      target &&
+      active &&
+      character.wealth >= target.minWealth &&
+      skill + officeBonus >= target.minSkill
+    ) {
       character.careerRank = target.rank;
       character.careerSinceDay = day;
       changes.push({
