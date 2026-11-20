@@ -20,7 +20,7 @@ export class SaveError extends Error {
 }
 
 /** 当前信封结构版本。 */
-export const SAVE_FORMAT_VERSION = 6;
+export const SAVE_FORMAT_VERSION = 8;
 export const SAVE_FORMAT = 'throne-and-gold-save';
 
 interface LegacyState extends Record<string, unknown> {
@@ -235,6 +235,16 @@ function migrateV3toV4(raw: Record<string, unknown>): void {
 }
 
 /** v4 → v5：补生涯阶梯字段（关系网不需要新字段，复用现有 relations）。 */
+function migrateV7toV8(raw: Record<string, unknown>): void {
+  // v8 引入个人行动：健康、每月行动力、银行存款。
+  const characters = (raw['characters'] ?? {}) as Record<string, Record<string, unknown>>;
+  for (const character of Object.values(characters)) {
+    if (typeof character['health'] !== 'number') character['health'] = 100;
+    if (typeof character['actionPoints'] !== 'number') character['actionPoints'] = 3;
+    if (character['deposits'] === undefined) character['deposits'] = {};
+  }
+}
+
 function migrateV6toV7(raw: Record<string, unknown>): void {
   // v7 引入战争：国家交战列表/厌战、地区占领与围城、军队训练与统帅。
   const countries = (raw['countries'] ?? {}) as Record<string, Record<string, unknown>>;
@@ -315,6 +325,11 @@ export function migrateWorldState(raw: unknown): WorldState {
     if (version === 6) {
       migrateV6toV7(state);
       version = 7;
+      continue;
+    }
+    if (version === 7) {
+      migrateV7toV8(state);
+      version = 8;
       continue;
     }
     throw new SaveError(`缺少 v${version} → v${SCHEMA_VERSION} 的迁移步骤`);

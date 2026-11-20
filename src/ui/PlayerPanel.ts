@@ -4,7 +4,9 @@
  * 只读 `UiDeps`，不持有引擎；读档后由一个 `update()` 全量重绘即可。
  */
 
+import type { Command } from '../core/CommandBus';
 import type { Organization } from '../core/WorldState';
+import { neighborsOf } from '../systems/character/Activity';
 import type { UiDeps } from './context';
 import { button, clear, el, fmtMoney, fmtPct } from './dom';
 import { alignmentLabel } from '../systems/character/Profile';
@@ -79,6 +81,9 @@ export class PlayerPanel {
     }
     this.host.append(rows);
 
+    rows.append(this.row('行动力', `${player.actionPoints} / 3`));
+    rows.append(this.row('健康', `${Math.round(player.health)} / 100`));
+
     // 训练：花铜币把主技能练到天赋上限，是玩家开局最直接的自我提升。
     const skills = Object.entries(player.skills)
       .sort((a, b) => b[1] - a[1])
@@ -105,6 +110,25 @@ export class PlayerPanel {
       }
       this.host.append(train);
     }
+
+    // 个人动词：移动 / 贩货 / 休息 / 存取。每项消耗 1 点行动力（移动 1 点 + 2 健康）。
+    const quick = el('div', 'player-card__train');
+    quick.append(el('p', 'player-card__train-title', '个人行动（各耗 1 行动力）'));
+    quick.append(this.act('休息', { kind: 'rest' }, player.health >= 100));
+    quick.append(this.act('贩货 5 单位', { kind: 'trade_goods', goodId: 'grain', units: 5 }));
+    quick.append(this.act('存 100', { kind: 'deposit', amount: 100 }, player.wealth < 100));
+    quick.append(
+      this.act(
+        '取 100',
+        { kind: 'withdraw', amount: 100 },
+        Object.values(player.deposits).reduce((sum, value) => sum + value, 0) < 100,
+      ),
+    );
+    for (const link of neighborsOf(state, player.regionId).slice(0, 3)) {
+      const name = state.regions[link.id]?.name ?? link.id;
+      quick.append(this.act(`去${name}`, { kind: 'move', regionId: link.id }));
+    }
+    this.host.append(quick);
 
     const skillEntries = Object.entries(player.skills)
       .sort((a, b) => b[1] - a[1])
@@ -150,6 +174,26 @@ export class PlayerPanel {
       }
     }
     this.host.append(actions);
+  }
+
+  private act(label: string, command: Command, disabled = false): HTMLButtonElement {
+    const element = button(
+      label,
+      () => {
+        const result = this.deps.dispatch(command);
+        this.deps.notify(
+          result.ok ? (result.summary ?? '完成') : (result.error ?? '无法执行'),
+          result.ok ? 'ok' : 'error',
+        );
+        if (result.ok && result.travelDays !== undefined) {
+          this.deps.advanceDays(result.travelDays);
+        }
+        this.deps.refresh();
+      },
+      'small',
+    );
+    element.disabled = disabled;
+    return element;
   }
 
   private row(label: string, value: string): HTMLElement {

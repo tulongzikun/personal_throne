@@ -44,6 +44,7 @@ import { settleMonthlyProduction } from '../systems/economy/ProductionSystem';
 import { settleMonthlyMarket } from '../systems/economy/MarketSystem';
 import { settleMonthlyTrade } from '../systems/economy/TradeSystem';
 import { settleMonthlyCharacters } from '../systems/character/CharacterSystem';
+import { refreshMonthlyActions } from '../systems/character/Activity';
 import { settleYearlyDemography } from '../systems/character/Demography';
 import { settleYearlyCareer } from '../systems/character/Career';
 import { decayRelations } from '../systems/character/Relations';
@@ -299,6 +300,7 @@ export class GameEngine {
   }
 
   private onOrganizationPhase(ctx: SettleContext): void {
+    refreshMonthlyActions(this.state);
     const settlement = monthlyOrganizationSettlement(this.state, this.content, ctx);
     const decisions = settleMonthlyDecisions(this.state, ctx);
     const stipends = settleMonthlyCharacters(this.state, this.content, ctx);

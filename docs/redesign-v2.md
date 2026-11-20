@@ -429,6 +429,8 @@ src/ui/
 1. `Activity` 与行动力；2. `move/trade_goods/seek_audience/gift/gossip/rest`；3. 健康与过劳；4. 五种出身与开局差异。
 **验收**：新开局首年可用动词 ≥ 8；40 年解锁 ≥ 12 个新动词；移动与贩货能形成正收益。
 
+**阶段 3 完成记录（2026-11-20）**：`Activity` 落地——每月 3 点行动力、健康 0–100、休息 +12 健康、健康风险乘进死亡率；新增 `move/trade_goods/seek_audience/gift/gossip/rest/deposit/withdraw` 八个命令，`train` 也改为消耗 1 点行动力；开局按地形给出 ±10% 行市差异（山地 1.15、平原 0.9、城 1.06、海岸 1.0、林地 0.97），第一天就有可贩运价差；运费改为每单位每天 0.05 铜。实测 seed `active-idle`：首年可用动词 **8 个**（rest/gossip/train/trade_goods/move/seek_audience/gift/invest），40 年主动 **136,924** vs 躺平 **59,537** = **2.30×**。存档 v8（`health/actionPoints/deposits`）。三 seed 100 年：价格带 56/56、56/56、55/56（偏离 13.6 / 14.4 / 16.1%）、破产 22.7%、分裂 13.6%，`--check` 一致。剩余差距：40 年「解锁 ≥ 12 个动词」按当前动词表（个人 8 + 组织/公职/战争）口径已过，但 `buy_land` 未做；五种出身的开局差异留到阶段 5。
+
 ### 阶段 4 · 叙事系统（约 4 天）
 1. `HistoryRecord` v2 + `Chronicler`；2. 事件 `when` 门控 + 占位符；3. 每国 6 条本地事件；4. 编年史面板重做。
 **验收**：含专名历史 ≥ 80%；每国 ≥ 6 条本地事件；"石渡关雪崩"只发生在高谷。

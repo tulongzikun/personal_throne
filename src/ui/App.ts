@@ -167,6 +167,7 @@ export class App {
       state: () => this.engine.state,
       content: () => this.engine.content,
       dispatch: (command) => this.dispatch(command),
+      advanceDays: (days) => this.advanceToDay(this.engine.state.clock.day + days),
       refresh: () => this.refresh(),
       notify: (message, tone) => this.notify(message, tone),
       openRegion: (regionId) => this.openRegion(regionId),

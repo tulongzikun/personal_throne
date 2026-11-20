@@ -43,6 +43,14 @@ import {
 } from '../systems/organization/Shares';
 import { shareOf } from '../systems/organization/Organization';
 import { applyForOffice } from '../systems/country/Offices';
+import {
+  actionBlocker,
+  heal,
+  neighborsOf,
+  REST_HEALTH,
+  spendAction,
+} from '../systems/character/Activity';
+import { bumpRelation, setRelation } from '../systems/character/Relations';
 
 export interface CommandBase {
   /** 命令唯一序号，由 GameEngine 分配；用于幂等与审计。 */
@@ -105,7 +113,20 @@ export type Command =
   /** 持股超过现任领袖且达到 34% 时接管字号。 */
   | (CommandBase & { kind: 'claim_leadership'; orgId: OrgId })
   /** 谋求本国公职（分数过线且压过现任者才会成功）。 */
-  | (CommandBase & { kind: 'seek_office'; countryId: CountryId; officeId: string });
+  | (CommandBase & { kind: 'seek_office'; countryId: CountryId; officeId: string })
+  | (CommandBase & { kind: 'move'; regionId: RegionId })
+  | (CommandBase & {
+      kind: 'trade_goods';
+      goodId: GoodId;
+      units: number;
+      targetRegionId?: RegionId;
+    })
+  | (CommandBase & { kind: 'seek_audience'; characterId: CharacterId })
+  | (CommandBase & { kind: 'gift'; characterId: CharacterId; amount: number })
+  | (CommandBase & { kind: 'gossip' })
+  | (CommandBase & { kind: 'rest' })
+  | (CommandBase & { kind: 'deposit'; orgId?: OrgId; amount: number })
+  | (CommandBase & { kind: 'withdraw'; orgId?: OrgId; amount: number });
 
 export type CommandKind = Command['kind'];
 
@@ -114,6 +135,8 @@ export interface CommandResult {
   readonly error?: string;
   readonly summary?: string;
   readonly refs?: readonly { readonly kind: string; readonly id: string }[];
+  /** 移动类命令实际消耗的在途天数；UI 可据此推进时间。 */
+  readonly travelDays?: number;
 }
 
 const POLICY_MIN = 0;
@@ -493,6 +516,8 @@ export function applyCommand(
       const player = state.characters[state.playerId];
       if (!player) return fail('玩家不存在');
       if (!player.alive) return fail('你已经不在人世');
+      const blocked = actionBlocker(state, state.playerId);
+      if (blocked) return fail(blocked);
       const current = player.skills[command.skill] ?? 0;
       const attr = player.attributes[skillAttribute(command.skill)] ?? 10;
       const cap = 3 + Math.floor(attr / 3);
@@ -501,6 +526,7 @@ export function applyCommand(
       if (player.wealth < cost) return fail(`学费不足：需要 ${cost}，现有 ${player.wealth}`);
       player.wealth -= cost;
       player.skills[command.skill] = current + 1;
+      spendAction(player, 1);
       return {
         ok: true,
         summary: `你花 ${cost} 铜币训练 ${command.skill}，提升到 ${current + 1}`,
@@ -752,6 +778,185 @@ export function applyCommand(
       };
     }
 
+    case 'move': {
+      const blocked = actionBlocker(state, state.playerId);
+      if (blocked) return fail(blocked);
+      const player = state.characters[state.playerId]!;
+      const target = state.regions[command.regionId];
+      if (!target) return fail('目标地区不存在');
+      if (command.regionId === player.regionId) return fail('你已经在这里了');
+      const hop = neighborsOf(state, player.regionId).find((link) => link.id === command.regionId);
+      if (!hop) return fail('只能先移动到相邻地区（沿商路）');
+      const fee = hop.days * 2;
+      if (player.wealth < fee) return fail(`路费不足：需要 ${fee} 铜币`);
+      player.wealth -= fee;
+      spendAction(player, 2);
+      player.regionId = command.regionId;
+      player.location = { regionId: command.regionId, site: 'road', sinceDay: state.clock.day };
+      return {
+        ok: true,
+        summary: `你沿商路走了 ${hop.days} 天抵达${target.name}`,
+        refs: [{ kind: 'region', id: command.regionId }],
+        travelDays: hop.days,
+      };
+    }
+
+    case 'trade_goods': {
+      const blocked = actionBlocker(state, state.playerId);
+      if (blocked) return fail(blocked);
+      const player = state.characters[state.playerId]!;
+      const units = Math.max(1, Math.round(command.units));
+      const sourceKey = marketKeyOf(player.regionId, command.goodId);
+      const source = state.markets[sourceKey];
+      if (!source) return fail('本地没有这种货');
+      if (source.stock < units) return fail(`本地库存只有 ${source.stock} 单位`);
+      const links = neighborsOf(state, player.regionId);
+      const candidates = (
+        command.targetRegionId ? links.filter((link) => link.id === command.targetRegionId) : links
+      )
+        .map((link) => {
+          const market = state.markets[marketKeyOf(link.id, command.goodId)];
+          return market
+            ? { link, market, margin: market.price * 0.95 - source.price * 1.05 }
+            : null;
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .sort((a, b) => b.margin - a.margin);
+      const best = candidates[0];
+      if (!best) return fail('没有可去的相邻市场');
+      const buy = Math.round(source.price * 1.05) * units;
+      // 运费按每单位每天 0.05 铜计：4 天路程约 0.2 铜/单位，量大利薄。
+      const freight = Math.max(1, Math.round(best.link.days * units * 0.05));
+      if (player.wealth < buy + freight) {
+        return fail(`本钱不足：需要 ${buy + freight} 铜币`);
+      }
+      const revenue = Math.round(best.market.price * 0.95) * units;
+      const profit = revenue - buy - freight;
+      if (profit <= 0) return fail('这趟货不赚钱，换个地方或等价格变化');
+      player.wealth += profit;
+      source.stock -= units;
+      best.market.stock += units;
+      spendAction(player, 1);
+      return {
+        ok: true,
+        summary: `你贩了 ${units} 单位${content.goods.find((good) => good.id === command.goodId)?.name ?? command.goodId}，净赚 ${profit} 铜币`,
+        refs: [{ kind: 'region', id: best.link.id }],
+      };
+    }
+
+    case 'seek_audience': {
+      const blocked = actionBlocker(state, state.playerId);
+      if (blocked) return fail(blocked);
+      const player = state.characters[state.playerId]!;
+      const target = state.characters[command.characterId];
+      if (!target || !target.alive) return fail('对方不在人世');
+      if (target.regionId !== player.regionId) return fail('对方不在本地');
+      if (target.id === player.id) return fail('不需要拜会自己');
+      bumpRelation(state, player.id, target.id, 'ally', 6);
+      spendAction(player, 1);
+      return {
+        ok: true,
+        summary: `你拜会了${target.name}，关系更近了一步`,
+        refs: [{ kind: 'character', id: target.id }],
+      };
+    }
+
+    case 'gift': {
+      const blocked = actionBlocker(state, state.playerId);
+      if (blocked) return fail(blocked);
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail('礼物金额不合法');
+      const player = state.characters[state.playerId]!;
+      const target = state.characters[command.characterId];
+      if (!target || !target.alive) return fail('对方不在人世');
+      if (target.regionId !== player.regionId) return fail('对方不在本地');
+      if (player.wealth < command.amount) return fail('现金不足');
+      player.wealth -= command.amount;
+      target.wealth += command.amount;
+      const gain = Math.max(1, Math.min(25, Math.round(command.amount / 40)));
+      setRelation(state, player.id, target.id, 'ally', gain);
+      spendAction(player, 1);
+      return {
+        ok: true,
+        summary: `你送给${target.name}价值 ${command.amount} 铜币的礼物（关系 +${gain}）`,
+        refs: [{ kind: 'character', id: target.id }],
+      };
+    }
+
+    case 'gossip': {
+      const blocked = actionBlocker(state, state.playerId);
+      if (blocked) return fail(blocked);
+      const player = state.characters[state.playerId]!;
+      const neighbors = Object.values(state.characters)
+        .filter(
+          (other) => other.alive && other.regionId === player.regionId && other.id !== player.id,
+        )
+        .sort((a, b) => (a.id < b.id ? -1 : 1));
+      const names = neighbors.slice(0, 2).map((other) => other.name);
+      const insight = player.skills.insight ?? 0;
+      const cap = 3 + Math.floor((player.attributes.perception ?? 10) / 3);
+      if (insight < cap) player.skills.insight = insight + 1;
+      spendAction(player, 1);
+      return {
+        ok: true,
+        summary:
+          names.length > 0
+            ? `你在市集上打听风声，听说${names.join('、')}最近有些麻烦（洞察 +${insight < cap ? 1 : 0}）`
+            : '你在市集上转了一圈，只听到些无关紧要的闲话',
+        refs: [],
+      };
+    }
+
+    case 'rest': {
+      const blocked = actionBlocker(state, state.playerId);
+      if (blocked && !blocked.includes('健康')) return fail(blocked);
+      const player = state.characters[state.playerId]!;
+      const gained = heal(player, REST_HEALTH);
+      spendAction(player, 0);
+      return {
+        ok: true,
+        summary: `你歇了几日，健康恢复 ${gained} 点（当前 ${player.health}）`,
+        refs: [{ kind: 'character', id: player.id }],
+      };
+    }
+
+    case 'deposit':
+    case 'withdraw': {
+      const player = state.characters[state.playerId]!;
+      if (!Number.isInteger(command.amount) || command.amount <= 0) return fail('金额不合法');
+      const banks = Object.values(state.organizations)
+        .filter(
+          (org) =>
+            org.type === 'bank' &&
+            org.lifecycle !== 'dissolved' &&
+            (command.orgId ? org.id === command.orgId : org.homeRegionId === player.regionId),
+        )
+        .sort((a, b) => (a.id < b.id ? -1 : 1));
+      const bank = banks[0];
+      if (!bank) return fail('本地没有银行');
+      const held = player.deposits[bank.id] ?? 0;
+      if (command.kind === 'deposit') {
+        if (player.wealth < command.amount) return fail('现金不足');
+        player.wealth -= command.amount;
+        player.deposits[bank.id] = held + command.amount;
+        bank.cash += command.amount;
+        return {
+          ok: true,
+          summary: `你在${bank.name}存入 ${command.amount} 铜币`,
+          refs: [{ kind: 'organization', id: bank.id }],
+        };
+      }
+      if (held < command.amount) return fail(`存款只有 ${held} 铜币`);
+      if (bank.cash < command.amount) return fail('银行现金不足');
+      player.deposits[bank.id] = held - command.amount;
+      bank.cash -= command.amount;
+      player.wealth += command.amount;
+      return {
+        ok: true,
+        summary: `你从${bank.name}取出 ${command.amount} 铜币`,
+        refs: [{ kind: 'organization', id: bank.id }],
+      };
+    }
+
     default: {
       const exhaustive: never = command;
       return fail(`未知命令 ${(exhaustive as { kind?: string }).kind ?? '?'}`);
@@ -851,5 +1056,21 @@ export function describeCommand(command: Command): string {
       return '接管字号';
     case 'seek_office':
       return `谋求 ${command.countryId} 的 ${command.officeId} 公职`;
+    case 'move':
+      return `前往 ${command.regionId}`;
+    case 'trade_goods':
+      return `贩运 ${command.units} 单位 ${command.goodId}`;
+    case 'seek_audience':
+      return '拜会某人';
+    case 'gift':
+      return `送礼 ${command.amount} 铜币`;
+    case 'gossip':
+      return '打听风声';
+    case 'rest':
+      return '休息';
+    case 'deposit':
+      return `存入 ${command.amount} 铜币`;
+    case 'withdraw':
+      return `取出 ${command.amount} 铜币`;
   }
 }

@@ -22,7 +22,7 @@ export type ContractId = string;
 export type ArmyId = string;
 export type EntityId = string;
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 /* ------------------------------------------------------------------ */
 /* 人物档案（schema，M4）                                               */
@@ -172,6 +172,9 @@ export interface CharacterDef {
   /** 生涯阶梯等级（0 起步 … 3 顶尖），见 systems/character/Career.ts。 */
   readonly careerRank?: number;
   readonly careerSinceDay?: number;
+  readonly health?: number;
+  readonly actionPoints?: number;
+  readonly deposits?: Record<string, number>;
 }
 
 export interface OrganizationDef {
@@ -526,6 +529,13 @@ export interface Character {
   careerRank: number;
   /** 进入当前阶梯的日期（天）。 */
   careerSinceDay: number;
+  /* ---- 阶段 3：个人行动（健康、行动力、存款） ---- */
+  /** 健康 0–100；低于 40 时死亡率上升、事件更可能走坏结局。 */
+  health: number;
+  /** 本月剩余行动力（每月刷新为 3，个人动词各消耗 1 点）。 */
+  actionPoints: number;
+  /** 存在银行类组织里的钱（提款时从组织现金支付利息后归还）。 */
+  deposits: Record<string, number>;
 }
 
 export interface Organization {
@@ -918,7 +928,26 @@ export function buildCharacter(def: CharacterDef): Character {
     offices: def.offices ? def.offices.map((office) => ({ ...office })) : [],
     careerRank: clampToRange(Math.round(def.careerRank ?? 0), 0, 3),
     careerSinceDay: Math.max(0, Math.round(def.careerSinceDay ?? 0)),
+    health: clampToRange(Math.round(def.health ?? 100), 0, 100),
+    actionPoints: clampToRange(Math.round(def.actionPoints ?? 3), 0, 6),
+    deposits: { ...(def.deposits ?? {}) },
   };
+}
+
+/** 地形对行市的初始扰动（±10%），只影响开局价格，之后由供需决定。 */
+function terrainPriceFactor(terrain: Terrain): number {
+  switch (terrain) {
+    case 'mountains':
+      return 1.15;
+    case 'plains':
+      return 0.9;
+    case 'city':
+      return 1.06;
+    case 'coast':
+      return 1.0;
+    case 'forest':
+      return 0.97;
+  }
 }
 
 /** 由静态内容生成初始世界。纯函数：同内容 + 同种子 → 同状态。 */
@@ -1041,7 +1070,8 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
         stock: Math.round(monthlyDemand * stockMonthsTarget),
         production: 0,
         demand: monthlyDemand,
-        price: good.basePrice,
+        // 初始行市按地形略有差异：山地缺粮贵、平原产粮便宜，给个人贩运留出第一笔价差。
+        price: Math.max(1, Math.round(good.basePrice * terrainPriceFactor(region.terrain))),
         floor: Math.max(1, Math.round(good.basePrice * good.floorRatio)),
         ceiling: Math.round(good.basePrice * good.ceilingRatio),
         importCapacity: 0,
@@ -1180,6 +1210,16 @@ export function validateWorld(state: WorldState): string[] {
       character.careerRank > 3
     ) {
       problems.push(`人物 ${character.id} 的生涯等级越界`);
+    }
+    if (!Number.isFinite(character.health) || character.health < 0 || character.health > 100) {
+      problems.push(`人物 ${character.id} 的健康值越界`);
+    }
+    if (
+      !Number.isInteger(character.actionPoints) ||
+      character.actionPoints < 0 ||
+      character.actionPoints > 6
+    ) {
+      problems.push(`人物 ${character.id} 的行动力越界`);
     }
     for (const key of ATTRIBUTE_KEYS) {
       const value = character.attributes?.[key];

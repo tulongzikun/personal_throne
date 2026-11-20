@@ -16,6 +16,8 @@ export interface UiDeps {
   content(): WorldContent;
   /** 唯一写入口，内部会调用 GameEngine.dispatch。 */
   dispatch(command: Command): CommandResult;
+  /** 推进若干天（移动等带在途时间的命令用）。 */
+  advanceDays(days: number): void;
   /** 请求外壳刷新（顶栏、地图、当前面板）。 */
   refresh(): void;
   notify(message: string, tone?: NoticeTone): void;
