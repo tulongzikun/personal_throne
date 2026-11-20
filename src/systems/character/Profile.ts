@@ -11,7 +11,7 @@
 import type { Alignment, Attributes, Character, SiteKind } from '../../core/WorldState';
 import { ATTRIBUTE_KEYS } from '../../core/WorldState';
 
-/** 种族属性修正（内容里的 `races.json` 目前没有属性字段，先在这里落实）。 */
+/** 种族属性修正。种族本体在 `content/world.json` 的 `characters[].race`，修正表只在此处维护。 */
 export const RACE_ATTRIBUTE_BONUS: Readonly<Record<string, Partial<Attributes>>> = {
   human: {},
   dwarf: { physique: 2, agility: -1 },

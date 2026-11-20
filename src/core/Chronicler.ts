@@ -10,25 +10,35 @@
 import type { HistoryRef } from './History';
 import type { Country, RegionId, WorldState } from './WorldState';
 
-/**
- * 实体 id → 展示名。
- * 注意：每次现算，不能缓存——出生与补员会不断新增人物，
- * 缓存过的表会把新人物当成未知 id（历史上曾因此漏出 `c_child_003`）。
- */
-const nameCache = new WeakMap<WorldState, { count: number; names: Map<string, string> }>();
-
 const ID_TOKEN = /[a-z]+_[a-z0-9_]+/g;
 
+/**
+ * 实体 id → 展示名（只读视图，调用方不得修改）。
+ *
+ * 缓存按 state 保存，失效由**显式调用** `invalidateEntityNames()` 触发，
+ * 而不是猜一个启发式键。旧实现以「人物数量」当失效键：人数不变而改名
+ * （迁移重算档案、未来加入改名功能）时会读到旧表。数量只是改名事件的
+ * 一个必要不充分条件，不能当键。
+ *
+ * 全量实体不足百条，但 `record()` 每条历史都要查一次，100 年模拟会调用
+ * 上万次——不缓存会让 sim 从 3.6 s 涨到 4.5 s，超出 D7 预算。
+ */
+const nameCache = new WeakMap<WorldState, Map<string, string>>();
+
+/** 实体增删或改名后必须调用，否则编年史会继续用旧名字。 */
+export function invalidateEntityNames(state: WorldState): void {
+  nameCache.delete(state);
+}
+
 export function entityNames(state: WorldState): Map<string, string> {
-  const count = Object.keys(state.characters).length;
   const cached = nameCache.get(state);
-  if (cached && cached.count === count) return cached.names;
+  if (cached) return cached;
   const names = new Map<string, string>();
   for (const region of Object.values(state.regions)) names.set(region.id, region.name);
   for (const country of Object.values(state.countries)) names.set(country.id, country.name);
   for (const org of Object.values(state.organizations)) names.set(org.id, org.name);
   for (const character of Object.values(state.characters)) names.set(character.id, character.name);
-  nameCache.set(state, { count: Object.keys(state.characters).length, names });
+  nameCache.set(state, names);
   return names;
 }
 
@@ -61,7 +71,6 @@ function seatOf(state: WorldState, countryId: string): RegionId | null {
   return best;
 }
 
-/** 把摘要里的裸 id 换成展示名（长的先换，避免子串误伤）。 */
 /** 把摘要里的裸 id 换成展示名（一次扫描，不做全表比对）。 */
 export function humanize(state: WorldState, summary: string): string {
   const names = entityNames(state);

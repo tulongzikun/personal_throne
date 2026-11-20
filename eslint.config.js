@@ -40,7 +40,7 @@ export default tseslint.config(
     },
   },
   {
-    // 架构铁律：core 与 systems 不得依赖 UI / 存储
+    // 架构铁律：core 与 systems 不得依赖 UI / 存储 / 内容装配
     files: ['src/core/**/*.ts', 'src/systems/**/*.ts'],
     rules: {
       'no-restricted-imports': [
@@ -48,8 +48,18 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@/ui/*', '@/storage/*', '**/ui/*', '**/storage/*'],
-              message: '核心模拟层不得依赖界面或存档层，请通过 GameEngine 暴露的能力反向注入。',
+              group: [
+                '@/ui/*',
+                '@/storage/*',
+                '@/content',
+                '@/content/*',
+                '**/ui/*',
+                '**/storage/*',
+                '**/content',
+                '**/content/*',
+              ],
+              message:
+                '核心模拟层不得依赖界面、存档层或数据装配器；配置由调用方显式传入（见 systems/country/PolicySystem.ts）。',
             },
           ],
         },

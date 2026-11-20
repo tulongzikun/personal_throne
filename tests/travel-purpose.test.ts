@@ -116,15 +116,12 @@ describe('P2 到场规则', () => {
     expect(findRelation(state, player.id, ruler.id, 'ally')?.value ?? 0).toBeGreaterThan(0);
   });
 
-  it('考察市场要在当地，期限 30 天且不可重复', () => {
+  it('打听行情可在本地或相邻地区，30 天内有效且不重复', () => {
     const engine = makeEngine('travel-inspect');
     const state = engine.state;
     const player = state.characters[state.playerId]!;
     player.actionPoints = 3;
-
-    const away = engine.dispatch({ kind: 'inspect_market', regionId: 'r_silvermoon' });
-    expect(away.ok).toBe(false);
-    expect(away.error ?? '').toContain('当地');
+    player.wealth = 1000;
 
     const here = engine.dispatch({ kind: 'inspect_market', regionId: player.regionId });
     expect(here.ok).toBe(true);
@@ -132,6 +129,24 @@ describe('P2 到场规则', () => {
 
     const again = engine.dispatch({ kind: 'inspect_market', regionId: player.regionId });
     expect(again.ok).toBe(false);
-    expect(again.error ?? '').toContain('考察');
+    expect(again.error ?? '').toContain('最近');
+
+    const neighbor = state.regions[player.regionId]!.links[0]!.to;
+    const cashBefore = player.wealth;
+    const away = engine.dispatch({ kind: 'inspect_market', regionId: neighbor });
+    expect(away.ok).toBe(true);
+    expect(player.wealth).toBe(cashBefore - 20);
+
+    const far = Object.keys(state.regions).find(
+      (id) =>
+        id !== player.regionId &&
+        id !== neighbor &&
+        !state.regions[player.regionId]!.links.some((link) => link.to === id),
+    );
+    if (far) {
+      const tooFar = engine.dispatch({ kind: 'inspect_market', regionId: far });
+      expect(tooFar.ok).toBe(false);
+      expect(tooFar.error ?? '').toContain('相邻');
+    }
   });
 });

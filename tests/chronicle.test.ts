@@ -6,7 +6,12 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { composeChronicle, entityNames, humanize } from '../src/core/Chronicler';
+import {
+  composeChronicle,
+  entityNames,
+  humanize,
+  invalidateEntityNames,
+} from '../src/core/Chronicler';
 import { GameEngine } from '../src/core/GameEngine';
 import { content, makeWorld } from './helpers';
 
@@ -46,6 +51,21 @@ describe('编年史', () => {
       (record) => record.subject !== null && record.subject !== undefined,
     );
     expect(withSubject.length / records.length).toBeGreaterThanOrEqual(0.95);
+  });
+
+  it('实体改名后编年史跟着变（缓存不得以数量为失效键）', () => {
+    const world = makeWorld('chronicle-rename');
+    const org = Object.values(world.organizations)[0]!;
+    expect(humanize(world, org.id)).toBe(org.name);
+
+    // 人数与组织数都不变，只改名：按数量做失效键的实现会在这里返回旧名。
+    const renamed = `${org.name}（改组后）`;
+    org.name = renamed;
+    invalidateEntityNames(world);
+    expect(humanize(world, org.id)).toBe(renamed);
+
+    // 反向确认：不调失效函数时，缓存本来就不该被悄悄绕过。
+    expect(entityNames(world).get(org.id)).toBe(renamed);
   });
 
   it('组织类记录带地点，人物类记录主体是本人', () => {

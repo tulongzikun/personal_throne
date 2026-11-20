@@ -3,13 +3,15 @@
  *
  * 只读 `GameEngine.state`，所有写入都经由 `deps.dispatch`（唯一写入口）。
  * 时间推进使用 `setInterval` 分片，每次 tick 最多推进 3 天，避免阻塞输入。
+ *
+ * 顶栏 / 时间条 / 快捷键 / 信号收集 / 玩家生命周期 / 自动存档分别落在
+ * `ui/app/` 下的独立模块里，这里只做装配与时间推进。
  */
 
 import { describeCommand, type Command, type CommandResult } from '../core/CommandBus';
 import { formatDate, nextBoundary, Phase, toDateParts } from '../core/GameClock';
 import { GameEngine } from '../core/GameEngine';
-import type { CharacterId, ScheduledEvent, WorldState } from '../core/WorldState';
-import { AUTO_SLOT, downloadSave, readSaveFile, writeSlot } from '../storage/SaveManager';
+import type { WorldState } from '../core/WorldState';
 import { CharacterPanel } from './CharacterPanel';
 import type { NoticeTone, UiDeps } from './context';
 import { ArmyPanel } from './ArmyPanel';
@@ -17,70 +19,33 @@ import { CountryPanel } from './CountryPanel';
 import { CreateCharacterDialog, creationErrorText } from './CreateCharacterDialog';
 import { StartDialog } from './StartDialog';
 import { SuggestionsPanel } from './SuggestionsPanel';
-import { ambitionOf, chapterOf } from '../systems/goals/Ambition';
-import { EventDialog, type WorldSignal } from './EventDialog';
-import { regionNews } from '../systems/region/RegionNews';
-import { RELATION_LABELS, isRelated, relationOf, subjectOf } from './signals';
-import { eventText, eventTextForRefs } from '../core/EventEngine';
-import { describeCheck } from '../systems/character/Check';
-import type { ChoiceDef } from '../core/WorldState';
+import { EventDialog } from './EventDialog';
 import { HistoryPanel } from './HistoryPanel';
-import { MapView, countryPalette } from './MapView';
+import { MapView } from './MapView';
 import { OrganizationPanel } from './OrganizationPanel';
 import { PlayerPanel } from './PlayerPanel';
 import { RegionPanel } from './RegionPanel';
 import { SaveDialog } from './SaveDialog';
 import { Tour } from './Tour';
-import { button, el, fmtMoney, messageOf } from './dom';
+import { el, fmtMoney, messageOf } from './dom';
+import { eventText } from '../core/EventEngine';
 
-type TabId = 'region' | 'character' | 'organization' | 'country' | 'army' | 'history';
-type Speed = 0 | 1 | 7 | 30;
+import {
+  choiceHint,
+  SPEED_CONFIG,
+  TABS,
+  type Speed,
+  type TabId,
+  type TimebarRefs,
+  type TopbarRefs,
+} from './app/appTypes';
+import { exportGame, importFile, maybeAutoSave, type AutoSaveState } from './app/autosave';
+import { installShortcuts, labelButtons, observeButtons } from './app/keyboard';
+import { maybeFirstReport, checkPlayerDeath, type LifecycleDeps } from './app/lifecycle';
+import { collectSignals, newSignalTracker, type SignalTracker } from './app/signalsFeed';
+import { buildTimebar } from './app/timebar';
+import { buildLegend, buildTopbar } from './app/topbar';
 
-const TABS: readonly { readonly id: TabId; readonly label: string }[] = [
-  { id: 'region', label: '地区' },
-  { id: 'character', label: '人物' },
-  { id: 'organization', label: '组织' },
-  { id: 'country', label: '国家' },
-  { id: 'army', label: '军团' },
-  { id: 'history', label: '历史' },
-];
-
-const SPEED_KEYS: Record<1 | 7 | 30, string> = { 1: '1', 7: '2', 30: '3' };
-
-/** 数字键 1/2/3 对应 1×/7×/30×，4 暂停。 */
-const KEY_SPEEDS: Readonly<Record<string, Speed>> = { '1': 1, '2': 7, '3': 30, '4': 0 };
-
-const SPEED_CONFIG: Record<1 | 7 | 30, { readonly interval: number; readonly days: number }> = {
-  1: { interval: 1000, days: 1 },
-  7: { interval: 250, days: 1 },
-  30: { interval: 100, days: 3 },
-};
-
-interface TopbarRefs {
-  readonly date: HTMLElement;
-  readonly player: HTMLElement;
-  readonly cash: HTMLElement;
-  readonly speed: HTMLElement;
-  readonly hash: HTMLElement;
-  readonly toast: HTMLElement;
-}
-
-interface TimebarRefs {
-  readonly element: HTMLElement;
-  readonly hint: HTMLElement;
-}
-
-function signalKey(event: ScheduledEvent): string {
-  return `${event.day}:${event.seq}:${event.refId}`;
-}
-
-/** 抉择按钮上的提示：先写规则（看哪个属性、门槛多少），再写后果。 */
-function choiceHint(state: WorldState, choice: ChoiceDef): string {
-  const player = state.characters[state.playerId];
-  if (!choice.check || !player) return choice.hint ?? '';
-  const rule = describeCheck(player, choice.check);
-  return choice.hint ? `${choice.hint} · ${rule}` : rule;
-}
 export class App {
   private engine: GameEngine;
   private readonly root: HTMLElement;
@@ -113,27 +78,34 @@ export class App {
   /** 打开模态框前的速度；全部关闭后恢复，手动暂停过则为 null。 */
   private modalResume: Speed | null = null;
   private lastSpeed: Speed = 1;
-  private observing = false;
   private timer: number | null = null;
   private toastTimer: number | null = null;
-  private lastHistoryId = 0;
-  private seenPending = new Set<string>();
+  private signals: SignalTracker;
   private shownChoices = new Set<string>();
   private pendingButton!: HTMLButtonElement;
   private lastHashDay = 0;
-  private deathShown = false;
-  private lastAutoSaveDay = 0;
-  private autoSaveBusy = false;
+  private deathShown = { value: false };
+  private autoSave: AutoSaveState = { lastDay: 0, busy: false };
   private suggestionsPanel!: SuggestionsPanel;
-  private firstReportShown = false;
+  private firstReport = { value: false };
 
   constructor(root: HTMLElement, engine: GameEngine) {
     this.root = root;
     this.engine = engine;
+    this.signals = newSignalTracker(engine.state);
     this.root.replaceChildren();
 
     this.shell = el('div', 'app');
-    this.topbar = this.buildTopbar(this.shell);
+    const topbar = buildTopbar(this.shell, {
+      openSave: () => this.saveDialog.open(),
+      reopenChoices: () => this.reopenChoices(),
+      restartTour: () => this.tour.restart(),
+      exportGame: () => this.exportGame(),
+      openCreator: () => this.openCreator(),
+      importFile: (file) => void this.importFile(file),
+    });
+    this.topbar = topbar.refs;
+    this.pendingButton = topbar.pending;
 
     const workspace = el('main', 'workspace');
     const playerRail = el('aside', 'player-rail');
@@ -152,7 +124,7 @@ export class App {
     );
     const mapHost = el('div', 'map-canvas');
     mapSection.append(mapHead, mapHost);
-    mapSection.append(this.buildLegend(engine.state));
+    mapSection.append(buildLegend(engine.state));
 
     const inspector = el('aside', 'inspector');
     const tabbar = el('nav', 'tabs');
@@ -193,8 +165,11 @@ export class App {
       openOrganization: (orgId) => this.openOrganization(orgId),
       openCharacter: (characterId) => this.openCharacter(characterId),
     };
-    this.playerPanel = new PlayerPanel(playerRail, this.deps);
-    this.suggestionsPanel = new SuggestionsPanel(playerRail, this.deps);
+    const playerSlot = el('div', 'player-rail__player');
+    const suggestSlot = el('div', 'player-rail__suggestions');
+    playerRail.append(playerSlot, suggestSlot);
+    this.playerPanel = new PlayerPanel(playerSlot, this.deps);
+    this.suggestionsPanel = new SuggestionsPanel(suggestSlot, this.deps);
     this.regionPanel = new RegionPanel(this.sectionOf('region'), this.deps);
     this.characterPanel = new CharacterPanel(this.sectionOf('character'), this.deps);
     this.organizationPanel = new OrganizationPanel(this.sectionOf('organization'), this.deps);
@@ -202,7 +177,14 @@ export class App {
     this.armyPanel = new ArmyPanel(this.sectionOf('army'), this.deps);
     this.historyPanel = new HistoryPanel(this.sectionOf('history'), this.deps);
 
-    const timebar = this.buildTimebar(this.shell);
+    const timebar: TimebarRefs = buildTimebar(
+      this.shell,
+      {
+        setSpeed: (speed) => this.setSpeed(speed),
+        jumpToNextEvent: () => this.jumpToNextEvent(),
+      },
+      this.speedButtons,
+    );
     this.timeHint = timebar.hint;
     this.shell.append(timebar.element);
 
@@ -218,7 +200,13 @@ export class App {
       onVisibilityChange: (visible) => this.holdForModal('save', visible),
     });
     this.tour = new Tour(this.shell);
-    document.addEventListener('keydown', this.onKeyDown, true);
+    installShortcuts({
+      shell: this.shell,
+      closeOverlay: () => this.closeOverlay(),
+      restartTour: () => this.tour.restart(),
+      togglePause: () => this.togglePause(),
+      setSpeed: (speed) => this.setSpeed(speed),
+    });
     this.root.append(this.shell);
   }
 
@@ -237,12 +225,11 @@ export class App {
     this.armyPanel.update();
     this.historyPanel.update();
 
-    this.lastHistoryId = state.history.at(-1)?.id ?? 0;
-    this.seenPending = new Set(state.pendingEvents.map(signalKey));
+    this.signals = newSignalTracker(state);
     this.shownChoices = new Set();
     this.lastHashDay = 0;
-    this.deathShown = false;
-    this.lastAutoSaveDay = state.clock.day;
+    this.deathShown = { value: false };
+    this.autoSave = { lastDay: state.clock.day, busy: false };
 
     this.switchTab('region');
     // 进入游戏即以 1× 推进；玩家可随时暂停。
@@ -250,8 +237,8 @@ export class App {
     this.refresh(true);
     if (message) this.notify(message, 'ok');
     if (options.tour !== false) this.tour.maybeStart();
-    this.labelButtons();
-    this.watchButtons();
+    labelButtons(this.shell);
+    observeButtons(this.shell);
   }
 
   /** 首次开局：在有存档时跳过，由玩家决定沿用默认人物还是自建。 */
@@ -260,142 +247,6 @@ export class App {
       onDefault: () => this.start('你是金穗行的少东家：持股 22%，掌柜是叔父霍布·金穗。'),
       onCreate: () => this.openCreator(),
     });
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* 顶栏与时间控制                                                       */
-  /* ------------------------------------------------------------------ */
-
-  private buildTopbar(shell: HTMLElement): TopbarRefs {
-    const header = el('header', 'topbar');
-    const brand = el('div', 'brand');
-    brand.append(el('span', 'brand__crown', '♛'), el('span', 'brand__name', '王座与黄金'));
-    header.append(brand);
-
-    const date = el('span', 'topbar__value topbar__value--date');
-    date.dataset.day = '';
-    const player = el('span', 'topbar__value');
-    const cash = el('span', 'topbar__value topbar__value--cash');
-    const speed = el('span', 'topbar__value');
-    const hash = el('span', 'topbar__value topbar__value--mono');
-
-    header.append(
-      this.topbarStat('日期', date),
-      this.topbarStat('玩家', player),
-      this.topbarStat('现金', cash),
-      this.topbarStat('速度', speed),
-      this.topbarStat('哈希', hash),
-    );
-
-    const actions = el('div', 'topbar__actions');
-    const importInput = el('input', 'sr-only');
-    importInput.type = 'file';
-    importInput.accept = '.json,application/json';
-    importInput.setAttribute('aria-label', '导入存档文件');
-    importInput.addEventListener('change', () => {
-      const file = importInput.files?.item(0);
-      if (file) void this.importFile(file);
-      importInput.value = '';
-    });
-    const saveButton = button('存档', () => this.saveDialog.open(), 'small');
-    saveButton.dataset.tour = 'save';
-    saveButton.title = '存档管理（自动槽 + 三个手动槽）';
-    this.pendingButton = button('待决抉择', () => this.reopenChoices(), 'small');
-    this.pendingButton.hidden = true;
-    this.pendingButton.title = '你还没决定的抉择；点开可以继续处理';
-    this.pendingButton.dataset.tour = 'pending';
-    const helpButton = button('?', () => this.tour.restart(), 'small');
-    helpButton.title = '重新查看新手引导（快捷键 ?）';
-    helpButton.setAttribute('aria-label', '打开新手引导');
-    helpButton.classList.add('topbar__help');
-    actions.append(
-      this.pendingButton,
-      saveButton,
-      button('导出', () => this.exportGame(), 'small'),
-      button('创建人物', () => this.openCreator(), 'small'),
-      button('导入', () => importInput.click(), 'small'),
-      helpButton,
-      importInput,
-    );
-    header.append(actions);
-
-    const toast = el('div', 'toast');
-    toast.setAttribute('role', 'status');
-    toast.setAttribute('aria-live', 'polite');
-    header.append(toast);
-
-    shell.append(header);
-    return { date, player, cash, speed, hash, toast };
-  }
-
-  private topbarStat(label: string, value: HTMLElement): HTMLElement {
-    const node = el('div', 'topbar__stat');
-    node.append(el('span', 'topbar__label', label), value);
-    return node;
-  }
-
-  /** 打开开局人物创建；成功后重挂界面到新玩家。 */
-  private openCreator(): void {
-    this.createDialog.open(this.engine.content, (choice) => {
-      try {
-        const result = this.engine.createPlayer(choice);
-        this.start(`你以「${result.character.name}」的身份登场`);
-        for (const warning of result.warnings) this.notify(warning, 'info');
-        return { ok: true };
-      } catch (error) {
-        return { ok: false, error: creationErrorText(error) };
-      }
-    });
-  }
-
-  private buildLegend(state: WorldState): HTMLElement {
-    const legend = el('ul', 'legend');
-    const palette = countryPalette(state);
-    for (const country of Object.values(state.countries).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    )) {
-      const item = el('li', 'legend__item');
-      const dot = el('span', 'legend__dot');
-      dot.style.background = palette.get(country.id) ?? '#d9b45b';
-      item.append(dot, el('span', 'legend__label', country.name));
-      legend.append(item);
-    }
-    legend.append(el('li', 'legend__hint', '地区轮廓 = 地形 · 连线粗细 = 运力 · 箭头 = 货流方向'));
-    return legend;
-  }
-
-  private buildTimebar(shell: HTMLElement): TimebarRefs {
-    const timebar = el('footer', 'timebar');
-    const segmented = el('div', 'segmented');
-    segmented.setAttribute('role', 'group');
-    segmented.setAttribute('aria-label', '时间速度');
-    segmented.dataset.tour = 'speed';
-    for (const speed of [0, 1, 7, 30] as const) {
-      const node = el('button', 'segmented__btn', speed === 0 ? '暂停' : `${speed}×`);
-      node.type = 'button';
-      node.setAttribute(
-        'aria-label',
-        speed === 0 ? '暂停时间（快捷键 4）' : `速度 ${speed}×（快捷键 ${SPEED_KEYS[speed]}）`,
-      );
-      node.title =
-        speed === 0
-          ? '暂停 / 继续（空格，或数字键 4）'
-          : `${speed}× 速度（数字键 ${SPEED_KEYS[speed]}）`;
-      if (speed === 0) node.classList.add('is-active');
-      node.addEventListener('click', () => this.setSpeed(speed));
-      this.speedButtons.set(speed, node);
-      segmented.append(node);
-    }
-
-    const jump = button('跳到下一事件', () => this.jumpToNextEvent(), 'ghost');
-    jump.classList.add('timebar__jump');
-
-    const hint = el('span', 'timebar__hint');
-    hint.title = '空格暂停 / 继续 · 1 2 3 切速度 · 4 暂停 · ? 看引导 · Esc 关闭弹窗';
-    const saveHint = el('span', 'timebar__hint timebar__hint--right', '存档仅写入本地浏览器');
-    timebar.append(segmented, jump, hint, saveHint);
-    shell.append(timebar);
-    return { element: timebar, hint };
   }
 
   /* ------------------------------------------------------------------ */
@@ -490,6 +341,20 @@ export class App {
     this.switchTab('character');
   }
 
+  /** 打开开局人物创建；成功后重挂界面到新玩家。 */
+  private openCreator(): void {
+    this.createDialog.open(this.engine.content, (choice) => {
+      try {
+        const result = this.engine.createPlayer(choice);
+        this.start(`你以「${result.character.name}」的身份登场`);
+        for (const warning of result.warnings) this.notify(warning, 'info');
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: creationErrorText(error) };
+      }
+    });
+  }
+
   /* ------------------------------------------------------------------ */
   /* 时间                                                                 */
   /* ------------------------------------------------------------------ */
@@ -536,84 +401,18 @@ export class App {
     this.setSpeed(0);
   }
 
-  /** 给没有显式 aria-label 的纯文字按钮补上可访问名（面板与对话框会动态重绘）。 */
-  private labelButtons(): void {
-    for (const node of this.shell.querySelectorAll('button:not([aria-label])')) {
-      const text = (node.textContent ?? '').trim();
-      if (text.length > 0) node.setAttribute('aria-label', text);
+  /** Esc：先关存档，再关引导；都没开就交给事件弹窗自己处理。 */
+  private closeOverlay(): boolean {
+    if (this.saveDialog.isOpen) {
+      this.saveDialog.close();
+      return true;
     }
+    if (this.tour.isOpen) {
+      this.tour.close();
+      return true;
+    }
+    return false;
   }
-
-  private watchButtons(): void {
-    if (this.observing) return;
-    this.observing = true;
-    let scheduled = 0;
-    const observer = new MutationObserver(() => {
-      if (scheduled !== 0) return;
-      scheduled = window.requestAnimationFrame(() => {
-        scheduled = 0;
-        this.labelButtons();
-      });
-    });
-    observer.observe(this.shell, { childList: true, subtree: true });
-  }
-
-  /**
-   * 全局快捷键在捕获阶段处理：Esc 优先关存档/引导并截断事件，
-   * 避免和事件弹窗自己的 Esc 监听互相抢焦点。
-   */
-  private readonly onKeyDown = (event: KeyboardEvent): void => {
-    const target = event.target;
-    const element = target instanceof HTMLElement ? target : null;
-    const typing =
-      element !== null &&
-      (element.isContentEditable ||
-        element.tagName === 'INPUT' ||
-        element.tagName === 'TEXTAREA' ||
-        element.tagName === 'SELECT');
-
-    if (event.key === 'Escape') {
-      if (this.saveDialog.isOpen) {
-        event.preventDefault();
-        event.stopPropagation();
-        this.saveDialog.close();
-        return;
-      }
-      if (this.tour.isOpen) {
-        event.preventDefault();
-        event.stopPropagation();
-        this.tour.close();
-      }
-      return;
-    }
-
-    if (event.ctrlKey || event.metaKey || event.altKey || typing) return;
-
-    if (event.key === '?') {
-      event.preventDefault();
-      event.stopPropagation();
-      this.tour.restart();
-      return;
-    }
-
-    if (event.key === ' ' || event.key === 'Spacebar') {
-      const interactive =
-        element !== null &&
-        (element.tagName === 'BUTTON' ||
-          element.tagName === 'A' ||
-          element.getAttribute('role') === 'button');
-      if (interactive) return;
-      event.preventDefault();
-      this.togglePause();
-      return;
-    }
-
-    const shortcut = KEY_SPEEDS[event.key];
-    if (shortcut !== undefined) {
-      event.preventDefault();
-      this.setSpeed(shortcut);
-    }
-  };
 
   private tick(days: number): void {
     try {
@@ -718,72 +517,11 @@ export class App {
   }
 
   private drainSignals(): void {
-    const state = this.engine.state;
-    const related: WorldSignal[] = [];
-
-    for (const record of state.history) {
-      if (record.id <= this.lastHistoryId || record.kind !== 'event') continue;
-      const def = record.causeEventId
-        ? this.engine.content.events.find((event) => event.id === record.causeEventId)
-        : undefined;
-      const subject = subjectOf(state, record);
-      const relation = relationOf(state, record);
-      const filled = def ? eventTextForRefs(state, def, record.refs) : undefined;
-      const title = filled?.title ?? '世界事件';
-      const text = filled?.body ?? record.summary;
-
-      if (!isRelated(relation)) continue;
-      related.push({
-        title,
-        body: text,
-        meta: formatDate(record.day),
-        tone: 'event',
-        relation: RELATION_LABELS[relation],
-        ...(subject ? { subject: subject.label } : {}),
-      });
-    }
-    const latest = state.history.at(-1);
-    if (latest) this.lastHistoryId = Math.max(this.lastHistoryId, latest.id);
-
-    for (const scheduled of state.pendingEvents) {
-      if (scheduled.kind !== 'event') continue;
-      const key = signalKey(scheduled);
-      if (this.seenPending.has(key)) continue;
-      this.seenPending.add(key);
-      if (scheduled.day <= state.clock.day) continue;
-      const def = this.engine.content.events.find((event) => event.id === scheduled.refId);
-      const omenTitle =
-        def && scheduled.targetScope && scheduled.targetEntityId
-          ? eventText(state, def, {
-              scope: scheduled.targetScope,
-              entityId: scheduled.targetEntityId,
-            }).title
-          : (def?.text.title ?? '未明之事');
-      related.push({
-        title: `预兆 · ${omenTitle}`,
-        body: `风声正在流传：这件事预计在 ${formatDate(scheduled.day)} 前后见分晓，没有人知道它会以何种面目到来。`,
-        meta: `待办 ${formatDate(scheduled.day)} · ${this.entityLabel(scheduled.targetScope, scheduled.targetEntityId)}`,
-        tone: 'omen',
-        relation: '与你或你身边的人有关',
-      });
-    }
-
-    const signals: WorldSignal[] = [...related];
-    // 远方见闻只挑要紧的地区局势说，不再逐条转述陌生人的遭遇。
-    const news = regionNews(state, 3);
-    if (news.length > 0) {
-      signals.push({
-        title: `${news.length} 条远方见闻`,
-        body: '只挑要紧的说；传闻会变，亲自去一趟看到的情况才算数。',
-        meta: `${formatDate(state.clock.day)} · 世界在别处继续`,
-        tone: 'digest',
-        items: news.map((item) => ({
-          title: item.title,
-          subject: this.entityLabel('region', item.regionId),
-          body: item.body,
-        })),
-      });
-    }
+    const signals = collectSignals({
+      state: this.engine.state,
+      content: this.engine.content,
+      tracker: this.signals,
+    });
     if (signals.length === 0) return;
     const dropped = this.eventDialog.pushMany(signals);
     if (dropped > 0) this.notify(`另有 ${dropped} 条已收入编年史`, 'info');
@@ -791,131 +529,36 @@ export class App {
 
   /** 每次推进后检查死讯与自动存档。 */
   private afterAdvance(): void {
-    this.checkPlayerDeath();
-    this.maybeAutoSave();
-    this.maybeFirstReport();
+    const deps = this.lifecycleDeps();
+    checkPlayerDeath(deps, this.deathShown);
+    maybeAutoSave(this.engine.state, this.autoSave, (message, tone) => this.notify(message, tone));
+    maybeFirstReport(deps, this.firstReport);
   }
 
-  /** 玩满一个月时给第一份财报：钱从哪来、花到哪去、下一步看什么。 */
-  private maybeFirstReport(): void {
-    if (this.firstReportShown) return;
-    const state = this.engine.state;
-    if (state.clock.day < 30) return;
-    this.firstReportShown = true;
-    const player = state.characters[state.playerId];
-    if (!player) return;
-    const ambition = ambitionOf(state);
-    const chapter = chapterOf(state);
-    this.eventDialog.pushMany([
-      {
-        title: '第一份财报',
-        body: `一个月过去了，你的现金是 ${player.wealth} 铜币，身上有 ${player.actionPoints} 点行动力、健康 ${Math.round(player.health)}。${ambition ? `你的野心是「${ambition.name}」——${ambition.goal}，现在走到 ${Math.round(ambition.progress * 100)}%（${ambition.hint}）。` : ''}左下角的三条建议会随局势换，照着做就行；想看事情怎么发生，翻右下角的编年史。`,
-        meta: `${formatDate(state.clock.day)} · 第 ${chapter.index} 章「${chapter.title}」`,
-        tone: 'digest',
+  private lifecycleDeps(): LifecycleDeps {
+    return {
+      engine: () => this.engine,
+      dialog: () => this.eventDialog,
+      notify: (message, tone) => this.notify(message, tone),
+      refresh: (forceHash) => this.refresh(forceHash),
+      pause: () => this.setSpeed(0),
+      afterInherit: () => {
+        this.signals.lastHistoryId =
+          this.engine.state.history.at(-1)?.id ?? this.signals.lastHistoryId;
       },
-    ]);
-  }
-
-  private checkPlayerDeath(): void {
-    if (this.deathShown || this.engine.playerAlive) return;
-    this.deathShown = true;
-    this.setSpeed(0);
-
-    const state = this.engine.state;
-    const player = state.characters[state.playerId];
-    const orgNames = Object.values(state.organizations)
-      .filter(
-        (org) =>
-          org.shares.some((share) => share.characterId === state.playerId) ||
-          org.leadership.leaderId === state.playerId,
-      )
-      .map((org) => org.name);
-    const heirs = this.engine.heirs();
-    const options = heirs.slice(0, 3).map((id: CharacterId) => ({
-      id,
-      label: `以 ${state.characters[id]?.name ?? id} 继续`,
-    }));
-    options.push({ id: '__end__', label: '就此落幕，看着世界继续' });
-
-    this.eventDialog.pushMany([
-      {
-        title: `${player?.name ?? '你'} 去世了`,
-        body: `${formatDate(state.clock.day)}，${player?.name ?? '你'}在${state.regions[player?.location.regionId ?? '']?.name ?? '异乡'}去世，享年 ${player?.age ?? '?'} 岁。留下的现金 ${fmtMoney(player?.wealth ?? 0)}，股份涉及 ${orgNames.join('、') || '无'}，由继承人按遗嘱分派。你可以选择以某位继承人的身份继续，也可以让故事停在这里。`,
-        meta: '讣告 · 世界不会停下来',
-        tone: 'choice',
-        options,
-        onPick: (choiceId) => this.inherit(choiceId),
-      },
-    ]);
-  }
-
-  private inherit(characterId: string): void {
-    if (characterId === '__end__') {
-      this.setSpeed(0);
-      this.notify('故事到此为止；你可以继续翻看这座世界的编年史。', 'info');
-      return;
-    }
-    const result = this.engine.continueAs(characterId);
-    if (!result.ok) {
-      this.notify(result.error ?? '无法继承', 'error');
-      this.deathShown = false;
-      return;
-    }
-    this.deathShown = false;
-    this.lastHistoryId = this.engine.state.history.at(-1)?.id ?? this.lastHistoryId;
-    this.refresh(true);
-    this.notify(result.summary ?? '你继承了家业', 'ok');
-  }
-
-  /** 每 30 天写一次自动存档；失败只提示一次，不阻塞推进。 */
-  private maybeAutoSave(): void {
-    const day = this.engine.state.clock.day;
-    if (this.autoSaveBusy || day - this.lastAutoSaveDay < 30) return;
-    this.lastAutoSaveDay = day;
-    this.autoSaveBusy = true;
-    void writeSlot(AUTO_SLOT, this.engine.state, '自动存档', Date.now())
-      .then(() => {
-        this.autoSaveBusy = false;
-      })
-      .catch((error: unknown) => {
-        this.autoSaveBusy = false;
-        this.notify(`自动存档失败：${messageOf(error)}`, 'error');
-      });
-  }
-
-  private entityLabel(scope: string | null, entityId: string | null): string {
-    if (!entityId) return '未知对象';
-    const state = this.engine.state;
-    switch (scope) {
-      case 'character':
-        return state.characters[entityId]?.name ?? entityId;
-      case 'organization':
-        return state.organizations[entityId]?.name ?? entityId;
-      case 'country':
-        return state.countries[entityId]?.name ?? entityId;
-      case 'region':
-        return state.regions[entityId]?.name ?? entityId;
-      default:
-        return entityId;
-    }
+    };
   }
 
   private exportGame(): void {
-    try {
-      downloadSave(this.engine.state, 'throne-and-gold-save.json');
-      this.notify('已导出存档文件', 'ok');
-    } catch (error) {
-      this.notify(`导出失败：${messageOf(error)}`, 'error');
-    }
+    exportGame(this.engine.state, (message, tone) => this.notify(message, tone));
   }
 
   private async importFile(file: File): Promise<void> {
-    try {
-      const envelope = await readSaveFile(file);
-      this.adopt(envelope.state, `已导入存档（${formatDate(envelope.day)}）`);
-    } catch (error) {
-      this.notify(`导入失败：${messageOf(error)}`, 'error');
-    }
+    await importFile(
+      file,
+      (state, message) => this.adopt(state, message),
+      (message, tone) => this.notify(message, tone),
+    );
   }
 
   private adopt(state: WorldState, message: string): void {
@@ -932,11 +575,10 @@ export class App {
     const orgId = player?.organizationId ?? Object.keys(state.organizations).sort()[0];
     if (orgId) this.organizationPanel.select(orgId);
 
-    this.lastHistoryId = state.history.at(-1)?.id ?? 0;
-    this.seenPending = new Set(state.pendingEvents.map(signalKey));
+    this.signals = newSignalTracker(state);
     this.lastHashDay = 0;
-    this.deathShown = false;
-    this.lastAutoSaveDay = state.clock.day;
+    this.deathShown = { value: false };
+    this.autoSave = { lastDay: state.clock.day, busy: false };
     this.refresh(true);
     this.notify(message, 'ok');
   }

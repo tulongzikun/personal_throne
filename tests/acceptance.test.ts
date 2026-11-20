@@ -118,6 +118,7 @@ describe('§13 B 商业干预', () => {
       state,
       { day: 90, periodKey: 'q1', phase: Phase.Country, rng: new Random('policy') },
       90,
+      content.balance.policy,
     );
 
     expect(proposals.length).toBeGreaterThan(0);

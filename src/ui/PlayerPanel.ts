@@ -23,6 +23,7 @@ import {
   tradeCarryCapacity,
 } from '../systems/character/SkillEffects';
 import { ambitionOf, chapterOf } from '../systems/goals/Ambition';
+import { bestTradeRoute } from '../systems/goals/Goals';
 import { CLASS_LABELS, RACE_LABELS, SKILL_LABELS, SEX_LABELS, labelOf } from './labels';
 
 export class PlayerPanel {
@@ -158,13 +159,7 @@ export class PlayerPanel {
     quick.append(el('p', 'player-card__train-title', '个人行动（各耗 1 行动力）'));
     quick.append(
       this.actionGroup('修养', [this.act('休息', { kind: 'rest' }, player.health >= 100)]),
-      this.actionGroup('生计', [
-        this.act(`贩货 ${tradeCarryCapacity(player)} 单位`, {
-          kind: 'trade_goods',
-          goodId: 'grain',
-          units: tradeCarryCapacity(player),
-        }),
-      ]),
+      this.actionGroup('生计', [this.tradeAction()]),
       this.actionGroup('钱庄', [
         this.act('存 100', { kind: 'deposit', amount: 100 }, player.wealth < 100),
         this.act(
@@ -235,6 +230,30 @@ export class PlayerPanel {
     this.host.append(card);
   }
 
+  /** 贩货按钮直接算好最优货种、目的地与预期利润，别让玩家对着一个黑箱猜。 */
+  private tradeAction(): HTMLButtonElement {
+    const state = this.deps.state();
+    const content = this.deps.content();
+    const player = state.characters[state.playerId];
+    const capacity = player ? Math.max(1, tradeCarryCapacity(player)) : 1;
+    const route = player ? bestTradeRoute(state, content, capacity) : null;
+    if (!route) {
+      return this.act('贩货（暂无划算路线）', { kind: 'rest' }, true);
+    }
+    const goodName = content.goods.find((good) => good.id === route.goodId)?.name ?? route.goodId;
+    const targetName = state.regions[route.target]?.name ?? route.target;
+    const label = `贩 ${route.units} ${goodName} → ${targetName} · 约 +${route.profit} 铜`;
+    return this.act(
+      label,
+      {
+        kind: 'trade_goods',
+        goodId: route.goodId,
+        units: route.units,
+        targetRegionId: route.target,
+      },
+      (player?.actionPoints ?? 0) < 1,
+    );
+  }
   private actionGroup(title: string, buttons: HTMLButtonElement[]): HTMLElement {
     const group = el('div', 'action-group');
     group.append(el('span', 'action-group__title', title));

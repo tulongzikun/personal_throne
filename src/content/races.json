@@ -1,5 +1,0 @@
-{
-  "human": { "id": "human", "name": "人类", "lifespan": 70, "traits": { "adaptability": 1.0 } },
-  "dwarf": { "id": "dwarf", "name": "矮人", "lifespan": 110, "traits": { "craft": 1.2 } },
-  "elf": { "id": "elf", "name": "精灵", "lifespan": 220, "traits": { "perception": 1.2 } }
-}

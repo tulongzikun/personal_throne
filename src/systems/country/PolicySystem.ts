@@ -22,7 +22,6 @@ import type {
   WorldState,
 } from '../../core/WorldState';
 import { sortedIds } from '../../core/WorldState';
-import { content as defaultContent } from '../../content';
 import { installRuler } from './Ruler';
 
 type PolicyConfig = BalanceConfig['policy'];
@@ -253,7 +252,7 @@ export function runPolicyRound(
   state: WorldState,
   ctx: SettleContext,
   day: number,
-  config: PolicyConfig = defaultContent.balance.policy,
+  config: PolicyConfig,
   influence = 0,
 ): PolicyRoundResult {
   const proposals: PolicyProposal[] = [];

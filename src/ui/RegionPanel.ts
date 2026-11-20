@@ -180,19 +180,22 @@ export class RegionPanel {
         });
         actions.append(attend);
       }
-      if (playerNow.regionId === region.id) {
+      const adjacent = (state.regions[playerNow.regionId]?.links ?? []).some(
+        (link) => link.to === region.id,
+      );
+      if (playerNow.regionId !== region.id && adjacent) {
         const inspected = (state.inspections[region.id] ?? 0) > state.clock.day;
         const inspect = el(
           'button',
           'btn',
-          inspected ? '已考察（30 天内有效）' : '考察市场（1 行动力）',
+          inspected ? '已打听（30 天内有效）' : '打听行情（20 铜 · 1 行动力）',
         );
         inspect.type = 'button';
         inspect.disabled = inspected;
         inspect.addEventListener('click', () => {
           const result = this.deps.dispatch({ kind: 'inspect_market', regionId: region.id });
           this.deps.notify(
-            result.ok ? (result.summary ?? '考察完毕') : (result.error ?? '无法考察'),
+            result.ok ? (result.summary ?? '打听完毕') : (result.error ?? '无法打听'),
             result.ok ? 'ok' : 'error',
           );
           this.deps.refresh();

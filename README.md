@@ -15,8 +15,8 @@
 ## 当前状态
 
 **版本 2.0.0（2026-11-20）。M0–M7 全部完成。** 规模：**7 国 / 14 地区 / 21 组织 / 54 人物 / 90 条事件**；
-32 个测试文件 / 201 个用例；`release/index.html` 368,416 字节（体积预算 23.4%）；
-100 年无界面快进 3.66–3.89 s（D7 预算：14 区 < 4.0 s）、状态哈希稳定。
+33 个测试文件 / 207 个用例；`release/index.html` 374,280 字节（体积预算 23.8%）；
+100 年无界面快进 3.33–3.77 s（8 次采样，D7 预算：14 区 < 4.0 s）、状态哈希稳定。
 CI（run 34）与 Pages 部署（run 31）均为 success，站点 <https://tulongzikun.github.io/personal_throne/> 返回 200。
 
 ### 里程碑
@@ -24,7 +24,7 @@ CI（run 34）与 Pages 部署（run 31）均为 success，站点 <https://tulon
 **M0 工程基线：完成。** TypeScript 严格模式、单文件构建、ESLint 架构约束、Vitest 与 GitHub Actions CI 均已就绪。
 
 **M1 模拟核心：完成。** `src/core/` 9 个模块（世界状态、历法、随机、命令、事件、历史、分层、编年史、引擎）+
-`src/systems/` 30 个结算文件；`pnpm sim --years 100 --seed demo --check` 哈希稳定。
+`src/systems/` 34 个结算文件（8 域）；`pnpm sim --years 100 --seed demo --check` 哈希稳定。
 
 **M2 组织与经济：完成。** 组织生命周期（active → crisis → restructuring → dissolved，清算顺序 债主 → 欠薪 → 股东）、
 契约（供货 / 运输 / 贷款 / 雇佣）、市场份额竞争、在途货运与关税、四类风险系数表、10 条组织事件；
@@ -85,8 +85,8 @@ CI（run 34）与 Pages 部署（run 31）均为 success，站点 <https://tulon
 三 seed 100 年：破产率 20.8–28.0%、分裂率 8.3–12.0%、继承危机 45–49 次。
 
 **M7 阶段 7 打磨与发布：完成（v2.0.0）。** 创建人物的职业/地区/技能与组织类型全部中文化，抉择弹窗正文对比度提高；
-性能复测 100 年 3.66–3.89 s（D7 预算调为 14 区 < 4.0 s）；版本号 2.0.0；33 个测试文件 / 205 个用例全绿，
-`release/index.html` 368,416 字节（体积预算 23.4%）。
+性能复测 100 年 3.33–3.77 s（D7 预算调为 14 区 < 4.0 s）；版本号 2.0.0；33 个测试文件 / 207 个用例全绿，
+`release/index.html` 374,280 字节（体积预算 23.8%）。
 玩家卡新增「野心」行（富甲一方 / 权倾朝野 / 名动四方，按职业推导）与「第 N 章」标题；玩满 30 天弹一次「第一份财报」（现金、行动力、健康与野心进度）。
 
 **玩家人物卡：完成。** 左栏玩家卡底部直接展开一张「我的人物卡」（档案、阵营九宫格、六维），不用切到人物面板；技能与性格全部用中文名，弹窗里不再出现 `{country}` 之类的裸占位符，进入游戏默认 1× 推进。
@@ -123,7 +123,7 @@ pnpm release        # build + 校验（无外链 / ≤ 1,572,864 字节）+ 复�
 pnpm preview        # 预览构建产物
 pnpm typecheck      # 仅类型检查
 pnpm lint           # ESLint（架构依赖方向、Math.random 与 new Date 禁令）
-pnpm test           # vitest run：32 个文件 / 201 个用例
+pnpm test           # vitest run：33 个文件 / 207 个用例
 pnpm test:watch     # 监听模式
 pnpm format         # Prettier
 pnpm sim --years 100 --seed demo-seed            # 无界面快进，打印哈希 / 耗时 / 破产率 / 分裂率 / 价格偏离 / 关税
@@ -134,43 +134,44 @@ pnpm sim --years 100 --seed demo-seed --check    # 复跑并比对状态哈希�
 
 ## 测试
 
-32 个文件 / 201 个用例，全部使用固定内容 + 固定种子（`tests/helpers/index.ts` 提供 `makeWorld(seed)` / `makeEngine(seed)`）。
+33 个文件 / 207 个用例，全部使用固定内容 + 固定种子（`tests/helpers/index.ts` 提供 `makeWorld(seed)` / `makeEngine(seed)`）。
 `tests/ui-panels.test.ts`、`tests/modal-pause.test.ts`、`tests/app-modal-pause.test.ts` 需要 DOM，用 jsdom（`// @vitest-environment jsdom`）驱动。
 
-| 文件                                | 用例 | 覆盖                                                  |
-| ----------------------------------- | ---- | ----------------------------------------------------- |
-| `tests/simulation.test.ts`          | 6    | R1 确定性/状态哈希、世界规模、100 年稳定性与性能预算  |
-| `tests/fastforward.test.ts`         | 4    | R2 快进等价性、R3 存档往返与损坏拒绝                  |
-| `tests/organization.test.ts`        | 8    | R4/R7 会计恒等式、投资与权限、领袖与统治者继承        |
-| `tests/country.test.ts`             | 7    | R5 预算恒等式、政策三阶段、游说命令                   |
-| `tests/events.test.ts`              | 9    | R6 互斥竞速、冷却、效果夹取、后续事件、人物分层       |
-| `tests/policy.test.ts`              | 6    | 政策压力、提案成本、冷却、政体不变式                  |
-| `tests/economy-m2.test.ts`          | 14   | 生命周期清算、契约、市场竞争、运价与关税              |
-| `tests/economy-closure.test.ts`     | 5    | COGS 单一口径、分红、俸禄、Δ权益 + 分红 / 税后净利    |
-| `tests/acceptance.test.ts`          | 6    | 验收 B（商业干预）与 D（财务危机）                    |
-| `tests/migration.test.ts`           | 8    | 存档 v1→v9 迁移、版本上限拒绝、迁移后哈希失效         |
-| `tests/character-model.test.ts`     | 6    | 六维/阵营/信仰/地点、生成规则、v3→v4 迁移             |
-| `tests/character-lifecycle.test.ts` | 6    | 婚姻对称、遗产与股份守恒、出生继承、人口学可复现      |
-| `tests/character-creation.test.ts`  | 12   | 出身/天赋/姓名/性别/信仰/归属，白身入场与旧位置移交   |
-| `tests/relations-career.test.ts`    | 9    | 关系网回归、生涯阶梯晋升与破产降级、转行、退休移交    |
-| `tests/activity.test.ts`            | 6    | 行动力与健康消耗、动词前置条件、按月结算              |
-| `tests/checks.test.ts`              | 5    | d20 加值公式、门槛判定、检定描述文本                  |
-| `tests/choices.test.ts`             | 9    | 抉择挂起不代选、成功/失败分支、效用择优               |
-| `tests/shares.test.ts`              | 6    | 股份买卖与估值、未登记份额、34% 门槛接管领袖          |
-| `tests/offices.test.ts`             | 9    | 三席任命与补位、影响力、评分门槛、谋求公职            |
-| `tests/politics.test.ts`            | 6    | 继承危机、未成年摄政、政体切换门槛                    |
-| `tests/war.test.ts`                 | 4    | 征兵扣款与上限、行军目标、宣战双向与议和、权限校验    |
-| `tests/goals.test.ts`               | 7    | 建议事项取值、野心推导、第一份财报                    |
-| `tests/growth-visibility.test.ts`   | 5    | 技能每级折算、地区机会清单、前往天数与路费            |
-| `tests/travel-purpose.test.ts`      | 5    | 谋职/游说须在首都、签约须在总部、到场理由             |
-| `tests/narrative-signals.test.ts`   | 6    | 事件分级、远方见闻折叠、讣告与继承人选择              |
-| `tests/local-events.test.ts`        | 5    | 42 条本地事件、`when` 世界门控、占位符替换            |
-| `tests/event-chains.test.ts`        | 6    | 父→子事件延迟/概率排定、`history.<eventId>` 条件      |
-| `tests/chronicle.test.ts`           | 4    | 专名替换、裸 id 归零、年-月分组与地点签               |
-| `tests/ui-panels.test.ts`           | 5    | jsdom 驱动玩家卡与地区页                              |
-| `tests/modal-pause.test.ts`         | 2    | 对话框可见性通知、选项点击后恢复                      |
-| `tests/app-modal-pause.test.ts`     | 3    | 打开暂停/关闭恢复、手动暂停不被覆盖、待决抉择入口计数 |
-| `tests/event-noise.test.ts`         | 2    | 单月同事件只触发一次、同目标同日后续不重复排队        |
+| 文件                                | 用例 | 覆盖                                                            |
+| ----------------------------------- | ---- | --------------------------------------------------------------- |
+| `tests/simulation.test.ts`          | 6    | R1 确定性/状态哈希、世界规模、100 年稳定性与性能预算            |
+| `tests/fastforward.test.ts`         | 4    | R2 快进等价性、R3 存档往返与损坏拒绝                            |
+| `tests/organization.test.ts`        | 8    | R4/R7 会计恒等式、投资与权限、领袖与统治者继承                  |
+| `tests/country.test.ts`             | 7    | R5 预算恒等式、政策三阶段、游说命令                             |
+| `tests/events.test.ts`              | 9    | R6 互斥竞速、冷却、效果夹取、后续事件、人物分层                 |
+| `tests/policy.test.ts`              | 6    | 政策压力、提案成本、冷却、政体不变式                            |
+| `tests/economy-m2.test.ts`          | 14   | 生命周期清算、契约、市场竞争、运价与关税                        |
+| `tests/economy-closure.test.ts`     | 5    | COGS 单一口径、分红、俸禄、Δ权益 + 分红 / 税后净利              |
+| `tests/acceptance.test.ts`          | 6    | 验收 B（商业干预）与 D（财务危机）                              |
+| `tests/migration.test.ts`           | 8    | 存档 v1→v9 迁移、版本上限拒绝、迁移后哈希失效                   |
+| `tests/character-model.test.ts`     | 6    | 六维/阵营/信仰/地点、生成规则、v3→v4 迁移                       |
+| `tests/character-lifecycle.test.ts` | 6    | 婚姻对称、遗产与股份守恒、出生继承、人口学可复现                |
+| `tests/character-creation.test.ts`  | 12   | 出身/天赋/姓名/性别/信仰/归属，白身入场与旧位置移交             |
+| `tests/relations-career.test.ts`    | 9    | 关系网回归、生涯阶梯晋升与破产降级、转行、退休移交              |
+| `tests/activity.test.ts`            | 6    | 行动力与健康消耗、动词前置条件、按月结算                        |
+| `tests/checks.test.ts`              | 5    | d20 加值公式、门槛判定、检定描述文本                            |
+| `tests/choices.test.ts`             | 9    | 抉择挂起不代选、成功/失败分支、效用择优                         |
+| `tests/shares.test.ts`              | 6    | 股份买卖与估值、未登记份额、34% 门槛接管领袖                    |
+| `tests/offices.test.ts`             | 9    | 三席任命与补位、影响力、评分门槛、谋求公职                      |
+| `tests/politics.test.ts`            | 6    | 继承危机、未成年摄政、政体切换门槛                              |
+| `tests/war.test.ts`                 | 4    | 征兵扣款与上限、行军目标、宣战双向与议和、权限校验              |
+| `tests/goals.test.ts`               | 7    | 建议事项取值、野心推导、第一份财报                              |
+| `tests/growth-visibility.test.ts`   | 5    | 技能每级折算、地区机会清单、前往天数与路费                      |
+| `tests/travel-purpose.test.ts`      | 5    | 谋职/游说须在首都、签约须在总部、到场理由                       |
+| `tests/narrative-signals.test.ts`   | 6    | 事件分级、远方见闻折叠、讣告与继承人选择                        |
+| `tests/local-events.test.ts`        | 5    | 42 条本地事件、`when` 世界门控、占位符替换                      |
+| `tests/event-chains.test.ts`        | 6    | 父→子事件延迟/概率排定、`history.<eventId>` 条件                |
+| `tests/chronicle.test.ts`           | 5    | 专名替换、裸 id 归零、年-月分组与地点签、改名后缓存失效         |
+| `tests/ui-panels.test.ts`           | 5    | jsdom 驱动玩家卡与地区页                                        |
+| `tests/modal-pause.test.ts`         | 2    | 对话框可见性通知、选项点击后恢复                                |
+| `tests/app-modal-pause.test.ts`     | 4    | 打开暂停/关闭恢复、手动暂停不被覆盖、待决抉择入口计数、首屏左栏 |
+| `tests/event-noise.test.ts`         | 2    | 单月同事件只触发一次、同目标同日后续不重复排队                  |
+| `tests/region-news.test.ts`         | 4    | 治安随稳定/内斗/物价恶化、见闻每地区一条、遭遇力量检定          |
 
 ## 发布
 
@@ -186,20 +187,23 @@ pnpm sim --years 100 --seed demo-seed --check    # 复跑并比对状态哈希�
 ## 架构速览
 
 ```text
-src/core/        世界状态 + 引擎编排（9 个模块：GameEngine / WorldState / GameClock / CommandBus /
-                 EventEngine / Random / History / SimulationTier / Chronicler）
-src/systems/     7 个业务域、30 个结算文件：
-                 character/(12) organization/(7) country/(4) economy/(3) npc/(1) military/(1) goals/(2)
-src/content/     静态内容与数值配置（JSON：races/classes/items/goods/organizations/countries/world/
-                 balance/faiths/backgrounds/names + events/6 个）+ index.ts 唯一装配器
+src/core/        状态内核 + 编排层（顶层 9 个模块：GameEngine / WorldState / GameClock / CommandBus /
+                 EventEngine / Random / History / SimulationTier / Chronicler；子目录 schema/ 类型、
+                 commands/ 按域命令、event/ 事件管线均 ≤ 600 行）
+src/systems/     8 个业务域、34 个结算文件：
+                 character/(15) organization/(7) country/(4) economy/(3) goals/(2) military/(1) npc/(1) region/(1)
+src/content/     静态内容与数值配置（14 个 JSON 由 index.ts 装配：goods/organizations/countries/world/
+                 balance/faiths/backgrounds/names + events/6 个）
 src/storage/     存档信封、迁移（v1→v9）、IndexedDB 槽位、导入导出
-src/ui/          原生 DOM 组件 + SVG 地图（20 个 .ts + styles/base.css）
+src/ui/          原生 DOM 组件 + SVG 地图（29 个 .ts + styles/base.css；app/ 与 map/ 子目录）
+                 全部源文件 ≤ 602 行（最大为 core/GameEngine.ts）
 scripts/         sim.ts（快进 CLI）、release.mjs（发布校验）
-tests/           32 个回归用例文件 + helpers
+tests/           33 个回归用例文件 + helpers
 release/         仓库内发布的成品单文件
 ```
 
 五条铁律见 [development-plan.md §4](development-plan.md)：core/systems 不依赖 UI 与存储、单一写入口
 `GameEngine.dispatch`、随机唯一来源、遍历按稳定 ID 排序、时间唯一入口 `GameClock`。
-分层现状与已知偏差（`systems` 里一处 `content` 默认参数、`ui` 只读引用 `systems` 的 10 个纯函数文件）
+分层现状与已整改项（`systems` 的 `content` 依赖已切断、`ui` 只读引用 `systems` 的 11 个纯函数文件、
+7 个超大文件已拆分）
 见 [docs/architecture-review-2026-11-20.md](docs/architecture-review-2026-11-20.md)。

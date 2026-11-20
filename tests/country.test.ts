@@ -88,7 +88,12 @@ describe('政策三阶段', () => {
     country.legitimacy = 0.45;
     country.stability = 0.4;
 
-    const proposals = runPolicyRound(world, context(90, new Random('policy')), 90);
+    const proposals = runPolicyRound(
+      world,
+      context(90, new Random('policy')),
+      90,
+      content.balance.policy,
+    );
     expect(proposals.length).toBeGreaterThan(0);
 
     for (const value of Object.values(world.countries['c_kingdom']?.policies ?? {})) {

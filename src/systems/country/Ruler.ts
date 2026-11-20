@@ -11,6 +11,7 @@
 
 import type { CharacterId, Country, Polity, WorldState } from '../../core/WorldState';
 import { buildCharacter, sortedIds } from '../../core/WorldState';
+import { invalidateEntityNames } from '../../core/Chronicler';
 
 function scoreOf(state: WorldState, id: CharacterId, polity: Polity): number {
   const character = state.characters[id];
@@ -84,6 +85,7 @@ function spawnRegent(state: WorldState, country: Country): CharacterId {
   state.characterSeq += 1;
   const id = `c_regent_${String(state.characterSeq).padStart(3, '0')}`;
   const regionId = country.regionIds[0] ?? sortedIds(state.regions)[0] ?? 'r_unknown';
+  invalidateEntityNames(state);
   state.characters[id] = buildCharacter({
     id,
     name: `${country.name}摄政`,

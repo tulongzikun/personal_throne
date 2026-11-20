@@ -56,7 +56,7 @@ describe('左侧玩家卡：个人行动分组', () => {
     );
     expect(labels.some((label) => label.startsWith('去'))).toBe(false);
     expect(labels).toContain('休息');
-    expect(labels.some((label) => /^贩货 \d+ 单位$/.test(label))).toBe(true);
+    expect(labels.some((label) => /^贩 \d+ .+ → .+ · 约 \+?\d+ 铜$/.test(label))).toBe(true);
     expect(labels).toContain('存 100');
     expect(labels).toContain('取 100');
     expect(host.textContent).toContain('移动：在地图或右侧地区页点城市');

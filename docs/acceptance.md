@@ -8,7 +8,7 @@
 ## 0. 如何复跑
 
 ```bash
-pnpm test                                     # 32 文件 / 201 例
+pnpm test                                     # 33 文件 / 207 例
 pnpm sim --years 100 --seed demo --check      # 100 年 + 复跑比对
 pnpm sim --years 100 --seed alpha
 pnpm sim --years 100 --seed beta
@@ -217,7 +217,7 @@ pnpm build && pnpm release                    # 单文件 release/index.html
 | 项 | 结果 |
 |---|---|
 | 版本 | package.json 2.0.0；CONTENT_VERSION 0.7.0；SCHEMA_VERSION 9（当时误记为 8，实际 `src/core/WorldState.ts:25` 与 `src/storage/Migration.ts:23` 均为 9） |
-| 测试 | 25 文件 / 173 例通过（tsc、eslint、prettier 干净）——**当时快照**，现为 32 文件 / 201 例，见 §18 |
+| 测试 | 25 文件 / 173 例通过（tsc、eslint、prettier 干净）——**当时快照**，现为 33 文件 / 207 例，见 §18 |
 | 三 seed 100 年 | 破产 20.8/26.1/28.0%；分裂 8.3/8.7/12.0%；继承危机 45–49 次；宣战 44–58 次 |
 | 确定性 | `sim --years 100 --check` 通过且复跑一致 |
 | 性能 | 100 年 3.66–3.89 s（14 区预算 4.0 s） |
@@ -234,7 +234,7 @@ pnpm build && pnpm release                    # 单文件 release/index.html
 | 右侧前往 | 相邻城市显示路程与路费，「前往」可用；本地与不相邻城市不显示按钮 |
 | 交互闭环 | 点击前往 → 移动生效、现金扣 `days*2`、自动推进天数 |
 | 测试 | `tests/ui-panels.test.ts` 4 例（jsdom，现为 5 例）；全套 26 文件 / 177 例——**当时快照**，见 §18 |
-| 产物 | 353,647 字节（22.5%）——**当时快照**，现为 368,416 字节（23.4%），见 §18 |
+| 产物 | 353,647 字节（22.5%）——**当时快照**，现为 374,280 字节（23.8%），见 §18 |
 
 ## 18. 当前口径（v2.0.0 最终，2026-11-20）
 
@@ -242,13 +242,13 @@ pnpm build && pnpm release                    # 单文件 release/index.html
 
 | 项 | 结果 |
 |---|---|
-| 版本 | package.json **2.0.0**；`CONTENT_VERSION = '0.7.0'`（`src/content/index.ts:36`）；`SAVE_FORMAT_VERSION = 9`（`src/storage/Migration.ts:23`）；`SCHEMA_VERSION = 9`（`src/core/WorldState.ts:25`） |
+| 版本 | package.json **2.0.0**；`CONTENT_VERSION = '0.7.0'`（`src/content/index.ts:36`）；`SAVE_FORMAT_VERSION = 9`（`src/storage/Migration.ts:23`）；`SCHEMA_VERSION = 9`（`src/core/schema/ids.ts:21`，经 `core/WorldState.ts` 再导出） |
 | 内容规模 | **7 国 / 14 地区 / 21 组织 / 54 人物 / 90 条事件**（local 42、country 20、organization 13、adventure 9、war 3、economy 3） |
-| 代码规模 | core 9 个模块（含 `Chronicler.ts`）、systems 30 个文件 7 域、ui 20 个 .ts + `styles/base.css`、tests 32 + `helpers/index.ts` |
-| 测试 | **32 文件 / 201 例**全绿（`tsc --noEmit`、`eslint .`、`prettier --check .` 干净） |
+| 代码规模 | core 顶层 9 个模块（含 `Chronicler.ts`）+ `schema/`(7) `commands/`(4) `event/`(6) 子目录，共 29 个 .ts；systems 34 个文件 8 域（character 15 / organization 7 / country 4 / economy 3 / goals 2 / military 1 / npc 1 / region 1）；ui 29 个 .ts（含 `app/` 7、`map/` 2）+ `styles/base.css`；tests 33 + `helpers/index.ts`；**全部源文件 ≤ 602 行** |
+| 测试 | **33 文件 / 207 例**全绿（`tsc --noEmit`、`eslint .`、`prettier --check .` 干净） |
 | 确定性 | `pnpm sim --years 100 --seed demo --check` 通过且复跑一致 |
-| 性能 | 100 年快进 **3.66–3.89 s**（14 区预算 4.0 s）；`tests/simulation.test.ts:59` 断言 `< 8000 ms` |
-| 产物 | `release/index.html` **368,416 字节（23.4%）**，零外链、`file://` 可运行 |
+| 性能 | 100 年快进 **3.33–3.77 s**（8 次采样 3.330–3.768 s；14 区预算 4.0 s）；`tests/simulation.test.ts:59` 断言 `< 8000 ms` |
+| 产物 | `release/index.html` **374,280 字节（23.8%）**，零外链、`file://` 可运行 |
 | 存档迁移 | `Migration.ts` 351 行，`migrateV1`…`migrateV8` 一路迁到 v9；`tests/migration.test.ts` 8 例真实覆盖 |
 | 仍缺 | R8 内容 schema/引用校验（`development-plan.md` §9.2 唯一 ❌）；UI 端到端（现为 jsdom 组件级）；`snapshot()`/`subscribe()`；四种地图图层与像素级美术 |
 

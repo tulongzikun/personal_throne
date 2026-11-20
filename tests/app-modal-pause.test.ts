@@ -64,3 +64,13 @@ describe('弹窗与时间', () => {
     expect(toggle?.textContent).toContain('1');
   });
 });
+
+describe('首屏左栏', () => {
+  it('建议事项真的挂在左栏，而不是被角色卡清掉', () => {
+    const { root } = boot();
+    const suggestions = root.querySelectorAll('.player-rail__suggestions .suggestions li');
+    expect(suggestions.length).toBe(3);
+    const labels = Array.from(suggestions).map((node) => node.textContent ?? '');
+    expect(labels.some((text) => text.length > 0)).toBe(true);
+  });
+});

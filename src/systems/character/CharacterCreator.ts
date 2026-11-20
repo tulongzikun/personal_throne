@@ -19,6 +19,7 @@ import type {
   WorldState,
 } from '../../core/WorldState';
 import { ATTRIBUTE_KEYS, buildCharacter, neutralAttributes } from '../../core/WorldState';
+import { invalidateEntityNames } from '../../core/Chronicler';
 import type { Random } from '../../core/Random';
 import { clampAlignment } from './Profile';
 import { retireCharacter } from './Retire';
@@ -338,6 +339,7 @@ export function createPlayerCharacter(
 
   const character = buildCharacter(def);
   state.characters[id] = character;
+  invalidateEntityNames(state);
   state.playerId = id;
   return { character, warnings, retired };
 }

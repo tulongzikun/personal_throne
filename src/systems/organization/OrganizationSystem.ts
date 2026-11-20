@@ -11,6 +11,7 @@
 
 import type { OrgId, SettleContext, WorldContent, WorldState } from '../../core/WorldState';
 import { marketKeyOf, sortedIds } from '../../core/WorldState';
+import { invalidateEntityNames } from '../../core/Chronicler';
 import { settleMonthlyFinance, type FinanceEntry } from './Finance';
 import { settleMonthlyRisk, type RiskDelta } from './OrganizationRisk';
 import {
@@ -125,6 +126,7 @@ function maybeEnterMarkets(
         id = `o_npc_${state.orgSeq}`;
       }
       const members = 18;
+      invalidateEntityNames(state);
       state.organizations[id] = {
         id,
         name: `${region.name.slice(0, 2)}${good.name}行`,
