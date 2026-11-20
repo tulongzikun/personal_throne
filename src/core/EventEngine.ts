@@ -12,7 +12,8 @@
  */
 
 import { DAYS_PER_MONTH } from './GameClock';
-import type { Random } from './Random';
+import { Random } from './Random';
+import { rollCheck } from '../systems/character/Check';
 import type {
   CondExpr,
   Effect,
@@ -33,7 +34,7 @@ export const EVENT_WINDOW_DAYS = 30;
 /** 历史特征的回溯窗口（一年）。 */
 export const HISTORY_WINDOW_DAYS = 360;
 /** 玩家抉择的等待窗口（天），超时自动按效用择优。 */
-export const CHOICE_WINDOW_DAYS = 45;
+export const CHOICE_WINDOW_DAYS = 180;
 
 /**
  * 事件触发概率。
@@ -631,10 +632,12 @@ export function applyEvent(
     def.cooldownDays > 0 ? def.cooldownDays : content.balance.events.defaultCooldownDays;
   state.cooldowns[`${def.id}@${target.entityId}`] = state.clock.day + cooldown;
 
+  const notes = changes.filter((line) => line.includes('检定') || line.startsWith('抉择：'));
+  const suffix = notes.length > 0 ? `：${notes.join('；')}` : '';
   return {
     def,
     target,
-    summary: `${eventText(state, def, target).title}（${labelOf(state, target)}）`,
+    summary: `${eventText(state, def, target).title}（${labelOf(state, target)}）${suffix}`,
     changes,
   };
 }
@@ -886,6 +889,11 @@ export function pickChoice(
 }
 
 /** 应用某个选项并返回变化说明；调用方负责把 pending 从状态里移除。 */
+/** 没有显式 rng（直接调用 applyEvent）时，用种子派生一个可复现的掷骰源。 */
+function fallbackRng(state: WorldState): Random {
+  return new Random(`${state.meta.seed}:check`);
+}
+
 export function resolveChoice(
   state: WorldState,
   content: WorldContent,
@@ -895,7 +903,15 @@ export function resolveChoice(
   rng: Random | null = null,
 ): string[] {
   const changes: string[] = [];
-  for (const effect of choice.effects) {
+  let effects = choice.effects;
+  const character = target.scope === 'character' ? state.characters[target.entityId] : undefined;
+  if (choice.check && character) {
+    const key = `${def.id}:${choice.id}`;
+    const check = rollCheck(rng ?? fallbackRng(state), character, choice.check, key);
+    changes.push(check.text);
+    if (!check.success) effects = choice.failureEffects ?? [];
+  }
+  for (const effect of effects) {
     changes.push(...applyEffect(state, content, target, effect, def.id));
   }
   if (rng) changes.push(...scheduleFollowUps(state, def, target, rng));

@@ -336,7 +336,7 @@
       {
         "id": "raise",
         "label": "答应加薪，平息众怒",
-        "hint": "现金 −180，冲突下降",
+        "hint": "说服检定：成功平息众怒，失败则被当成软弱",
         "effects": [
           {
             "kind": "add",
@@ -353,17 +353,49 @@
             "path": "leadership.legitimacy",
             "value": 0.03
           }
+        ],
+        "check": {
+          "attribute": "charisma",
+          "difficulty": 11
+        },
+        "failureEffects": [
+          {
+            "kind": "add",
+            "path": "conflict",
+            "value": 0.05
+          },
+          {
+            "kind": "add",
+            "path": "cash",
+            "value": -80
+          }
         ]
       },
       {
         "id": "refuse",
         "label": "拒绝，若停工就清场",
-        "hint": "冲突上升，效率下降",
+        "hint": "威吓检定：镇住场面，但失败会激化冲突",
         "effects": [
           {
             "kind": "add",
             "path": "conflict",
             "value": 0.07
+          },
+          {
+            "kind": "add",
+            "path": "efficiency",
+            "value": -0.05
+          }
+        ],
+        "check": {
+          "attribute": "physique",
+          "difficulty": 12
+        },
+        "failureEffects": [
+          {
+            "kind": "add",
+            "path": "conflict",
+            "value": 0.1
           },
           {
             "kind": "add",

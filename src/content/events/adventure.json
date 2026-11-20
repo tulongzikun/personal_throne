@@ -4,7 +4,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.02,
+      "lambda0": 0.05,
       "terms": [
         {
           "path": "traits.ambition",
@@ -41,6 +41,17 @@
             "path": "wealth",
             "value": 90
           }
+        ],
+        "check": {
+          "attribute": "perception",
+          "difficulty": 10
+        },
+        "failureEffects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -60
+          }
         ]
       },
       {
@@ -61,7 +72,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.015,
+      "lambda0": 0.04,
       "terms": [
         {
           "path": "traits.caution",
@@ -70,24 +81,55 @@
       ]
     },
     "cooldownDays": 330,
-    "effects": [
-      {
-        "kind": "add",
-        "path": "wealth",
-        "value": -80
-      }
-    ],
+    "effects": [],
     "text": {
       "title": "路遇剪径",
       "body": "回程的山道上，几个人影从石头后面站起来，手里握着短刀。"
-    }
+    },
+    "choices": [
+      {
+        "id": "pay",
+        "label": "破财买路",
+        "hint": "现金 −80，人马平安",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -80
+          }
+        ]
+      },
+      {
+        "id": "run",
+        "label": "拔腿就跑",
+        "hint": "敏捷检定：甩掉他们，跑不掉就丢更多",
+        "check": {
+          "attribute": "agility",
+          "difficulty": 12
+        },
+        "effects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -10
+          }
+        ],
+        "failureEffects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -140
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "ev_adv_mentor",
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.0072,
+      "lambda0": 0.03,
       "terms": [
         {
           "path": "traits.loyalty",
@@ -96,24 +138,49 @@
       ]
     },
     "cooldownDays": 880,
-    "effects": [
-      {
-        "kind": "add",
-        "path": "skills.trade",
-        "value": 1
-      }
-    ],
+    "effects": [],
     "text": {
       "title": "老行家点拨",
       "body": "一位退隐的老账房愿意教你如何从账本里看出人心，你受益不浅。"
-    }
+    },
+    "choices": [
+      {
+        "id": "accept",
+        "label": "拜入门下",
+        "hint": "贸易 +1，孝敬 30 铜",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "skills.trade",
+            "value": 1
+          },
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -30
+          }
+        ]
+      },
+      {
+        "id": "decline",
+        "label": "谢过好意",
+        "hint": "不花钱，留个好名声（善良 +1）",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "alignment.good",
+            "value": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "ev_adv_ambush",
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.01,
+      "lambda0": 0.03,
       "terms": []
     },
     "chain": {
@@ -147,6 +214,48 @@
           ]
         }
       }
+    ],
+    "choices": [
+      {
+        "id": "fight",
+        "label": "抄起家伙硬闯",
+        "hint": "力量检定：成功抢回货物，失败挂彩又破财",
+        "check": {
+          "attribute": "physique",
+          "difficulty": 12
+        },
+        "effects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": 40
+          },
+          {
+            "kind": "add",
+            "path": "skills.melee",
+            "value": 1
+          }
+        ],
+        "failureEffects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -120
+          }
+        ]
+      },
+      {
+        "id": "payoff",
+        "label": "留下买路钱",
+        "hint": "破财免灾：现金 −60，但人马平安",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -60
+          }
+        ]
+      }
     ]
   },
   {
@@ -154,7 +263,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.006,
+      "lambda0": 0.02,
       "terms": []
     },
     "chain": {
@@ -162,24 +271,54 @@
       "step": 3
     },
     "cooldownDays": 132,
-    "effects": [
-      {
-        "kind": "add",
-        "path": "wealth",
-        "value": 160
-      }
-    ],
+    "effects": [],
     "text": {
       "title": "战利品",
       "body": "刀口还热，你从匪首的腰袋里摸出一把成色不错的银币。"
-    }
+    },
+    "choices": [
+      {
+        "id": "keep",
+        "label": "据为己有",
+        "hint": "现金 +160，善良 −4",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": 160
+          },
+          {
+            "kind": "add",
+            "path": "alignment.good",
+            "value": -4
+          }
+        ]
+      },
+      {
+        "id": "hand_in",
+        "label": "交给官府",
+        "hint": "守序 +4，赏钱 20 铜",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "alignment.law",
+            "value": 4
+          },
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": 20
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "ev_adv_faithful",
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.012,
+      "lambda0": 0.04,
       "terms": [
         {
           "path": "traits.loyalty",
@@ -188,29 +327,49 @@
       ]
     },
     "cooldownDays": 200,
-    "effects": [
-      {
-        "kind": "add",
-        "path": "wealth",
-        "value": 70
-      },
-      {
-        "kind": "add",
-        "path": "alignment.good",
-        "value": 4
-      }
-    ],
+    "effects": [],
     "text": {
       "title": "善缘",
       "body": "你在路边帮了朝圣者一把，对方临别时塞来一小袋钱。"
-    }
+    },
+    "choices": [
+      {
+        "id": "donate",
+        "label": "捐一笔香火钱",
+        "hint": "现金 −60，善良 +4",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -60
+          },
+          {
+            "kind": "add",
+            "path": "alignment.good",
+            "value": 4
+          }
+        ]
+      },
+      {
+        "id": "witness",
+        "label": "只做个见证",
+        "hint": "不出钱，善良 +1",
+        "effects": [
+          {
+            "kind": "add",
+            "path": "alignment.good",
+            "value": 1
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "ev_adv_merchant_offer",
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.02,
+      "lambda0": 0.05,
       "terms": [
         {
           "path": "skills.trade",
@@ -240,6 +399,17 @@
             "path": "skills.trade",
             "value": 1
           }
+        ],
+        "check": {
+          "attribute": "intellect",
+          "difficulty": 11
+        },
+        "failureEffects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -80
+          }
         ]
       },
       {
@@ -261,7 +431,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.018,
+      "lambda0": 0.05,
       "terms": [
         {
           "path": "traits.loyalty",
@@ -291,6 +461,22 @@
             "path": "alignment.good",
             "value": 2
           }
+        ],
+        "check": {
+          "attribute": "charisma",
+          "difficulty": 11
+        },
+        "failureEffects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -40
+          },
+          {
+            "kind": "add",
+            "path": "alignment.good",
+            "value": -2
+          }
         ]
       },
       {
@@ -317,7 +503,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.016,
+      "lambda0": 0.05,
       "terms": [
         {
           "path": "traits.authority",
@@ -351,6 +537,17 @@
             "kind": "add",
             "path": "skills.persuasion",
             "value": 1
+          }
+        ],
+        "check": {
+          "attribute": "willpower",
+          "difficulty": 10
+        },
+        "failureEffects": [
+          {
+            "kind": "add",
+            "path": "wealth",
+            "value": -150
           }
         ]
       },

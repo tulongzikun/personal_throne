@@ -80,7 +80,7 @@ describe('抉择', () => {
     expect(engine.state.history.at(-1)?.causeEventId).toBe('ev_adv_opportunity');
   });
 
-  it('等待超期后自动按效用处理', () => {
+  it('抉择不会因为时间流逝替你决定（世界继续走）', () => {
     const engine = makeEngine('test-seed', { stopAtChoices: true });
     engine.applyTrigger(
       eventById('ev_adv_opportunity'),
@@ -89,9 +89,9 @@ describe('抉择', () => {
     );
     expect(engine.pendingChoices).toHaveLength(1);
 
-    engine.advanceDays(CHOICE_WINDOW_DAYS + 2);
-    expect(engine.pendingChoices).toHaveLength(0);
-    expect(engine.state.history.some((record) => record.summary.includes('超时未决'))).toBe(true);
+    engine.advanceDays(CHOICE_WINDOW_DAYS + 200);
+    expect(engine.pendingChoices.some((item) => item.eventId === 'ev_adv_opportunity')).toBe(true);
+    expect(engine.state.history.some((record) => record.summary.includes('超时未决'))).toBe(false);
   });
 
   it('pickChoice 只看满足条件的选项，同分按 id 稳定', () => {

@@ -226,7 +226,6 @@ export class GameEngine {
   /* ---------------------------------------------------------------- */
 
   private settleDay(day: number): void {
-    this.expireChoices(day);
     this.fireDueEvents(day);
     for (const point of settlementPoints(day)) {
       this.settlePhase(point);
@@ -518,29 +517,6 @@ export class GameEngine {
       summary: `抉择「${picked.label}」${changes.length > 0 ? `：${changes.join('；')}` : ''}`,
       refs: [{ kind: pending.scope, id: pending.entityId }],
     };
-  }
-
-  /** 超时未决：按效用自动选一个，写进历史。 */
-  private expireChoices(day: number): void {
-    const due = this.state.pendingChoices.filter((item) => item.expiresDay <= day);
-    if (due.length === 0) return;
-    this.state.pendingChoices = this.state.pendingChoices.filter((item) => !due.includes(item));
-
-    for (const pending of due) {
-      const def = this.content.events.find((event) => event.id === pending.eventId);
-      if (!def?.choices || def.choices.length === 0) continue;
-      const target = { scope: pending.scope, entityId: pending.entityId };
-      const choice = pickChoice(this.state, target, def.choices);
-      if (!choice) continue;
-      applyBaseEffects(this.state, this.content, def, target);
-      resolveChoice(this.state, this.content, def, target, choice, this.rng);
-      this.record(
-        'event',
-        `${formatDate(day)} ${eventText(this.state, def, target).title}：超时未决，按「${choice.label}」处理`,
-        [{ kind: pending.scope, id: pending.entityId }],
-        def.id,
-      );
-    }
   }
 
   /** 统一的"事件结算"入口：玩家抉择会被挂起，其余按效用自动选。 */

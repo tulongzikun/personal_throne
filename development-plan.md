@@ -760,7 +760,7 @@ interface EventDef {
 | 数据 | `EventDef.choices: ChoiceDef[] {id,label,hint?,effects,conditions?}`；`WorldState.pendingChoices` 记录挂起项（含 `expiresDay`） | 迁移 v5→v6 |
 | 玩家 | `GameEngine` 选项 `stopAtChoices`（UI 传 true）：玩家事件只入队不结算，弹窗出现「你的抉择」；`dispatch({kind:choose, choiceId})` 结算基础效果 + 选项效果，写历史 | `tests/choices.test.ts` 9 例 |
 | NPC/无头 | `pickChoice` 按效用（合法性/稳定度权重高、冲突为负、现金按面值）择优，同分按 id；`sim` 与脚本默认走自动路径，保持确定性 | 自动结算用例 |
-| 超时 | `CHOICE_WINDOW_DAYS = 45`，`expireChoices` 在 `settleDay` 起始处理，写「超时未决，按 X 处理」 | 超时用例 |
+| 超时 | 已移除自动代选：挂起的抉择不会过期，世界继续走、玩家随时可点（§8.37） | `tests/choices.test.ts` |
 | 内容 | `ev_org_strike`（加薪/清场）、`ev_country_tariff_dispute`（加税/降税）、`ev_adv_opportunity`（接活/稳妥） | 内容校验 + 100 年 sim |
 
 **实测**：100 年 demo `--check` 通过、复跑一致、2.32 s；`release/index.html` 208,059 字节（13.2%）；Edge 探针 7 面板 / 73 按钮 / 0 报错。
@@ -1028,6 +1028,19 @@ interface EventDef {
 
 
 ## 9. 测试与质量策略
+
+### 8.37 d20 检定、抉择不再代选与默认 1×（2026-11-20）
+
+| 项 | 内容 |
+|---|---|
+| d20 检定 | 新增 `src/systems/character/Check.ts`：`checkBonus = floor((属性−10)/2)`、`describeCheck()` 生成「力量检定 d20+2 ≥ 12」、`rollCheck()` 用命名流 `check` 掷 1–20，结果写进历史与弹窗（`d20(14)+2 = 16 ≥ 12，成功`） |
+| 选项检定 | `ChoiceDef.check?: {attribute, difficulty}` 与 `failureEffects`：成功走 `effects`、失败走 `failureEffects`；`choiceUtility` 仍用于 NPC/无头模式的择优 |
+| 抉择不再代选 | 移除 `expireChoices`：玩家挂起的抉择不会因时间流逝被自动处理，世界继续走、随时可点；`CHOICE_WINDOW_DAYS` 仅用于记录 |
+| 更多要决策的事件 | 冒险事件从 4 条有选项扩到 9 条（伏击、拦路、老商人、捡钱、募捐、家事、征召、买卖、机会），全部带属性检定；`.tmp/player-freq.ts` 实测玩家事件 ~2 次/年（此前 ~1 次/年且多无选项） |
+| 不再自动暂停 | 删除 `pauseForPlayer()`：相关事件只弹窗、不再把速度归零；读档恢复上一次速度；只有玩家死亡与推进出错会停 |
+| 教玩家看属性 | 抉择按钮的 hint 自动追加检定规则（属性、加值、门槛）；人物面板与左栏人物卡展示六维与 `skillEffectSummary` 的每级收益 |
+| 测试 | 新增 `tests/checks.test.ts` 5 例；`tests/choices.test.ts` 的超时用例改为「时间不会替你决定」；全套 **29 文件 / 194 例** |
+| 产物 | 100 年 demo `--check` 通过、3.85 s、市场 56/56 在区间、破产 21.7%、分裂 13.0%；`release/index.html` 见构建输出 |
 
 ### 8.36 玩家人物卡与占位符修复（2026-11-20）
 

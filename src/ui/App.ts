@@ -20,7 +20,9 @@ import { SuggestionsPanel } from './SuggestionsPanel';
 import { ambitionOf, chapterOf } from '../systems/goals/Ambition';
 import { EventDialog, type DigestItem, type WorldSignal } from './EventDialog';
 import { RELATION_LABELS, isRelated, relationOf, subjectOf } from './signals';
-import { CHOICE_WINDOW_DAYS, eventText, eventTextForRefs } from '../core/EventEngine';
+import { eventText, eventTextForRefs } from '../core/EventEngine';
+import { describeCheck } from '../systems/character/Check';
+import type { ChoiceDef } from '../core/WorldState';
 import { HistoryPanel } from './HistoryPanel';
 import { MapView, countryPalette } from './MapView';
 import { OrganizationPanel } from './OrganizationPanel';
@@ -71,6 +73,13 @@ function signalKey(event: ScheduledEvent): string {
   return `${event.day}:${event.seq}:${event.refId}`;
 }
 
+/** 抉择按钮上的提示：先写规则（看哪个属性、门槛多少），再写后果。 */
+function choiceHint(state: WorldState, choice: ChoiceDef): string {
+  const player = state.characters[state.playerId];
+  if (!choice.check || !player) return choice.hint ?? '';
+  const rule = describeCheck(player, choice.check);
+  return choice.hint ? `${choice.hint} · ${rule}` : rule;
+}
 export class App {
   private engine: GameEngine;
   private readonly root: HTMLElement;
@@ -646,12 +655,12 @@ export class App {
       {
         title: choiceText.title,
         body: choiceText.body,
-        meta: `${formatDate(pending.day)} · 这一步由你决定（${CHOICE_WINDOW_DAYS} 天内有效）`,
+        meta: `${formatDate(pending.day)} · 这一步由你决定（世界继续走，想好了随时点）`,
         tone: 'choice',
         options: def.choices.map((choice) => ({
           id: choice.id,
           label: choice.label,
-          ...(choice.hint ? { hint: choice.hint } : {}),
+          hint: choiceHint(state, choice),
         })),
         onPick: (choiceId) => {
           const result = this.engine.dispatch({ kind: 'choose', choiceId });
@@ -732,16 +741,8 @@ export class App {
       });
     }
     if (signals.length === 0) return;
-    if (related.length > 0) this.pauseForPlayer();
     const dropped = this.eventDialog.pushMany(signals);
     if (dropped > 0) this.notify(`另有 ${dropped} 条已收入编年史`, 'info');
-  }
-
-  /** 与你相关的事发生时暂停时间，避免 30× 下把抉择与死讯冲过去。 */
-  private pauseForPlayer(): void {
-    if (this.speed === 0) return;
-    this.setSpeed(0);
-    this.notify('有与你相关的事发生，时间已暂停', 'info');
   }
 
   /** 每次推进后检查死讯与自动存档。 */
@@ -874,7 +875,7 @@ export class App {
   }
 
   private adopt(state: WorldState, message: string): void {
-    this.setSpeed(0);
+    this.setSpeed(this.lastSpeed === 0 ? 1 : this.lastSpeed);
     this.engine = new GameEngine(state, this.engine.content, { stopAtChoices: true });
     const player = state.characters[state.playerId];
     this.selectedRegionId = player?.regionId ?? Object.keys(state.regions).sort()[0] ?? null;

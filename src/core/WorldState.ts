@@ -422,11 +422,20 @@ export interface EventWhen {
   readonly terrains?: readonly Terrain[];
 }
 
+export interface ChoiceCheck {
+  readonly attribute: AttributeKey;
+  readonly difficulty: number;
+}
+
 export interface ChoiceDef {
   readonly id: string;
   readonly label: string;
   readonly hint?: string;
+  /** 需要掷骰时：看哪个属性、门槛多少；成功走 effects，失败走 failureEffects。 */
+  readonly check?: ChoiceCheck;
   readonly effects: readonly Effect[];
+  /** 检定失败时的后果；缺省表示失败没有额外损失。 */
+  readonly failureEffects?: readonly Effect[];
   readonly conditions?: Expr;
 }
 
