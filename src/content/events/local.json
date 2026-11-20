@@ -1,0 +1,1300 @@
+[
+  {
+    "id": "ev_local_kingdom_harvest_feast",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_kingdom"
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": 0.8
+        }
+      ]
+    },
+    "cooldownDays": 180,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.02
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -120
+      }
+    ],
+    "text": {
+      "title": "{country}的秋收宴",
+      "body": "王庭在银月堡摆下长桌，领主们带着今年的新麦入席；宴席上的许诺比麦子更多。"
+    }
+  },
+  {
+    "id": "ev_local_kingdom_border_levy",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_kingdom"
+    },
+    "risk": {
+      "lambda0": 0.025,
+      "terms": [
+        {
+          "path": "debtRatio",
+          "coef": 1.5
+        }
+      ]
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "policies.militaryShare",
+        "value": 0.02
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -260
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "{country}的边境征召",
+      "body": "东境烽火台连点三夜，王家骑士沿官道向北集结，农户被征去修栅栏。"
+    }
+  },
+  {
+    "id": "ev_local_kingdom_granary_fire",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_kingdom"
+    },
+    "risk": {
+      "lambda0": 0.018,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -0.6
+        }
+      ]
+    },
+    "cooldownDays": 200,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -180
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.03
+      }
+    ],
+    "text": {
+      "title": "{place}的谷仓走水",
+      "body": "半夜火起，半仓陈麦烧成焦炭；城里粮价当天就涨了一成。"
+    }
+  },
+  {
+    "id": "ev_local_kingdom_silver_vein",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_kingdom"
+    },
+    "risk": {
+      "lambda0": 0.012,
+      "terms": []
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 320
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.01
+      }
+    ],
+    "text": {
+      "title": "{place}的新银脉",
+      "body": "矿工在旧坑下层敲到一条富脉，王庭的税吏第二天就带着秤来了。"
+    }
+  },
+  {
+    "id": "ev_local_kingdom_royal_wedding",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_kingdom"
+    },
+    "risk": {
+      "lambda0": 0.01,
+      "terms": []
+    },
+    "cooldownDays": 480,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.03
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -200
+      }
+    ],
+    "text": {
+      "title": "{country}的王室婚礼",
+      "body": "公主远嫁，嫁妆车队堵了半条商路；沿街的酒馆一夜之间把价钱翻倍。"
+    }
+  },
+  {
+    "id": "ev_local_kingdom_salt_tax",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_kingdom"
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -1
+        }
+      ]
+    },
+    "cooldownDays": 300,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "policies.taxRate",
+        "value": 0.01
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "{country}的盐税风波",
+      "body": "盐商联名递状，说新税会把北方的腌肉价压垮；议会里吵了三天没有结果。"
+    }
+  },
+  {
+    "id": "ev_local_league_dock_strike",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_league"
+    },
+    "risk": {
+      "lambda0": 0.024,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -1.2
+        }
+      ]
+    },
+    "cooldownDays": 180,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.03
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -140
+      }
+    ],
+    "text": {
+      "title": "{place}的码头停工",
+      "body": "脚夫要求按潮水计工钱，货栈的箱子在雨里堆了一夜。"
+    }
+  },
+  {
+    "id": "ev_local_league_fleet_loss",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_league"
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": []
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -300
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.01
+      }
+    ],
+    "text": {
+      "title": "{country}的船队失事",
+      "body": "三艘满载香料的商船在礁区断成两截，钱庄的保单被翻出来逐条核对。"
+    }
+  },
+  {
+    "id": "ev_local_league_council_election",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_league"
+    },
+    "risk": {
+      "lambda0": 0.012,
+      "terms": []
+    },
+    "cooldownDays": 480,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.03
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.02
+      }
+    ],
+    "text": {
+      "title": "{country}的议会改选",
+      "body": "十三家行会各自押注，最后当选的是一位谁都没听说过的账房先生。"
+    }
+  },
+  {
+    "id": "ev_local_league_pirate_raid",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_league"
+    },
+    "risk": {
+      "lambda0": 0.022,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -0.8
+        }
+      ]
+    },
+    "cooldownDays": 200,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -220
+      }
+    ],
+    "text": {
+      "title": "{place}近海的海盗",
+      "body": "黑帆在灯塔射程内掠过，两条渔船没能回港；商会当晚就把护航费涨了。"
+    }
+  },
+  {
+    "id": "ev_local_league_mint_scandal",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_league"
+    },
+    "risk": {
+      "lambda0": 0.014,
+      "terms": []
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.03
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "{country}的铸币丑闻",
+      "body": "有人发现新铸的银币轻了半成，钱庄门口排起长队。"
+    }
+  },
+  {
+    "id": "ev_local_league_river_silt",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_league"
+    },
+    "risk": {
+      "lambda0": 0.016,
+      "terms": []
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -160
+      },
+      {
+        "kind": "add",
+        "path": "policies.tariffRate",
+        "value": -0.01
+      }
+    ],
+    "text": {
+      "title": "{place}的河口淤积",
+      "body": "上游冲下来的泥沙堵住主航道，吃水深的船得在湾外卸货。"
+    }
+  },
+  {
+    "id": "ev_local_highvale_avalanche",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_highvale"
+    },
+    "risk": {
+      "lambda0": 0.03,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -0.5
+        }
+      ]
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -200
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.03
+      }
+    ],
+    "text": {
+      "title": "{place}的雪崩",
+      "body": "石渡关以上的雪檐整片塌下来，商道被封了七天；山下的村子只来得及敲钟。"
+    }
+  },
+  {
+    "id": "ev_local_highvale_clan_feud",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_highvale"
+    },
+    "risk": {
+      "lambda0": 0.022,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -1.4
+        }
+      ]
+    },
+    "cooldownDays": 200,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.05
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "{place}的山民械斗",
+      "body": "两家人为一条水源打了半宿，天亮时山谷里躺了七个。"
+    }
+  },
+  {
+    "id": "ev_local_highvale_mining_license",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_highvale"
+    },
+    "risk": {
+      "lambda0": 0.014,
+      "terms": []
+    },
+    "cooldownDays": 300,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 240
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "{country}的采矿许可",
+      "body": "高谷议会把北坡的采石权卖给了一位外来商人，山民把告示撕了下来。"
+    }
+  },
+  {
+    "id": "ev_local_highvale_winter_shortage",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_highvale"
+    },
+    "risk": {
+      "lambda0": 0.018,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -0.9
+        }
+      ]
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.04
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -150
+      }
+    ],
+    "text": {
+      "title": "{place}的雪季缺粮",
+      "body": "封山来得比往年早，粮车进不来，村长把最后一窖燕麦按人头分了。"
+    }
+  },
+  {
+    "id": "ev_local_highvale_eagle_oath",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_highvale"
+    },
+    "risk": {
+      "lambda0": 0.01,
+      "terms": []
+    },
+    "cooldownDays": 480,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.03
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.03
+      }
+    ],
+    "text": {
+      "title": "{country}的鹰旗盟誓",
+      "body": "三家山堡在鹰旗下歃血，约定雪化之前谁也不许下山抢粮。"
+    }
+  },
+  {
+    "id": "ev_local_highvale_canyon_ambush",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_highvale"
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": []
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -120
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "{place}的峡谷伏击",
+      "body": "一队盐商在窄谷里遇袭，护送的佣兵只回来两个。"
+    }
+  },
+  {
+    "id": "ev_local_covenant_sacred_procession",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_covenant"
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": [
+        {
+          "path": "legitimacy",
+          "coef": 0.6
+        }
+      ]
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.03
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 180
+      }
+    ],
+    "text": {
+      "title": "{country}的圣火巡游",
+      "body": "圣火从大教堂一路传到海边，沿途跪满了人；捐献箱沉得抬不动。"
+    }
+  },
+  {
+    "id": "ev_local_covenant_heresy_trial",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_covenant"
+    },
+    "risk": {
+      "lambda0": 0.018,
+      "terms": []
+    },
+    "cooldownDays": 300,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.02
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.03
+      }
+    ],
+    "text": {
+      "title": "{place}的异端审判",
+      "body": "一位说\"火只是火\"的学者被押上广场，围观的人比赶集还多。"
+    }
+  },
+  {
+    "id": "ev_local_covenant_indulgence",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_covenant"
+    },
+    "risk": {
+      "lambda0": 0.016,
+      "terms": []
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 300
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.01
+      }
+    ],
+    "text": {
+      "title": "{country}的赎罪金",
+      "body": "教廷开卖新一轮赎罪券，银币从七国各地流向烬瀑。"
+    }
+  },
+  {
+    "id": "ev_local_covenant_pilgrim_flood",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_covenant"
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": []
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 140
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.02
+      }
+    ],
+    "text": {
+      "title": "{place}的朝圣潮",
+      "body": "港口挤满了要去圣殿的人，客栈把马厩都改成了通铺。"
+    }
+  },
+  {
+    "id": "ev_local_covenant_oracle_dispute",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_covenant"
+    },
+    "risk": {
+      "lambda0": 0.012,
+      "terms": []
+    },
+    "cooldownDays": 420,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.02
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "{country}的神谕争议",
+      "body": "两位主祭对同一段经文给出相反的解释，教廷的鸽子飞了三趟也没定论。"
+    }
+  },
+  {
+    "id": "ev_local_covenant_temple_repair",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_covenant"
+    },
+    "risk": {
+      "lambda0": 0.014,
+      "terms": []
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -240
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.01
+      }
+    ],
+    "text": {
+      "title": "{place}的圣殿修缮",
+      "body": "大教堂的穹顶裂了缝，石匠的账单堆到了主祭桌上。"
+    }
+  },
+  {
+    "id": "ev_local_clans_clan_moot",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_clans"
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": 0.5
+        }
+      ]
+    },
+    "cooldownDays": 300,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.02
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.02
+      }
+    ],
+    "text": {
+      "title": "{country}的部族大会",
+      "body": "九位族长在铁峰下围火而坐，争的是明年谁先开炉。"
+    }
+  },
+  {
+    "id": "ev_local_clans_iron_dispute",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_clans"
+    },
+    "risk": {
+      "lambda0": 0.022,
+      "terms": []
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 120
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "{place}的铁价争执",
+      "body": "铁匠行会嫌矿石太贵，矿主说炉子都快烧不起了；最后两边一起涨了价。"
+    }
+  },
+  {
+    "id": "ev_local_clans_blood_price",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_clans"
+    },
+    "risk": {
+      "lambda0": 0.012,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -0.8
+        }
+      ]
+    },
+    "cooldownDays": 480,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.04
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.01
+      }
+    ],
+    "text": {
+      "title": "{place}的血仇和解",
+      "body": "两族的老人把断矛埋进同一块土里，赔礼是三十头羊和一口新炉。"
+    }
+  },
+  {
+    "id": "ev_local_clans_vein_quarrel",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_clans"
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": []
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.03
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -160
+      }
+    ],
+    "text": {
+      "title": "{place}的矿脉争端",
+      "body": "两条坑道在地下打通，双方都说是自己先挖到的。"
+    }
+  },
+  {
+    "id": "ev_local_clans_winter_store",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_clans"
+    },
+    "risk": {
+      "lambda0": 0.018,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -1
+        }
+      ]
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.04
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -140
+      }
+    ],
+    "text": {
+      "title": "{country}的冬储不足",
+      "body": "今年的炭烧得太早，族长们开始数着日子过冬。"
+    }
+  },
+  {
+    "id": "ev_local_clans_smith_exodus",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_clans"
+    },
+    "risk": {
+      "lambda0": 0.014,
+      "terms": []
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -180
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "{place}的铁匠出走",
+      "body": "十几个熟练铁匠带着家小去了南边，说是那边的炉子给的钱多。"
+    }
+  },
+  {
+    "id": "ev_local_merchants_company_dividend",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_merchants"
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": []
+    },
+    "cooldownDays": 300,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 260
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.01
+      }
+    ],
+    "text": {
+      "title": "{country}的商团分红",
+      "body": "珊瑚商邦的账房把今年的红利用麻袋抬进议事厅，股东们排着队按手印。"
+    }
+  },
+  {
+    "id": "ev_local_merchants_passage_fee",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_merchants"
+    },
+    "risk": {
+      "lambda0": 0.022,
+      "terms": []
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 180
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "{place}的航路通行费",
+      "body": "商邦在礁区新设了浮标，过路的船都要交一笔\"指路钱\"。"
+    }
+  },
+  {
+    "id": "ev_local_merchants_coral_storm",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_merchants"
+    },
+    "risk": {
+      "lambda0": 0.024,
+      "terms": []
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -280
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.03
+      }
+    ],
+    "text": {
+      "title": "{place}的珊瑚湾风暴",
+      "body": "风暴掀翻了半条栈桥，漂上来的货箱比鱼还多。"
+    }
+  },
+  {
+    "id": "ev_local_merchants_smuggling_raid",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_merchants"
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": []
+    },
+    "cooldownDays": 200,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 160
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.01
+      }
+    ],
+    "text": {
+      "title": "{place}的走私查获",
+      "body": "税吏在第三条巷子里撬开一批\"腌鱼\"，里面全是没上税的香料。"
+    }
+  },
+  {
+    "id": "ev_local_merchants_bank_run",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_merchants"
+    },
+    "risk": {
+      "lambda0": 0.014,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -1.2
+        }
+      ]
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.04
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -200
+      }
+    ],
+    "text": {
+      "title": "{country}的银号挤兑",
+      "body": "有人在码头散布同盟钱庄要倒的谣言，天没黑门口就排到了街角。"
+    }
+  },
+  {
+    "id": "ev_local_merchants_spice_fleet",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_merchants"
+    },
+    "risk": {
+      "lambda0": 0.016,
+      "terms": []
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 300
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.01
+      }
+    ],
+    "text": {
+      "title": "{place}的远洋香料",
+      "body": "一条从南方回来的船带回了整舱胡椒，当天的拍卖价把老商人吓白了脸。"
+    }
+  },
+  {
+    "id": "ev_local_steppe_horse_plague",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_steppe"
+    },
+    "risk": {
+      "lambda0": 0.022,
+      "terms": []
+    },
+    "cooldownDays": 300,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -240
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.03
+      }
+    ],
+    "text": {
+      "title": "{place}的马群疫病",
+      "body": "马群在一个月里倒了一半，牧人把病马赶进了干河床。"
+    }
+  },
+  {
+    "id": "ev_local_steppe_pasture_dispute",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_steppe"
+    },
+    "risk": {
+      "lambda0": 0.024,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": -1.2
+        }
+      ]
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.04
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": -0.02
+      }
+    ],
+    "text": {
+      "title": "{place}的草场越界",
+      "body": "两部的羊群在同一片草场上顶了三天，最后是长老们骑马去把人分开的。"
+    }
+  },
+  {
+    "id": "ev_local_steppe_khan_election",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_steppe"
+    },
+    "risk": {
+      "lambda0": 0.01,
+      "terms": []
+    },
+    "cooldownDays": 480,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.04
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.02
+      }
+    ],
+    "text": {
+      "title": "{country}的汗位推举",
+      "body": "各部把白毡铺在草地上，谁坐上去谁就是新汗。"
+    }
+  },
+  {
+    "id": "ev_local_steppe_caravan_passage",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_steppe"
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": []
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 160
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.01
+      }
+    ],
+    "text": {
+      "title": "{place}的商队过境",
+      "body": "三百匹骆驼从马集穿过，商队头人按老规矩给每个部留下盐和茶。"
+    }
+  },
+  {
+    "id": "ev_local_steppe_white_disaster",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_steppe"
+    },
+    "risk": {
+      "lambda0": 0.018,
+      "terms": []
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": -0.05
+      },
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -180
+      }
+    ],
+    "text": {
+      "title": "{place}的白灾",
+      "body": "大雪压塌了半个冬营地，牲畜冻死无数；部众开始向南边的河谷迁移。"
+    }
+  },
+  {
+    "id": "ev_local_steppe_eagle_hunt",
+    "domain": "country",
+    "scope": "country",
+    "when": {
+      "countryId": "c_steppe"
+    },
+    "risk": {
+      "lambda0": 0.012,
+      "terms": []
+    },
+    "cooldownDays": 360,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.02
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.03
+      }
+    ],
+    "text": {
+      "title": "{country}的鹰猎大会",
+      "body": "各部骑手在同一片草场上放鹰，赢家的马鞍上多了一条金线。"
+    }
+  }
+]

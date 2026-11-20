@@ -22,6 +22,10 @@ export interface HistoryRecord {
   readonly refs: HistoryRef[];
   /** 由哪个事件引发；命令或系统自发的记录为 null。 */
   readonly causeEventId: string | null;
+  /** 叙事主体（v2）：人物/组织/国家/地区。 */
+  readonly subject?: HistoryRef | null;
+  /** 事发地点（v2）。 */
+  readonly place?: string | null;
 }
 
 export interface HistoryQuery {

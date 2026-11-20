@@ -1363,9 +1363,44 @@ select.input {
   gap: 1px;
 }
 
+/* 月份分组头：只出现一次，避免每条都重复日期。 */
+.history__month {
+  margin-top: var(--space-2);
+  padding: 4px 8px;
+  font-family: var(--font-num);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: var(--gold-dim);
+  border-bottom: 1px solid var(--border);
+}
+
+.history__tags {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-self: end;
+}
+
+.history__place {
+  padding: 0 6px;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.history__mine {
+  padding: 0 6px;
+  font-size: 0.62rem;
+  color: #1b1712;
+  background: var(--gold);
+  border-radius: 999px;
+}
+
 .history__row {
   display: grid;
-  grid-template-columns: 86px 46px minmax(0, 1fr);
+  grid-template-columns: 86px 46px minmax(0, 1fr) auto;
   gap: var(--space-2);
   align-items: baseline;
   padding: 6px 8px;

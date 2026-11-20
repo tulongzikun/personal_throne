@@ -19,6 +19,7 @@ import type {
   EntityId,
   EventDef,
   ChoiceDef,
+  EventWhen,
   Expr,
   Market,
   WorldContent,
@@ -362,6 +363,60 @@ export function entitiesOfScope(state: WorldState, scope: EventScope): EntityId[
 }
 
 /** 收集某次月度抽样中所有"够格"的事件候选（已过条件与冷却）。 */
+/** 事件目标所在地区：地区=自身，组织=母地区，人物=所在地，国家=人口最多的地区。 */
+export function targetRegionOf(state: WorldState, target: EventTarget): string | null {
+  switch (target.scope) {
+    case 'region':
+      return state.regions[target.entityId] ? target.entityId : null;
+    case 'organization':
+      return state.organizations[target.entityId]?.homeRegionId ?? null;
+    case 'character':
+      return state.characters[target.entityId]?.regionId ?? null;
+    case 'country': {
+      const country = state.countries[target.entityId];
+      let best: string | null = null;
+      let population = -1;
+      for (const id of country?.regionIds ?? []) {
+        const region = state.regions[id];
+        if (region && region.population > population) {
+          population = region.population;
+          best = id;
+        }
+      }
+      return best;
+    }
+  }
+}
+
+/** 事件目标所在国家（地区按所属国）。 */
+export function targetCountryOf(state: WorldState, target: EventTarget): string | null {
+  if (target.scope === 'country') return state.countries[target.entityId] ? target.entityId : null;
+  const regionId = targetRegionOf(state, target);
+  return regionId ? (state.regions[regionId]?.countryId ?? null) : null;
+}
+
+/** 世界门控：发生地不符的事件不该出现在候选里（"石渡关雪崩"只在高谷）。 */
+export function matchesWhen(
+  state: WorldState,
+  when: EventWhen | undefined,
+  target: EventTarget,
+): boolean {
+  if (!when) return true;
+  const countryId = targetCountryOf(state, target);
+  if (when.countryId !== undefined) {
+    const allowed = typeof when.countryId === 'string' ? [when.countryId] : when.countryId;
+    if (!countryId || !allowed.includes(countryId)) return false;
+  }
+  const regionId = targetRegionOf(state, target);
+  if (when.regionIds !== undefined && (!regionId || !when.regionIds.includes(regionId)))
+    return false;
+  if (when.terrains !== undefined) {
+    const terrain = regionId ? state.regions[regionId]?.terrain : undefined;
+    if (!terrain || !when.terrains.includes(terrain)) return false;
+  }
+  return true;
+}
+
 export function collectCandidates(
   state: WorldState,
   content: WorldContent,
@@ -410,6 +465,8 @@ export function collectCandidates(
       if (until > day) continue;
 
       const target: EventTarget = { scope: def.scope, entityId };
+      // 世界门控：地形/国家不符的事件不进入候选（阶段 4）。
+      if (!matchesWhen(state, def.when, target)) continue;
       // 条件与风险项共用同一套特征函数，因此 `debtRatio` 这类派生量也能写进 conditions。
       const resolver = (path: string): number => featureFor(target, path);
 
@@ -510,6 +567,24 @@ export function selectTriggered(
 /* ------------------------------------------------------------------ */
 
 /** 应用一个已触发事件的全部效果，并设置冷却。 */
+/** 把 {place}/{country}/{subject} 占位符换成专名（阶段 4）。 */
+export function eventText(
+  state: WorldState,
+  def: EventDef,
+  target: EventTarget,
+): { title: string; body: string } {
+  const regionId = targetRegionOf(state, target);
+  const countryId = targetCountryOf(state, target);
+  const vars: Record<string, string> = {
+    place: (regionId ? state.regions[regionId]?.name : undefined) ?? labelOf(state, target),
+    country: (countryId ? state.countries[countryId]?.name : undefined) ?? labelOf(state, target),
+    subject: labelOf(state, target),
+  };
+  const fill = (text: string): string =>
+    text.replace(/\{(\w+)\}/g, (match, key: string) => vars[key] ?? match);
+  return { title: fill(def.text.title), body: fill(def.text.body) };
+}
+
 export function applyEvent(
   state: WorldState,
   content: WorldContent,
@@ -543,7 +618,7 @@ export function applyEvent(
   return {
     def,
     target,
-    summary: `${def.text.title}（${labelOf(state, target)}）`,
+    summary: `${eventText(state, def, target).title}（${labelOf(state, target)}）`,
     changes,
   };
 }

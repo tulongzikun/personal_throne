@@ -18,7 +18,18 @@ const FILTERS: readonly { readonly id: HistoryKind | 'all'; readonly label: stri
   { id: 'death', label: '死亡' },
 ];
 
-const LIMIT = 50;
+const LIMIT = 200;
+
+/** 去掉记录里重复的日期前缀（面板已单独显示日期与月份）。 */
+function stripDate(summary: string): string {
+  return summary.replace(/^\d+年\d+月\d+日\s*/, '');
+}
+
+function monthOf(day: number): string {
+  const year = Math.floor((day - 1) / 360) + 1;
+  const month = Math.floor(((day - 1) % 360) / 30) + 1;
+  return `第 ${year} 年 ${month} 月`;
+}
 
 export class HistoryPanel {
   private readonly host: HTMLElement;
@@ -93,9 +104,16 @@ export class HistoryPanel {
     if (records.length === 0) {
       body.append(el('p', 'empty', '还没有记录。推进时间，世界会自己写下历史。'));
     } else {
-      const list = el('ol', 'history__list');
-      for (const record of records) list.append(this.row(record));
-      body.append(list);
+      // 按「年-月」分组：日期只出现一次，条目只写当天发生的事。
+      let currentMonth = '';
+      for (const record of records) {
+        const month = monthOf(record.day);
+        if (month !== currentMonth) {
+          currentMonth = month;
+          body.append(el('div', 'history__month', month));
+        }
+        body.append(this.row(record));
+      }
     }
     this.host.append(body);
   }
@@ -127,13 +145,28 @@ export class HistoryPanel {
   }
 
   private row(record: HistoryRecord): HTMLElement {
+    const state = this.deps.state();
     const row = el('li', `history__row history__row--${record.kind}`);
     row.dataset.historyId = String(record.id);
     row.title = this.rowHint(record);
+    const text = el('span', 'history__text', stripDate(record.summary));
+    const tags = el('span', 'history__tags');
+    if (record.place) {
+      const place = state.regions[record.place]?.name;
+      if (place) tags.append(el('span', 'history__place', place));
+    }
+    if (
+      record.subject &&
+      record.subject.type === 'character' &&
+      record.subject.id === state.playerId
+    ) {
+      tags.append(el('span', 'history__mine', '你'));
+    }
     row.append(
       el('span', 'history__day', formatDate(record.day)),
       el('span', `history__kind history__kind--${record.kind}`, HISTORY_KIND_LABELS[record.kind]),
-      el('span', 'history__text', record.summary),
+      text,
+      tags,
     );
     return row;
   }

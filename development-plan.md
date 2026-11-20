@@ -1011,6 +1011,22 @@ interface EventDef {
 **未达成**：`buy_land` 未做；五种出身的开局差异留阶段 5；「40 年解锁 ≥12 个动词」目前靠组织/公职/战争命令凑满，个人动词仍是 8 个。
 
 
+### 8.29 M7 阶段 4：叙事系统（2026-11-20）
+
+| 项 | 内容 |
+|---|---|
+| 编年史 | 新增 `src/core/Chronicler.ts`：`entityNames`（按人物数量缓存，出生后失效重建）、`humanize`（一次扫描把 `c_/o_/r_...` 换成专名）、`composeChronicle`（主体 + 地点 + 缺专名时补「地点 · 主体：」前缀）；`HistoryRecord` 增加可选 `subject/place` |
+| 世界门控 | `EventDef.when { countryId?, regionIds?, terrains? }`；`matchesWhen` 在 `collectCandidates` 里先于条件判定，避免「雪崩下在银月」这类错位 |
+| 占位符 | `eventText` 在触发时把 `{country}/{place}/{subject}` 换成专名，标题与正文都走同一套 |
+| 本地事件 | 新增 `src/content/events/local.json` 42 条（7 国 × 6 条，各带 `when.countryId` 与本地风味）；`ev_country_vale_avalanche` 补 `when: { countryId: "c_highvale" }`；`CONTENT_VERSION` 0.7.0 |
+| 面板 | 编年史按「第 N 年 M 月」分组、条目去掉重复日期前缀、地点签 + 「你」标记，上限 200 条 |
+| 测试 | 新增 `tests/chronicle.test.ts` 4 例、`tests/local-events.test.ts` 4 例；全套 23 文件 / 160 例 |
+| 指标 | 20 年 12,617 条历史：含专名 100%、裸 id 0、带主体 99.8%；7 国本地事件全部触发；100 年 3.6 s、破产 21.7%、分裂 13.0% |
+| 产物 | `release/index.html` **341,530 字节**（21.7%） |
+
+**未达成**：本地事件仍是「国家尺度」的小插曲，未与地方市场/人物命运联动；事件正文只在抉择弹窗与摘要里出现，编年史只存标题级叙事。
+
+
 ## 9. 测试与质量策略
 
 ### 9.1 测试金字塔

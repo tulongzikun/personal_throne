@@ -399,6 +399,11 @@ export interface EventDef {
   readonly exclusivity?: string;
   readonly cooldownDays: number;
   readonly weight?: number;
+  /**
+   * 世界门控（阶段 4）：事件只在其发生地成立时才有资格成为候选。
+   * countryId 允许数组（同一闹剧在多国上演时复用一条事件）。
+   */
+  readonly when?: EventWhen;
   readonly effects: readonly Effect[];
   readonly text: { readonly title: string; readonly body: string };
   /** 所属事件链与步序：step>1 的只能由父事件排定，不参与随机候选。 */
@@ -407,6 +412,12 @@ export interface EventDef {
   readonly followUps?: readonly FollowUpDef[];
   /** 需要玩家/当事人二选一的选项；有 choices 时 effects 不再自动应用。 */
   readonly choices?: readonly ChoiceDef[];
+}
+
+export interface EventWhen {
+  readonly countryId?: string | readonly string[];
+  readonly regionIds?: readonly string[];
+  readonly terrains?: readonly Terrain[];
 }
 
 export interface ChoiceDef {

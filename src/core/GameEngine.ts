@@ -26,6 +26,7 @@ import {
 } from './EventEngine';
 import { formatDate, GameClock, Phase, settlementPoints, type SettlementPoint } from './GameClock';
 import { History } from './History';
+import { composeChronicle } from './Chronicler';
 import { Random } from './Random';
 import { applyTiers, computeTiers } from './SimulationTier';
 import {
@@ -598,13 +599,17 @@ export class GameEngine {
     refs: readonly { kind: string; id: string }[],
     causeEventId: string | null = null,
   ): void {
+    const typed = refs.map((ref) => ({ type: ref.kind, id: ref.id }));
+    const chronicle = composeChronicle(this.state, summary, typed);
     this.history.append({
       day: this.state.clock.day,
       phase: Phase.Action,
       kind,
-      summary,
-      refs: refs.map((ref) => ({ type: ref.kind, id: ref.id })),
+      summary: chronicle.summary,
+      refs: typed,
       causeEventId,
+      subject: chronicle.subject,
+      place: chronicle.place,
     });
   }
 

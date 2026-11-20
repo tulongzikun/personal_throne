@@ -29,10 +29,11 @@ import worldJson from './world.json';
 import adventureEvents from './events/adventure.json';
 import countryEvents from './events/country.json';
 import economyEvents from './events/economy.json';
+import localEvents from './events/local.json';
 import organizationEvents from './events/organization.json';
 import warEvents from './events/war.json';
 
-export const CONTENT_VERSION = '0.6.0';
+export const CONTENT_VERSION = '0.7.0';
 
 function byId<T extends { id: string }>(items: readonly T[]): T[] {
   return [...items].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
@@ -44,6 +45,7 @@ const events: EventDef[] = byId([
   ...economyEvents,
   ...adventureEvents,
   ...warEvents,
+  ...localEvents,
 ] as unknown as EventDef[]);
 
 export const content: WorldContent = {

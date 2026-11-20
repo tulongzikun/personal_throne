@@ -765,6 +765,7 @@
     "id": "ev_country_vale_avalanche",
     "domain": "country",
     "scope": "country",
+    "when": { "countryId": "c_highvale" },
     "conditions": {
       "all": [
         {
