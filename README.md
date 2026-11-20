@@ -5,7 +5,7 @@
 ## 文档
 
 - 玩法与世界观：[design.md](design.md)（GDD v1.0，记录**设计意图**，不随实现进度改写）
-- 工程计划、里程碑记录与实现偏差：[development-plan.md](development-plan.md)（§4 五条铁律、§5.1 当前目录、§5.2 偏差记录、§8.1 当前进度、§8.5–§8.38 各阶段记录）
+- 工程计划、里程碑记录与实现偏差：[development-plan.md](development-plan.md)（§4 五条铁律、§5.1 当前目录、§5.2 偏差记录、§8.1 当前进度、§8.5–§8.39 各阶段记录）
 - 代码结构评审与整改建议：[docs/architecture-review-2026-11-20.md](docs/architecture-review-2026-11-20.md)
 - 验收复核：[docs/acceptance.md](docs/acceptance.md)；试玩报告：[docs/playtest-2026-11-20.md](docs/playtest-2026-11-20.md)
 - 成长与旅行设计：[docs/growth-travel-design.md](docs/growth-travel-design.md)
@@ -15,7 +15,7 @@
 ## 当前状态
 
 **版本 2.0.0（2026-11-20）。M0–M7 全部完成。** 规模：**7 国 / 14 地区 / 21 组织 / 54 人物 / 90 条事件**；
-31 个测试文件 / 199 个用例；`release/index.html` 368,416 字节（体积预算 23.4%）；
+32 个测试文件 / 201 个用例；`release/index.html` 368,416 字节（体积预算 23.4%）；
 100 年无界面快进 3.66–3.89 s（D7 预算：14 区 < 4.0 s）、状态哈希稳定。
 CI（run 34）与 Pages 部署（run 31）均为 success，站点 <https://tulongzikun.github.io/personal_throne/> 返回 200。
 
@@ -85,7 +85,7 @@ CI（run 34）与 Pages 部署（run 31）均为 success，站点 <https://tulon
 三 seed 100 年：破产率 20.8–28.0%、分裂率 8.3–12.0%、继承危机 45–49 次。
 
 **M7 阶段 7 打磨与发布：完成（v2.0.0）。** 创建人物的职业/地区/技能与组织类型全部中文化，抉择弹窗正文对比度提高；
-性能复测 100 年 3.66–3.89 s（D7 预算调为 14 区 < 4.0 s）；版本号 2.0.0；32 个测试文件 / 201 个用例全绿，
+性能复测 100 年 3.66–3.89 s（D7 预算调为 14 区 < 4.0 s）；版本号 2.0.0；33 个测试文件 / 205 个用例全绿，
 `release/index.html` 368,416 字节（体积预算 23.4%）。
 玩家卡新增「野心」行（富甲一方 / 权倾朝野 / 名动四方，按职业推导）与「第 N 章」标题；玩满 30 天弹一次「第一份财报」（现金、行动力、健康与野心进度）。
 
@@ -123,7 +123,7 @@ pnpm release        # build + 校验（无外链 / ≤ 1,572,864 字节）+ 复�
 pnpm preview        # 预览构建产物
 pnpm typecheck      # 仅类型检查
 pnpm lint           # ESLint（架构依赖方向、Math.random 与 new Date 禁令）
-pnpm test           # vitest run：31 个文件 / 199 个用例
+pnpm test           # vitest run：32 个文件 / 201 个用例
 pnpm test:watch     # 监听模式
 pnpm format         # Prettier
 pnpm sim --years 100 --seed demo-seed            # 无界面快进，打印哈希 / 耗时 / 破产率 / 分裂率 / 价格偏离 / 关税
@@ -134,7 +134,7 @@ pnpm sim --years 100 --seed demo-seed --check    # 复跑并比对状态哈希�
 
 ## 测试
 
-31 个文件 / 199 个用例，全部使用固定内容 + 固定种子（`tests/helpers/index.ts` 提供 `makeWorld(seed)` / `makeEngine(seed)`）。
+32 个文件 / 201 个用例，全部使用固定内容 + 固定种子（`tests/helpers/index.ts` 提供 `makeWorld(seed)` / `makeEngine(seed)`）。
 `tests/ui-panels.test.ts`、`tests/modal-pause.test.ts`、`tests/app-modal-pause.test.ts` 需要 DOM，用 jsdom（`// @vitest-environment jsdom`）驱动。
 
 | 文件                                | 用例 | 覆盖                                                  |
@@ -170,6 +170,7 @@ pnpm sim --years 100 --seed demo-seed --check    # 复跑并比对状态哈希�
 | `tests/ui-panels.test.ts`           | 5    | jsdom 驱动玩家卡与地区页                              |
 | `tests/modal-pause.test.ts`         | 2    | 对话框可见性通知、选项点击后恢复                      |
 | `tests/app-modal-pause.test.ts`     | 3    | 打开暂停/关闭恢复、手动暂停不被覆盖、待决抉择入口计数 |
+| `tests/event-noise.test.ts`         | 2    | 单月同事件只触发一次、同目标同日后续不重复排队        |
 
 ## 发布
 
@@ -194,7 +195,7 @@ src/content/     静态内容与数值配置（JSON：races/classes/items/goods/
 src/storage/     存档信封、迁移（v1→v9）、IndexedDB 槽位、导入导出
 src/ui/          原生 DOM 组件 + SVG 地图（20 个 .ts + styles/base.css）
 scripts/         sim.ts（快进 CLI）、release.mjs（发布校验）
-tests/           31 个回归用例文件 + helpers
+tests/           32 个回归用例文件 + helpers
 release/         仓库内发布的成品单文件
 ```
 

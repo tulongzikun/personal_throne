@@ -32,6 +32,7 @@ import {
   signLoanContract,
 } from '../systems/organization/ContractSystem';
 import { priceOf } from '../systems/economy/MarketSystem';
+import { settleTravelEncounter } from '../systems/region/RegionNews';
 import { switchCareer } from '../systems/character/Career';
 import { declareWar, isAtWar, makePeace } from '../systems/military/WarSystem';
 import {
@@ -824,9 +825,10 @@ export function applyCommand(
       spendAction(player, 2);
       player.regionId = command.regionId;
       player.location = { regionId: command.regionId, site: 'road', sinceDay: state.clock.day };
+      const encounter = settleTravelEncounter(state, player, command.regionId);
       return {
         ok: true,
-        summary: `你沿商路走了 ${hop.days} 天抵达${target.name}`,
+        summary: `你沿商路走了 ${hop.days} 天抵达${target.name}${encounter ? `；${encounter}` : ''}`,
         refs: [{ kind: 'region', id: command.regionId }],
         travelDays: hop.days,
       };

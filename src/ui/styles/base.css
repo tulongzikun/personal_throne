@@ -2484,6 +2484,11 @@ select.input {
   color: var(--ink-soft, #6c6154);
 }
 
+.travel__hint--risk {
+  color: var(--danger, #9b3d2e);
+  font-weight: 600;
+}
+
 /* 建议事项：左下角常驻，给出「下一步做什么」的三条真实建议。 */
 .suggestions {
   display: flex;

@@ -8,7 +8,7 @@
 ## 0. 如何复跑
 
 ```bash
-pnpm test                                     # 31 文件 / 199 例
+pnpm test                                     # 32 文件 / 201 例
 pnpm sim --years 100 --seed demo --check      # 100 年 + 复跑比对
 pnpm sim --years 100 --seed alpha
 pnpm sim --years 100 --seed beta
@@ -217,7 +217,7 @@ pnpm build && pnpm release                    # 单文件 release/index.html
 | 项 | 结果 |
 |---|---|
 | 版本 | package.json 2.0.0；CONTENT_VERSION 0.7.0；SCHEMA_VERSION 9（当时误记为 8，实际 `src/core/WorldState.ts:25` 与 `src/storage/Migration.ts:23` 均为 9） |
-| 测试 | 25 文件 / 173 例通过（tsc、eslint、prettier 干净）——**当时快照**，现为 31 文件 / 199 例，见 §18 |
+| 测试 | 25 文件 / 173 例通过（tsc、eslint、prettier 干净）——**当时快照**，现为 32 文件 / 201 例，见 §18 |
 | 三 seed 100 年 | 破产 20.8/26.1/28.0%；分裂 8.3/8.7/12.0%；继承危机 45–49 次；宣战 44–58 次 |
 | 确定性 | `sim --years 100 --check` 通过且复跑一致 |
 | 性能 | 100 年 3.66–3.89 s（14 区预算 4.0 s） |
@@ -244,8 +244,8 @@ pnpm build && pnpm release                    # 单文件 release/index.html
 |---|---|
 | 版本 | package.json **2.0.0**；`CONTENT_VERSION = '0.7.0'`（`src/content/index.ts:36`）；`SAVE_FORMAT_VERSION = 9`（`src/storage/Migration.ts:23`）；`SCHEMA_VERSION = 9`（`src/core/WorldState.ts:25`） |
 | 内容规模 | **7 国 / 14 地区 / 21 组织 / 54 人物 / 90 条事件**（local 42、country 20、organization 13、adventure 9、war 3、economy 3） |
-| 代码规模 | core 9 个模块（含 `Chronicler.ts`）、systems 30 个文件 7 域、ui 20 个 .ts + `styles/base.css`、tests 31 + `helpers/index.ts` |
-| 测试 | **31 文件 / 199 例**全绿（`tsc --noEmit`、`eslint .`、`prettier --check .` 干净） |
+| 代码规模 | core 9 个模块（含 `Chronicler.ts`）、systems 30 个文件 7 域、ui 20 个 .ts + `styles/base.css`、tests 32 + `helpers/index.ts` |
+| 测试 | **32 文件 / 201 例**全绿（`tsc --noEmit`、`eslint .`、`prettier --check .` 干净） |
 | 确定性 | `pnpm sim --years 100 --seed demo --check` 通过且复跑一致 |
 | 性能 | 100 年快进 **3.66–3.89 s**（14 区预算 4.0 s）；`tests/simulation.test.ts:59` 断言 `< 8000 ms` |
 | 产物 | `release/index.html` **368,416 字节（23.4%）**，零外链、`file://` 可运行 |

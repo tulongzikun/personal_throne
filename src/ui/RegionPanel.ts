@@ -11,6 +11,7 @@ import {
   officeSeatsFor,
 } from '../systems/country/Offices';
 import { purchaseFactor, saleFactor, tradeCarryCapacity } from '../systems/character/SkillEffects';
+import { banditryLabel, banditryOf } from '../systems/region/RegionNews';
 
 export class RegionPanel {
   private readonly host: HTMLElement;
@@ -225,6 +226,16 @@ export class RegionPanel {
           );
           if (opportunities.length > 0) {
             travel.append(el('p', 'travel__hint', `此行可办：${opportunities[0]}`));
+          }
+          const banditry = banditryOf(state, region.id);
+          if (banditry >= 0.15) {
+            travel.append(
+              el(
+                'p',
+                'travel__hint travel__hint--risk',
+                `治安：${banditryLabel(banditry)}——到了那边可能遇到劫匪（力量检定）`,
+              ),
+            );
           }
           const go = el('button', 'btn btn--gold', '前往');
           go.type = 'button';

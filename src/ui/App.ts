@@ -18,7 +18,8 @@ import { CreateCharacterDialog, creationErrorText } from './CreateCharacterDialo
 import { StartDialog } from './StartDialog';
 import { SuggestionsPanel } from './SuggestionsPanel';
 import { ambitionOf, chapterOf } from '../systems/goals/Ambition';
-import { EventDialog, type DigestItem, type WorldSignal } from './EventDialog';
+import { EventDialog, type WorldSignal } from './EventDialog';
+import { regionNews } from '../systems/region/RegionNews';
 import { RELATION_LABELS, isRelated, relationOf, subjectOf } from './signals';
 import { eventText, eventTextForRefs } from '../core/EventEngine';
 import { describeCheck } from '../systems/character/Check';
@@ -719,10 +720,6 @@ export class App {
   private drainSignals(): void {
     const state = this.engine.state;
     const related: WorldSignal[] = [];
-    const digest = new Map<
-      string,
-      { title: string; body: string; subjects: string[]; count: number }
-    >();
 
     for (const record of state.history) {
       if (record.id <= this.lastHistoryId || record.kind !== 'event') continue;
@@ -735,22 +732,7 @@ export class App {
       const title = filled?.title ?? '世界事件';
       const text = filled?.body ?? record.summary;
 
-      if (!isRelated(relation)) {
-        const key = title + ' ' + text;
-        const entry = digest.get(key);
-        if (entry) {
-          entry.count += 1;
-          if (subject) entry.subjects.push(subject.label);
-        } else {
-          digest.set(key, {
-            title,
-            body: text,
-            subjects: subject ? [subject.label] : [],
-            count: 1,
-          });
-        }
-        continue;
-      }
+      if (!isRelated(relation)) continue;
       related.push({
         title,
         body: text,
@@ -787,19 +769,19 @@ export class App {
     }
 
     const signals: WorldSignal[] = [...related];
-    if (digest.size > 0) {
-      // 同一事件一个月里打到多个人是噪声：合并成「路遇伏击 ×7」并列出当事人。
-      const items: DigestItem[] = [...digest.values()].map((entry) => ({
-        title: entry.count > 1 ? `${entry.title} ×${entry.count}` : entry.title,
-        subject: entry.subjects.length > 0 ? entry.subjects.slice(0, 3).join('、') : '远方',
-        body: entry.body,
-      }));
+    // 远方见闻只挑要紧的地区局势说，不再逐条转述陌生人的遭遇。
+    const news = regionNews(state, 3);
+    if (news.length > 0) {
       signals.push({
-        title: `${items.length} 条远方见闻`,
-        body: '这些消息与你没有直接关系，已折叠成一页，等你得空时扫一眼。',
+        title: `${news.length} 条远方见闻`,
+        body: '只挑要紧的说；传闻会变，亲自去一趟看到的情况才算数。',
         meta: `${formatDate(state.clock.day)} · 世界在别处继续`,
         tone: 'digest',
-        items: items.slice(0, 8),
+        items: news.map((item) => ({
+          title: item.title,
+          subject: this.entityLabel('region', item.regionId),
+          body: item.body,
+        })),
       });
     }
     if (signals.length === 0) return;
