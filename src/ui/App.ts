@@ -12,6 +12,7 @@ import type { ScheduledEvent, WorldState } from '../core/WorldState';
 import { downloadSave, readSaveFile } from '../storage/SaveManager';
 import { CharacterPanel } from './CharacterPanel';
 import type { NoticeTone, UiDeps } from './context';
+import { ArmyPanel } from './ArmyPanel';
 import { CountryPanel } from './CountryPanel';
 import { CreateCharacterDialog, creationErrorText } from './CreateCharacterDialog';
 import { StartDialog } from './StartDialog';
@@ -26,7 +27,7 @@ import { SaveDialog } from './SaveDialog';
 import { Tour } from './Tour';
 import { button, el, fmtMoney, messageOf } from './dom';
 
-type TabId = 'region' | 'character' | 'organization' | 'country' | 'history';
+type TabId = 'region' | 'character' | 'organization' | 'country' | 'army' | 'history';
 type Speed = 0 | 1 | 7 | 30;
 
 const TABS: readonly { readonly id: TabId; readonly label: string }[] = [
@@ -34,6 +35,7 @@ const TABS: readonly { readonly id: TabId; readonly label: string }[] = [
   { id: 'character', label: '人物' },
   { id: 'organization', label: '组织' },
   { id: 'country', label: '国家' },
+  { id: 'army', label: '军团' },
   { id: 'history', label: '历史' },
 ];
 
@@ -79,6 +81,7 @@ export class App {
   private readonly characterPanel: CharacterPanel;
   private readonly organizationPanel: OrganizationPanel;
   private readonly countryPanel: CountryPanel;
+  private readonly armyPanel: ArmyPanel;
   private readonly historyPanel: HistoryPanel;
   private readonly eventDialog: EventDialog;
   private readonly createDialog: CreateCharacterDialog;
@@ -171,6 +174,7 @@ export class App {
     this.characterPanel = new CharacterPanel(this.sectionOf('character'), this.deps);
     this.organizationPanel = new OrganizationPanel(this.sectionOf('organization'), this.deps);
     this.countryPanel = new CountryPanel(this.sectionOf('country'), this.deps);
+    this.armyPanel = new ArmyPanel(this.sectionOf('army'), this.deps);
     this.historyPanel = new HistoryPanel(this.sectionOf('history'), this.deps);
 
     const timebar = this.buildTimebar(this.shell);
@@ -202,6 +206,7 @@ export class App {
 
     this.characterPanel.update();
     this.countryPanel.update();
+    this.armyPanel.update();
     this.historyPanel.update();
 
     this.lastHistoryId = state.history.at(-1)?.id ?? 0;
@@ -399,6 +404,8 @@ export class App {
         return this.organizationPanel;
       case 'country':
         return this.countryPanel;
+      case 'army':
+        return this.armyPanel;
       case 'history':
         return this.historyPanel;
     }
