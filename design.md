@@ -8,6 +8,8 @@
 - 世界观：原创奇幻世界，兼容D20规则及后续世界扩展
 - 设计状态：正式策划草案，数值尚未完成验证
 
+> **本文档是设计意图（v1.0 GDD），不随实现进度改写。** 实现现状、里程碑进度、与设计的偏差记录见 [`README.md`](README.md) 与 [`development-plan.md`](development-plan.md)；可复现的验收数字见 [`docs/acceptance.md`](docs/acceptance.md)；结构审计见 [`docs/architecture-review-2026-11-20.md`](docs/architecture-review-2026-11-20.md)。
+
 ---
 
 # 第一章：游戏定位

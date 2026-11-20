@@ -4,7 +4,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.05,
+      "lambda0": 0.02,
       "terms": [
         {
           "path": "traits.ambition",
@@ -72,7 +72,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.04,
+      "lambda0": 0.01,
       "terms": [
         {
           "path": "traits.caution",
@@ -129,7 +129,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.03,
+      "lambda0": 0.005,
       "terms": [
         {
           "path": "traits.loyalty",
@@ -180,7 +180,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.03,
+      "lambda0": 0.01,
       "terms": []
     },
     "chain": {
@@ -263,7 +263,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.02,
+      "lambda0": 0.003,
       "terms": []
     },
     "chain": {
@@ -318,7 +318,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.04,
+      "lambda0": 0.008,
       "terms": [
         {
           "path": "traits.loyalty",
@@ -369,7 +369,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.05,
+      "lambda0": 0.02,
       "terms": [
         {
           "path": "skills.trade",
@@ -431,7 +431,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.05,
+      "lambda0": 0.015,
       "terms": [
         {
           "path": "traits.loyalty",
@@ -503,7 +503,7 @@
     "domain": "adventure",
     "scope": "character",
     "risk": {
-      "lambda0": 0.05,
+      "lambda0": 0.015,
       "terms": [
         {
           "path": "traits.authority",

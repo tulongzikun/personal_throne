@@ -12,7 +12,7 @@
  */
 
 import { DAYS_PER_MONTH } from './GameClock';
-import { Random } from './Random';
+import { Random, fnv1a64 } from './Random';
 import { rollCheck } from '../systems/character/Check';
 import type {
   CondExpr,
@@ -453,14 +453,33 @@ export function collectCandidates(
     return list;
   };
 
-  // 人物事件按季度抽样：冒险类事件每月逐人判定既贵又吵（百年能刷出三千条）。
-  const characterRound = Math.floor(day / DAYS_PER_MONTH) % 3 === 0;
+  // 人物事件：玩家每月都在候选里，另外按月轮换 3 位 NPC；随机目标几十人会造成「一个月七次伏击」。
+  const characterEntities = (): readonly EntityId[] => {
+    const cached = entityCache.get('character');
+    if (cached) return cached;
+    const alive = entitiesFor('character');
+    const player = state.playerId;
+    const pool = alive.filter((id) => id !== player);
+    const picks = new Set<EntityId>();
+    if (state.characters[player]?.alive) picks.add(player);
+    if (pool.length > 0) {
+      const month = Math.floor(day / DAYS_PER_MONTH);
+      const start = Number(fnv1a64(`${state.meta.seed}:${month}`) % BigInt(pool.length));
+      for (let i = 0; i < 3 && i < pool.length; i += 1) {
+        const id = pool[(start + i) % pool.length];
+        if (id) picks.add(id);
+      }
+    }
+    const list = [...picks];
+    entityCache.set('character', list);
+    return list;
+  };
 
   for (const def of events) {
     // 链条后续只允许由父事件排定，避免随机直接跳到第 2/3 步。
     if ((def.chain?.step ?? 0) > 1) continue;
-    if (def.scope === 'character' && !characterRound) continue;
-    for (const entityId of entitiesFor(def.scope)) {
+    const entities = def.scope === 'character' ? characterEntities() : entitiesFor(def.scope);
+    for (const entityId of entities) {
       if ((state.tiers[entityId] ?? 3) > maxTier) continue;
       const cooldownKey = `${def.id}@${entityId}`;
       const until = state.cooldowns[cooldownKey] ?? 0;
@@ -504,6 +523,20 @@ export function selectTriggered(
   samplingDays: number = EVENT_WINDOW_DAYS,
 ): Triggered[] {
   const triggered: Triggered[] = [];
+  // 同一取样周期里同一事件最多触发一次；人物事件整体最多两条，避免一个月全是「路遇伏击」。
+  const fired = new Set<string>();
+  const CHARACTER_EVENT_LIMIT = 2;
+  let characterEvents = 0;
+  const allowed = (candidate: Candidate): boolean => {
+    if (fired.has(candidate.def.id)) return false;
+    if (candidate.def.scope === 'character' && characterEvents >= CHARACTER_EVENT_LIMIT)
+      return false;
+    return true;
+  };
+  const remember = (candidate: Candidate): void => {
+    fired.add(candidate.def.id);
+    if (candidate.def.scope === 'character') characterEvents += 1;
+  };
   const groups = new Map<string, Candidate[]>();
   const singles: Candidate[] = [];
 
@@ -540,7 +573,8 @@ export function selectTriggered(
         winner = member;
       }
     }
-    if (winner) {
+    if (winner && allowed(winner)) {
+      remember(winner);
       triggered.push({ def: winner.def, target: winner.target });
       // 赢家之外的成员进入冷却，避免下个月立刻顶上（同组互斥的语义延续）。
       for (const member of members) {
@@ -554,9 +588,11 @@ export function selectTriggered(
 
   // 独立事件：各自判定。
   for (const candidate of singles) {
+    if (!allowed(candidate)) continue;
     const probability = triggerProbability(candidate.lambda, samplingDays);
     const key = `${candidate.def.id}:${candidate.target.entityId}`;
     if (rng.chance({ stream: 'event', entityId: key, periodKey }, probability)) {
+      remember(candidate);
       triggered.push({ def: candidate.def, target: candidate.target });
     }
   }
@@ -668,9 +704,21 @@ export function scheduleFollowUps(
     )
       continue;
 
+    const dueDay = state.clock.day + Math.max(1, Math.round(followUp.delayDays));
+    // 同一目标同一天的同一条后续只排一次：否则同一批伏击会排出四条一模一样的「战利品」。
+    const duplicate = state.pendingEvents.some(
+      (item) =>
+        item.kind === 'event' &&
+        item.refId === followUp.eventId &&
+        item.day === dueDay &&
+        item.targetScope === target.scope &&
+        item.targetEntityId === target.entityId,
+    );
+    if (duplicate) continue;
+
     state.scheduleSeq += 1;
     state.pendingEvents.push({
-      day: state.clock.day + Math.max(1, Math.round(followUp.delayDays)),
+      day: dueDay,
       phase: 4,
       seq: state.scheduleSeq,
       kind: 'event',

@@ -719,7 +719,10 @@ export class App {
   private drainSignals(): void {
     const state = this.engine.state;
     const related: WorldSignal[] = [];
-    const digest: DigestItem[] = [];
+    const digest = new Map<
+      string,
+      { title: string; body: string; subjects: string[]; count: number }
+    >();
 
     for (const record of state.history) {
       if (record.id <= this.lastHistoryId || record.kind !== 'event') continue;
@@ -733,7 +736,19 @@ export class App {
       const text = filled?.body ?? record.summary;
 
       if (!isRelated(relation)) {
-        digest.push({ title, subject: subject?.label ?? '远方', body: text });
+        const key = title + ' ' + text;
+        const entry = digest.get(key);
+        if (entry) {
+          entry.count += 1;
+          if (subject) entry.subjects.push(subject.label);
+        } else {
+          digest.set(key, {
+            title,
+            body: text,
+            subjects: subject ? [subject.label] : [],
+            count: 1,
+          });
+        }
         continue;
       }
       related.push({
@@ -772,14 +787,19 @@ export class App {
     }
 
     const signals: WorldSignal[] = [...related];
-    if (digest.length > 0) {
-      const shown = digest.slice(0, 8);
+    if (digest.size > 0) {
+      // 同一事件一个月里打到多个人是噪声：合并成「路遇伏击 ×7」并列出当事人。
+      const items: DigestItem[] = [...digest.values()].map((entry) => ({
+        title: entry.count > 1 ? `${entry.title} ×${entry.count}` : entry.title,
+        subject: entry.subjects.length > 0 ? entry.subjects.slice(0, 3).join('、') : '远方',
+        body: entry.body,
+      }));
       signals.push({
-        title: `${digest.length} 条远方见闻`,
+        title: `${items.length} 条远方见闻`,
         body: '这些消息与你没有直接关系，已折叠成一页，等你得空时扫一眼。',
         meta: `${formatDate(state.clock.day)} · 世界在别处继续`,
         tone: 'digest',
-        items: shown,
+        items: items.slice(0, 8),
       });
     }
     if (signals.length === 0) return;
