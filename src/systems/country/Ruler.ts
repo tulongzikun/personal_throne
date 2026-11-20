@@ -106,5 +106,39 @@ function spawnRegent(state: WorldState, country: Country): CharacterId {
 export function installRuler(state: WorldState, country: Country, polity: Polity): CharacterId {
   const picked = chooseRuler(state, country, polity);
   country.rulerId = picked ?? spawnRegent(state, country);
+  // 未成年统治者由本国最年长/资深的在世人物摄政；成年后自动解除。
+  const ruler = state.characters[country.rulerId];
+  if (ruler && ruler.age < 16) {
+    const regent = chooseRegent(state, country, country.rulerId);
+    country.regentId = regent;
+  } else {
+    country.regentId = null;
+  }
   return country.rulerId;
+}
+
+/** 摄政人选：本国在世、非统治者本人、年龄 ≥ 16，按资历与影响力打分。 */
+export function chooseRegent(
+  state: WorldState,
+  country: Country,
+  rulerId: CharacterId,
+): CharacterId | null {
+  const inCountry = new Set(country.regionIds);
+  let best: CharacterId | null = null;
+  let bestScore = Number.NEGATIVE_INFINITY;
+  for (const id of sortedIds(state.characters)) {
+    const character = state.characters[id];
+    if (!character || !character.alive || id === rulerId || character.age < 16) continue;
+    if (!inCountry.has(character.regionId)) continue;
+    const score =
+      (character.skills.law ?? 0) * 0.2 +
+      (character.skills.persuasion ?? 0) * 0.2 +
+      (character.traits.authority ?? 0.4) * 2 +
+      Math.min(1, character.wealth / 20000);
+    if (score > bestScore) {
+      best = id;
+      bestScore = score;
+    }
+  }
+  return best;
 }

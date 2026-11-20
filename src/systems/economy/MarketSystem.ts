@@ -33,9 +33,14 @@ export function settleMonthlyMarket(state: WorldState, content: WorldContent): M
     const good = content.goods.find((candidate) => candidate.id === market.goodId);
     if (!region || !good) continue;
 
+    // 战时需求放大：军队征用、商路中断前的囤积都会推高当月消耗。
+    const country = state.countries[region.countryId];
+    const warFactor = country && country.atWarWith.length > 0 ? 1.12 : 1;
     const demand = Math.max(
       1,
-      Math.round(region.population * good.consumptionPerCapita * consumptionPerCapitaScale),
+      Math.round(
+        region.population * good.consumptionPerCapita * consumptionPerCapitaScale * warFactor,
+      ),
     );
     market.demand = demand;
 
@@ -47,7 +52,6 @@ export function settleMonthlyMarket(state: WorldState, content: WorldContent): M
     const surplusUnit = Math.max(0, supply - demand) / Math.max(1, demand);
 
     // 管制会压低有效价格上限：审批/限价让高价难以完全传导。
-    const country = state.countries[region.countryId];
     const regulation = country?.policies.regulation ?? 0.5;
     const capRatio = Math.max(0.2, 1 - 0.7 * regulation);
     const effectiveCeiling = Math.round(market.floor + (market.ceiling - market.floor) * capRatio);

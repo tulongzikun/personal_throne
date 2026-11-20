@@ -76,7 +76,7 @@ export class CountryPanel {
         el(
           'p',
           'country-card__meta',
-          `${labelOf(POLITY_LABELS, country.polity)} · 统治者 ${ruler?.name ?? '—'} · 人口 ${fmtInt(country.population)}`,
+          `${labelOf(POLITY_LABELS, country.polity)} · 统治者 ${ruler?.name ?? '—'}${country.regentId ? `（${state.characters[country.regentId]?.name ?? '摄政'}摄政）` : ''} · 人口 ${fmtInt(country.population)}`,
         ),
       );
       const lobby = el('button', 'btn btn--small', '游说此国');

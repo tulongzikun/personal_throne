@@ -1029,6 +1029,24 @@ interface EventDef {
 
 ## 9. 测试与质量策略
 
+### 8.31 M7 阶段 6：模拟深化（2026-11-20）
+
+| 项 | 内容 |
+|---|---|
+| 战争经济 | `MarketSystem`：交战国的当月需求 ×1.12；`TradeSystem`：任一端交战时商路容量 ×0.55（与贸易开放度叠乘），战时价格与运力都可见 |
+| 继承政治 | `CharacterSystem.handleDeath`：统治者死亡必排 `ev_country_succession_crisis`（+20 天）；`Ruler.installRuler` 对 <16 岁统治者调 `chooseRegent` 写入 `Country.regentId`，成年后清空；`CountryPanel` 显示「（X 摄政）」 |
+| 种族差异 | `Demography.effectiveAge`：精灵 ×0.35、矮人 ×0.85、人类 ×1；`annualMortality` 用折算年龄，精灵实际寿命约为人类三倍 |
+| 家族声望 | `Family.prestige`（0–100）：每年按在世成员公职 +2、生涯满级 +1，无人则 −1；`CharacterPanel` 显示「家族（声望 N）」 |
+| NPC 关系 | `settleNpcRelations`：每年在同组织在世成员中抽一对，50% 结盟（`ally` +30）/ 50% 结怨（`rival` +25），百年后 204–284 对 |
+| 校准 | `ev_org_split` 的 `lambda0` 0.07 → **0.018**、`cooldownDays` 1320 → **400**；`tests/policy.test.ts` 政体变更上界 6 → 8（战败与破产让个别国家真的崩溃，约每国 1 次/百年） |
+| 测试 | 新增 `tests/politics.test.ts` 6 例（种族寿命、摄政、继承危机入队、家族声望、战时需求、十年 NPC 关系）；全套 25 文件 / 173 例 |
+| 指标 | 三 seed 100 年：破产 **20.8/26.1/28.0%**、分裂 **8.3/8.7/12.0%**、继承危机 45–49 次、宣战 44–58 次、存活 50–69 人；`--check` 一致 |
+| 产物 | `release/index.html` **351,584 字节**（22.4%） |
+
+**未达成**：战时价格只做了「需求放大 + 运力腰斩」，没有军需采购、配给与黑市；继承危机是固定事件，没有真正的派系与拥立者名单；家族声望只影响面板展示，尚未回馈到婚配与事件权重。
+
+
+
 ### 8.30 M7 阶段 5：目标与新手（2026-11-20）
 
 | 项 | 内容 |

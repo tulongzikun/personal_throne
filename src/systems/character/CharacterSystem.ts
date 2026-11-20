@@ -128,6 +128,18 @@ export function handleDeath(
     installRuler(state, country, country.polity);
     country.legitimacy = Math.min(country.legitimacy, 0.4);
     country.stability = Math.min(country.stability, 0.3);
+    // 王位更替必然伴随一轮合法性危机：把事件排进队列，保证 100 年里看得到继承戏。
+    state.scheduleSeq += 1;
+    state.pendingEvents.push({
+      day: state.clock.day + 20,
+      phase: 4,
+      seq: state.scheduleSeq,
+      kind: 'event',
+      refId: 'ev_country_succession_crisis',
+      parentEventId: null,
+      targetScope: 'country',
+      targetEntityId: countryId,
+    });
   }
 
   // 遗产：现金留在人物名下（`wealth`），不复制到任何组织。

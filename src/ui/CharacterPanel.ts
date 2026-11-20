@@ -120,7 +120,12 @@ export class CharacterPanel {
         '所在',
         `${state.regions[selected.regionId]?.name ?? '—'} · ${labelOf(SITE_LABELS, selected.location.site)}`,
       ),
-      statCell('家族', family?.name ?? '无'),
+      statCell(
+        '家族',
+        family
+          ? `${family.name}${(family.prestige ?? 0) > 0 ? `（声望 ${family.prestige}）` : ''}`
+          : '无',
+      ),
       statCell('代际', `第 ${selected.generation} 代`),
       statCell('出身', state.regions[selected.homeRegionId]?.name ?? '—'),
     );

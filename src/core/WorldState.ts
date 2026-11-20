@@ -58,6 +58,8 @@ export interface Family {
   name: string;
   culture: string;
   memberIds: CharacterId[];
+  /** 家族声望：在世成员的公职与领袖位每年折算，满 100 封顶。 */
+  prestige?: number;
 }
 
 export interface CharacterLocation {
@@ -645,6 +647,8 @@ export interface Country {
   cabinetUtility: number;
   /** 继承规则：君主制默认 primogeniture，共和制默认 elective（M4 可用 council）。 */
   succession: SuccessionMode;
+  /** 未成年统治者时的摄政；成年后清空。 */
+  regentId?: CharacterId | null;
   /** 公职列表；M3 允许为空，M4 议会/内阁模型再填充。 */
   offices: CountryOffice[];
   /** 交战对象（双向写入，排序稳定）。 */

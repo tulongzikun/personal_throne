@@ -21,7 +21,7 @@ import type {
 import { buildCharacter, neutralAttributes, sortedIds } from '../../core/WorldState';
 import { clampAlignment } from './Profile';
 import { handleDeath, mortalityRisk } from './CharacterSystem';
-import { linkKin } from './Relations';
+import { linkKin, linkRivalry } from './Relations';
 
 /** 具名人口上限：超过后停止出生（其余人口以抽象人口计入国家 `population`）。 */
 export const MAX_NAMED_CHARACTERS = 400;
@@ -117,9 +117,21 @@ export function physiqueFactor(physique: number): number {
 }
 
 /** 幼年夭折率：5 岁前每年 4%，把死亡率曲线补全。 */
+/** 种族寿命对死亡率的折算：精灵老得慢，矮人略慢，人类按实际年龄。 */
+const RACE_AGE_FACTOR: Readonly<Record<string, number>> = {
+  human: 1,
+  dwarf: 0.85,
+  elf: 0.35,
+};
+
+export function effectiveAge(character: Character): number {
+  return character.age * (RACE_AGE_FACTOR[character.raceId] ?? 1);
+}
+
 export function annualMortality(character: Character): number {
-  if (character.age < 5) return 0.04;
-  return mortalityRisk(character.age) * physiqueFactor(character.attributes.physique);
+  const age = effectiveAge(character);
+  if (age < 5) return 0.04;
+  return mortalityRisk(age) * physiqueFactor(character.attributes.physique);
 }
 
 /** 年内出生：父母属性取均值后小幅漂移。 */
@@ -450,7 +462,64 @@ export function settleYearlyDemography(
   const newcomers = settlePopulationInflow(state, content, ctx);
   births.push(...newcomers);
 
+  settleFamilyPrestige(state);
+  settleNpcRelations(state, ctx);
+
   return { births: births.filter(Boolean), marriages, deaths, estates };
+}
+
+/** 家族声望：公职每席 +2、组织领袖 +1，按年累积，满 100 封顶；无人则缓慢回落。 */
+export function settleFamilyPrestige(state: WorldState): void {
+  const gains = new Map<string, number>();
+  for (const id of sortedIds(state.characters)) {
+    const character = state.characters[id];
+    if (!character || !character.alive || character.familyId === null) continue;
+    const gain = character.offices.length * 2 + (character.careerRank >= 3 ? 1 : 0);
+    if (gain > 0) gains.set(character.familyId, (gains.get(character.familyId) ?? 0) + gain);
+  }
+  for (const [familyId, family] of Object.entries(state.families)) {
+    const current = family.prestige ?? 0;
+    const delta = gains.get(familyId) ?? -1;
+    family.prestige = Math.max(0, Math.min(100, current + delta));
+  }
+}
+
+/** NPC 关系：每年在同组织/同地区里抽一对人，结盟或结怨，让世界有横向联系。 */
+export function settleNpcRelations(state: WorldState, ctx: SettleContext): void {
+  const living = sortedIds(state.characters).filter((id) => {
+    const character = state.characters[id];
+    return !!character && character.alive && id !== state.playerId;
+  });
+  if (living.length < 2) return;
+  for (const org of Object.values(state.organizations)) {
+    const members = living.filter((id) => state.characters[id]?.organizationId === org.id);
+    if (members.length < 2) continue;
+    const first =
+      members[
+        Math.floor(
+          ctx.rng.nextFloat({ stream: 'rel-a', entityId: org.id, periodKey: ctx.periodKey }) *
+            members.length,
+        )
+      ]!;
+    const second =
+      members[
+        Math.floor(
+          ctx.rng.nextFloat({ stream: 'rel-b', entityId: org.id, periodKey: ctx.periodKey }) *
+            members.length,
+        )
+      ]!;
+    if (first === second) continue;
+    const roll = ctx.rng.nextFloat({
+      stream: 'rel-kind',
+      entityId: org.id,
+      periodKey: ctx.periodKey,
+    });
+    if (roll < 0.5) {
+      linkKin(state, first, second, 30);
+    } else {
+      linkRivalry(state, first, second, 'rival', 25);
+    }
+  }
 }
 
 /** 出生一个人物：属性/阵营/信仰/地点全部从父母派生。 */

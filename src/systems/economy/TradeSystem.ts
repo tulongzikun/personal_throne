@@ -136,8 +136,13 @@ function planFlows(state: WorldState, content: WorldContent): TradeFlow[] {
             ? routeOwner
             : pickOwner(state, region.id);
 
+        // 战时封锁：任一端处于战争状态，商路有效运力减半（与开放度叠乘）。
+        const sourceCountry = state.countries[region.countryId];
+        const atWar =
+          (sourceCountry?.atWarWith.length ?? 0) > 0 || (country?.atWarWith.length ?? 0) > 0;
+        const warCapacity = atWar ? 0.55 : 1;
         // 贸易开放度提高商路有效容量，也放大玩家/组织开通的进口配额。
-        const routeCapacity = Math.round(link.capacity * (0.7 + 0.6 * freedom));
+        const routeCapacity = Math.round(link.capacity * (0.7 + 0.6 * freedom) * warCapacity);
         const importBoost = market ? Math.round(market.importCapacity * (0.5 + freedom)) : 0;
         const capacity = Math.min(routeCapacity + importBoost, surplus, gap);
         if (capacity <= 0) continue;

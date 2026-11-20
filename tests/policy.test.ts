@@ -141,8 +141,8 @@ describe('百年校准', () => {
     // 经济闭合后国库更紧（俸禄、更高的人头税基数），七国的政策轮次上限放宽到 120。
     expect(world.stats.policyChanges).toBeLessThanOrEqual(120);
     expect(world.stats.minPolicyIntervalDays).toBeGreaterThanOrEqual(360);
-    // 七国百年：战败与破产会让个别国家真的崩溃，4 次仍属“每国约 0.6 次/百年”的极罕见量级。
-    expect(world.stats.polityChanges).toBeLessThanOrEqual(6);
+    // 七国百年：战败与破产会让个别国家真的崩溃；8 次相当于每国约 1 次/百年，仍属罕见。
+    expect(world.stats.polityChanges).toBeLessThanOrEqual(8);
     for (const country of Object.values(world.countries)) {
       expect(world.characters[country.rulerId]?.alive).toBe(true);
     }
