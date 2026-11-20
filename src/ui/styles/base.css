@@ -1551,8 +1551,9 @@ select.input {
 
 .modal__meta {
   margin-top: var(--space-2);
-  font-size: 0.72rem;
-  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
 }
 
 .modal__body {

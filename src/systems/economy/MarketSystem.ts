@@ -22,6 +22,8 @@ export interface MarketMove {
 /** 先算需求（人口 × 人均消费，按消费系数缩放），再调价与库存。 */
 export function settleMonthlyMarket(state: WorldState, content: WorldContent): MarketMove[] {
   const moves: MarketMove[] = [];
+  // 商品表在整轮结算里不变，先建索引，避免每个市场都线性查一次（56 市场 × 65 商品 × 1200 月）。
+  const goodsById = new Map(content.goods.map((good) => [good.id, good]));
   const { consumptionPerCapitaScale, priceAdjustFloor, priceAdjustCeiling } =
     content.balance.economy;
 
@@ -30,7 +32,7 @@ export function settleMonthlyMarket(state: WorldState, content: WorldContent): M
     if (!market) continue;
 
     const region = state.regions[market.regionId];
-    const good = content.goods.find((candidate) => candidate.id === market.goodId);
+    const good = goodsById.get(market.goodId);
     if (!region || !good) continue;
 
     // 战时需求放大：军队征用、商路中断前的囤积都会推高当月消耗。

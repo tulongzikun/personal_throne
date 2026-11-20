@@ -10,6 +10,7 @@ import { TALENT_PICKS, TALENT_TAGS, type TalentTag } from '../systems/character/
 import type { Sex, WorldContent } from '../core/WorldState';
 import { ATTRIBUTE_KEYS } from '../core/WorldState';
 import { el, fmtMoney, messageOf } from './dom';
+import { CLASS_LABELS, ORG_TYPE_LABELS, SKILL_LABELS, labelOf } from './labels';
 
 export interface CreateCharacterResult {
   readonly ok: boolean;
@@ -180,14 +181,14 @@ export class CreateCharacterDialog {
       const meta = el(
         'span',
         'create-bg__meta',
-        `${background.classId} · ${background.regionId} · 初始 ${fmtMoney(background.wealth)}`,
+        `${labelOf(CLASS_LABELS, background.classId)} · ${this.content?.world.regions.find((region) => region.id === background.regionId)?.name ?? background.regionId} · 初始 ${fmtMoney(background.wealth)}`,
       );
       const desc = el('span', 'create-bg__desc', background.description);
       const skills = el(
         'span',
         'create-bg__skills',
         Object.entries(background.skills)
-          .map(([skill, value]) => `${skill} ${value}`)
+          .map(([skill, value]) => `${labelOf(SKILL_LABELS, skill)} ${value}`)
           .join(' · '),
       );
       node.append(title, meta, desc, skills);
@@ -308,7 +309,7 @@ export class CreateCharacterDialog {
       return !seat || seat.countryId === countryId;
     });
     for (const org of orgs) {
-      const option = el('option', '', `${org.name}（${org.type}）`);
+      const option = el('option', '', `${org.name}（${labelOf(ORG_TYPE_LABELS, org.type)}）`);
       option.value = org.id;
       this.orgSelect.append(option);
     }
