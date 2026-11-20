@@ -46,6 +46,10 @@ export interface WorldStats {
   profitTotal: number;
   /** 累计分红（权益的合法流出，校验时加回）。 */
   dividendsPaid: number;
+  /** 账上计提到成员的生涯月俸总额（阶段 2：工资到人比例）。 */
+  wagesBooked?: number;
+  /** 真正进了个人钱袋的生涯月俸总额。 */
+  wagesCredited?: number;
   orgCountSum: number;
   orgCountSamples: number;
   /** 政策三阶段的可观测统计（M3）。 */

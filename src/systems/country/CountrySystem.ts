@@ -8,7 +8,7 @@
  * 政体变更不在此处——M3 起由"政权更迭"事件链处理。
  */
 
-import type { SettleContext, WorldContent, WorldState } from '../../core/WorldState';
+import type { Country, SettleContext, WorldContent, WorldState } from '../../core/WorldState';
 import { sortedIds } from '../../core/WorldState';
 
 export interface CountryBudget {
@@ -60,26 +60,26 @@ export function settleMonthlyCountry(
     // 管制越重，行政成本越高（审批、稽查、价格管制）。
     const admin = Math.round(revenue * (ADMIN_RATE + 0.04 * country.policies.regulation));
     const interest = Math.round(country.debt * interestRateMonthly);
+    payCreditors(state, country, interest);
     const baseExpense = military + admin + interest + salaries;
 
     // 刚性收支：公共工程属于"有余钱才做"的可选支出，不参与赤字判定。
     const balance = revenue - baseExpense;
     country.treasury += balance;
+    // 俸禄在 baseExpense 里已经扣过一次，这里只把钱记到在任者名下，
+    // 不能再从国库扣第二遍（此前重复扣款会让国库凭空少一截）。
     if (balance >= 0) {
       for (const office of country.offices) {
         const holder = state.characters[office.holderId];
         if (!holder || !holder.alive) continue;
         holder.wealth += office.salaryMonthly;
-        country.treasury -= office.salaryMonthly;
       }
     }
     if (country.treasury < 0) {
-      country.debt += -country.treasury;
+      borrow(state, country, -country.treasury);
       country.treasury = 0;
     } else if (country.debt > 0) {
-      const repay = Math.min(country.debt, country.treasury);
-      country.debt -= repay;
-      country.treasury -= repay;
+      repayDebt(state, country, Math.min(country.debt, country.treasury));
     }
 
     // 公共工程：国库超过 6 个月刚性开支的部分，一半用于道路/水利/赈济，
@@ -126,4 +126,71 @@ export function settleMonthlyCountry(
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, Number(value.toFixed(4))));
+}
+
+/** 选一个债权方：本国境内现金最多的银行，其次本国现金最多的组织。 */
+function pickCreditor(state: WorldState, country: { regionIds: readonly string[] }): string | null {
+  const inCountry = Object.values(state.organizations).filter(
+    (org) =>
+      org &&
+      org.lifecycle !== 'dissolved' &&
+      country.regionIds.includes(org.homeRegionId) &&
+      org.cash > 0,
+  );
+  const bank = inCountry.filter((org) => org.type === 'bank').sort((a, b) => b.cash - a.cash)[0];
+  const best = bank ?? inCountry.sort((a, b) => b.cash - a.cash)[0];
+  return best?.id ?? null;
+}
+
+/** 借债：本金记到债权人名下，钱从债权人账上转进国库。 */
+function borrow(state: WorldState, country: Country, amount: number): void {
+  if (amount <= 0) return;
+  const creditorId = pickCreditor(state, country);
+  country.debt += amount;
+  country.treasury += 0;
+  if (!creditorId) return;
+  const creditor = state.organizations[creditorId];
+  if (!creditor) return;
+  const lend = Math.min(amount, Math.max(0, Math.round(creditor.cash * 0.5)));
+  if (lend <= 0) return;
+  creditor.cash -= lend;
+  country.creditors[creditorId] = (country.creditors[creditorId] ?? 0) + lend;
+}
+
+/** 还本：按债权人持仓比例把现金还回去（钱不会凭空消失）。 */
+function repayDebt(state: WorldState, country: Country, amount: number): void {
+  if (amount <= 0) return;
+  const holdings: [string, number][] = Object.entries(country.creditors).filter(
+    ([, value]) => value > 0,
+  );
+  const total = holdings.reduce((sum, [, value]) => sum + value, 0);
+  if (total <= 0) {
+    country.debt = Math.max(0, country.debt - amount);
+    country.treasury -= amount;
+    return;
+  }
+  let paid = 0;
+  for (const [orgId, value] of holdings) {
+    const share = Math.round((amount * value) / total);
+    const org = state.organizations[orgId];
+    if (org) org.cash += share;
+    country.creditors[orgId] = Math.max(0, value - share);
+    if (country.creditors[orgId] === 0) delete country.creditors[orgId];
+    paid += share;
+  }
+  country.debt = Math.max(0, country.debt - paid);
+  country.treasury -= paid;
+}
+
+/** 付息：按债权人持仓比例付，钱进组织现金。 */
+function payCreditors(state: WorldState, country: Country, interest: number): void {
+  if (interest <= 0) return;
+  const holdings = Object.entries(country.creditors).filter(([, value]) => value > 0);
+  const total = holdings.reduce((sum, [, value]) => sum + value, 0);
+  if (total <= 0) return;
+  for (const [orgId, value] of holdings) {
+    const org = state.organizations[orgId];
+    if (!org) continue;
+    org.cash += Math.round((interest * value) / total);
+  }
 }

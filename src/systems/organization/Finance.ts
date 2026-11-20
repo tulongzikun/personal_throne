@@ -82,6 +82,7 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     org.lastMonthTradeRevenue = 0;
 
     const careerWages = careerWageBill(state, org, state.clock.day);
+    state.stats.wagesBooked = (state.stats.wagesBooked ?? 0) + careerWages;
     const totalWages = payroll + careerWages;
     const grossProfit =
       revenue + tradeRevenue - tradeCogs - materialCost - totalWages - admin - interest;
@@ -125,15 +126,24 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     const country = region ? state.countries[region.countryId] : undefined;
     if (country && tax > 0) country.treasury += tax;
 
-    // 生涯月俸：工资已经计入支出，现金也扣过，这里把钱记到成员名下；
-    // 发不出全额工资时按比例不发，避免凭空造钱。
-    if (careerWages > 0 && wagesPaid >= totalWages) {
-      for (const member of Object.values(state.characters)) {
-        if (!member?.alive || member.organizationId !== org.id) continue;
-        if (!isOnDuty(state, member, state.clock.day)) continue;
-        const salary = careerSalary(member.careerRank);
-        if (salary > 0) member.wealth += salary;
+    // 生涯月俸：工资已计入支出、现金也扣过，这里把现金按比例记到在岗成员名下。
+    // 现金不够时按比例发，剩余部分留在 unpaidWages（下月现金宽裕再补发），
+    // 这样"账上发出去的工资"与"人手里收到的钱"始终对得上。
+    if (careerWages > 0) {
+      const payrollPool = Math.min(careerWages, wagesPaid);
+      const plan = wagePlan(state, org, careerWages);
+      let distributed = 0;
+      for (const line of plan) {
+        const amount = Math.round((payrollPool * line.salary) / careerWages);
+        if (amount <= 0) continue;
+        const member = state.characters[line.characterId];
+        if (!member) continue;
+        member.wealth += amount;
+        distributed += amount;
       }
+      state.stats.wagesCredited = (state.stats.wagesCredited ?? 0) + distributed;
+      const leftover = payrollPool - distributed;
+      if (leftover > 0) org.cash += leftover;
     }
 
     // 现金恢复后先补欠薪：现金↓、负债↓，权益不变。
@@ -143,6 +153,7 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
         org.cash -= repay;
         org.liabilities = Math.max(0, org.liabilities - repay);
         org.unpaidWages -= repay;
+        payWageArrears(state, org, repay);
       }
     }
 
@@ -293,6 +304,45 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /** 组织里所有有生涯等级的成员，每月该拿的月俸合计。 */
+interface WageLine {
+  readonly characterId: string;
+  readonly salary: number;
+}
+
+/** 组织里在岗、且有生涯月俸的成员，按人头列出来（用于按比例发薪）。 */
+function wagePlan(state: WorldState, org: { id: string }, day: number): WageLine[] {
+  const lines: WageLine[] = [];
+  for (const member of Object.values(state.characters)) {
+    if (!member?.alive || member.organizationId !== org.id) continue;
+    if (!isOnDuty(state, member, day)) continue;
+    const salary = careerSalary(member.careerRank);
+    if (salary > 0) lines.push({ characterId: member.id, salary });
+  }
+  return lines;
+}
+
+/** 补发欠薪：按在岗成员的月俸比例分掉这笔现金；没人可发就退回组织现金。 */
+function payWageArrears(state: WorldState, org: { id: string; cash: number }, pool: number): void {
+  const plan = wagePlan(state, org, state.clock.day);
+  const total = plan.reduce((sum, line) => sum + line.salary, 0);
+  if (total <= 0) {
+    org.cash += pool;
+    return;
+  }
+  let paid = 0;
+  for (const line of plan) {
+    const amount = Math.round((pool * line.salary) / total);
+    if (amount <= 0) continue;
+    const member = state.characters[line.characterId];
+    if (!member) continue;
+    member.wealth += amount;
+    paid += amount;
+  }
+  state.stats.wagesCredited = (state.stats.wagesCredited ?? 0) + paid;
+  const leftover = pool - paid;
+  if (leftover > 0) org.cash += leftover;
+}
+
 function careerWageBill(state: WorldState, org: { id: string }, day: number): number {
   let total = 0;
   for (const member of Object.values(state.characters)) {

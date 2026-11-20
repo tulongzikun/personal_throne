@@ -111,4 +111,6 @@ export interface Country {
   warStartDay: number;
   /** 厌战度 0–1：随战争月数与伤亡累积，满 1 会被迫议和。 */
   warExhaustion: number;
+  /** 国债的债权方：组织 ID → 持有国债额。赤字借债时记名，还本付息时钱流向这里。 */
+  creditors: Record<string, number>;
 }
