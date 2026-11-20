@@ -173,5 +173,36 @@
       "title": "战利品",
       "body": "刀口还热，你从匪首的腰袋里摸出一把成色不错的银币。"
     }
+  },
+  {
+    "id": "ev_adv_faithful",
+    "domain": "adventure",
+    "scope": "character",
+    "risk": {
+      "lambda0": 0.012,
+      "terms": [
+        {
+          "path": "traits.loyalty",
+          "coef": 0.8
+        }
+      ]
+    },
+    "cooldownDays": 200,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "wealth",
+        "value": 70
+      },
+      {
+        "kind": "add",
+        "path": "alignment.good",
+        "value": 4
+      }
+    ],
+    "text": {
+      "title": "善缘",
+      "body": "你在路边帮了朝圣者一把，对方临别时塞来一小袋钱。"
+    }
   }
 ]

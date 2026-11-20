@@ -2072,6 +2072,114 @@
         "perception": 13,
         "charisma": 11
       }
+    },
+    {
+      "id": "c_emberfall_cantor",
+      "name": "赛拉·烬声",
+      "culture": "vale",
+      "raceId": "human",
+      "classId": "politician",
+      "age": 44,
+      "regionId": "r_emberfall",
+      "organizationId": "o_emberfall_chapter",
+      "wealth": 2600,
+      "skills": {
+        "persuasion": 8,
+        "law": 6,
+        "insight": 5,
+        "negotiation": 4
+      },
+      "traits": {
+        "ambition": 0.62,
+        "loyalty": 0.7,
+        "caution": 0.5,
+        "charisma": 0.2
+      },
+      "sex": "female",
+      "faithId": "faith_ember",
+      "alignment": {
+        "law": 25,
+        "good": 15
+      },
+      "attributes": {
+        "physique": 10,
+        "agility": 11,
+        "intellect": 14,
+        "willpower": 15,
+        "perception": 12,
+        "charisma": 15
+      }
+    },
+    {
+      "id": "c_windsteppe_herder",
+      "name": "巴图·风蹄",
+      "culture": "steppe",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 39,
+      "regionId": "r_windsteppe",
+      "organizationId": "o_windsteppe_herders",
+      "wealth": 1800,
+      "skills": {
+        "trade": 7,
+        "appraisal": 5,
+        "tactics": 4,
+        "insight": 4
+      },
+      "traits": {
+        "ambition": 0.45,
+        "loyalty": 0.75,
+        "caution": 0.6
+      },
+      "sex": "male",
+      "faithId": "faith_veil",
+      "alignment": {
+        "law": -5,
+        "good": 10
+      },
+      "attributes": {
+        "physique": 13,
+        "agility": 12,
+        "intellect": 12,
+        "willpower": 13,
+        "perception": 13,
+        "charisma": 11
+      }
+    },
+    {
+      "id": "c_horsemoot_broker",
+      "name": "娜仁·马集",
+      "culture": "steppe",
+      "raceId": "human",
+      "classId": "merchant",
+      "age": 33,
+      "regionId": "r_horsemoot",
+      "organizationId": "o_horsemoot_packtrain",
+      "wealth": 2400,
+      "skills": {
+        "negotiation": 7,
+        "trade": 6,
+        "stealth": 4
+      },
+      "traits": {
+        "ambition": 0.6,
+        "loyalty": 0.5,
+        "caution": 0.45
+      },
+      "sex": "female",
+      "faithId": "faith_dawn",
+      "alignment": {
+        "law": -10,
+        "good": 5
+      },
+      "attributes": {
+        "physique": 11,
+        "agility": 14,
+        "intellect": 13,
+        "willpower": 12,
+        "perception": 14,
+        "charisma": 13
+      }
     }
   ]
 }

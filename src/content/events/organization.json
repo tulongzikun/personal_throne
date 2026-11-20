@@ -579,5 +579,41 @@
       "title": "违约",
       "body": "约定还款日过去三天，商队没有出发，担保人开始回避你的目光。"
     }
+  },
+  {
+    "id": "ev_org_caravan_ambush",
+    "domain": "organization",
+    "scope": "organization",
+    "conditions": {
+      "path": "conflict",
+      "op": ">",
+      "value": 0.2
+    },
+    "risk": {
+      "lambda0": 0.025,
+      "terms": [
+        {
+          "path": "conflict",
+          "coef": 1.5
+        }
+      ]
+    },
+    "cooldownDays": 150,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "cash",
+        "value": -190
+      },
+      {
+        "kind": "add",
+        "path": "conflict",
+        "value": 0.03
+      }
+    ],
+    "text": {
+      "title": "商队遇袭",
+      "body": "驮队在山口被截，货值与赎人钱都得字号自己掏。"
+    }
   }
 ]

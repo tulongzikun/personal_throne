@@ -556,5 +556,98 @@
         "share": 0.1
       }
     ]
+  },
+  {
+    "id": "o_emberfall_chapter",
+    "name": "烬瀑教团",
+    "type": "guild",
+    "industry": "service",
+    "foundedDay": 1,
+    "homeRegionId": "r_emberfall",
+    "scale": 0.5,
+    "cash": 5400,
+    "assets": 8600,
+    "liabilities": 1200,
+    "members": 38,
+    "payrollMonthly": 240,
+    "leaderId": "c_emberfall_cantor",
+    "legitimacy": 0.78,
+    "conflict": 0.18,
+    "governance": 0.76,
+    "efficiency": 0.55,
+    "strategy": "steady",
+    "lifecycle": "stable",
+    "shares": [
+      {
+        "characterId": "c_emberfall_cantor",
+        "share": 0.4
+      },
+      {
+        "characterId": "c_covenant_hierarch_seraph",
+        "share": 0.25
+      }
+    ]
+  },
+  {
+    "id": "o_windsteppe_herders",
+    "name": "风蹄牧会",
+    "type": "guild",
+    "industry": "grain",
+    "foundedDay": 1,
+    "homeRegionId": "r_windsteppe",
+    "scale": 0.55,
+    "cash": 3200,
+    "assets": 6800,
+    "liabilities": 1500,
+    "members": 44,
+    "payrollMonthly": 264,
+    "leaderId": "c_windsteppe_herder",
+    "legitimacy": 0.66,
+    "conflict": 0.22,
+    "governance": 0.62,
+    "efficiency": 0.58,
+    "strategy": "steady",
+    "lifecycle": "stable",
+    "shares": [
+      {
+        "characterId": "c_windsteppe_herder",
+        "share": 0.38
+      },
+      {
+        "characterId": "c_steppe_khan_yesu",
+        "share": 0.3
+      }
+    ]
+  },
+  {
+    "id": "o_horsemoot_packtrain",
+    "name": "马集驮队",
+    "type": "company",
+    "industry": "iron",
+    "foundedDay": 1,
+    "homeRegionId": "r_horsemoot",
+    "scale": 0.45,
+    "cash": 4100,
+    "assets": 7200,
+    "liabilities": 2100,
+    "members": 30,
+    "payrollMonthly": 180,
+    "leaderId": "c_horsemoot_broker",
+    "legitimacy": 0.64,
+    "conflict": 0.26,
+    "governance": 0.6,
+    "efficiency": 0.52,
+    "strategy": "contract",
+    "lifecycle": "stable",
+    "shares": [
+      {
+        "characterId": "c_horsemoot_broker",
+        "share": 0.36
+      },
+      {
+        "characterId": "c_steppe_khan_yesu",
+        "share": 0.22
+      }
+    ]
   }
 ]

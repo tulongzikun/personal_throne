@@ -859,5 +859,88 @@
       "title": "大帐议事",
       "body": "各部首领围坐大帐，重新确认推举与贡赋；一场公开议事让权威稍稍回稳。"
     }
+  },
+  {
+    "id": "ev_country_pilgrimage",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "path": "legitimacy",
+      "op": ">",
+      "value": 0.6
+    },
+    "risk": {
+      "lambda0": 0.02,
+      "terms": [
+        {
+          "path": "stability",
+          "coef": 1.4
+        }
+      ]
+    },
+    "cooldownDays": 240,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": 260
+      },
+      {
+        "kind": "add",
+        "path": "legitimacy",
+        "value": 0.02
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.01
+      }
+    ],
+    "text": {
+      "title": "朝圣季",
+      "body": "信徒沿古道涌入，沿途的食宿与香火抽成让国库多了一笔。"
+    }
+  },
+  {
+    "id": "ev_country_mercenary_muster",
+    "domain": "country",
+    "scope": "country",
+    "conditions": {
+      "path": "stability",
+      "op": "<",
+      "value": 0.6
+    },
+    "risk": {
+      "lambda0": 0.015,
+      "terms": [
+        {
+          "path": "debtRatio",
+          "coef": 2
+        }
+      ]
+    },
+    "exclusivity": "country_order",
+    "cooldownDays": 300,
+    "effects": [
+      {
+        "kind": "add",
+        "path": "treasury",
+        "value": -180
+      },
+      {
+        "kind": "add",
+        "path": "military",
+        "value": 40
+      },
+      {
+        "kind": "add",
+        "path": "stability",
+        "value": 0.03
+      }
+    ],
+    "text": {
+      "title": "雇佣兵集结",
+      "body": "边境不稳，朝廷只好花钱雇人；队伍一到，人心稍定，军费也涨了。"
+    }
   }
 ]

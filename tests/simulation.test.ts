@@ -69,8 +69,8 @@ describe('模拟确定性（R1）', () => {
 
   it('世界内容包含 MVP 规模的实体', () => {
     expect(Object.keys(makeWorld().regions).length).toBeGreaterThanOrEqual(4);
-    expect(Object.keys(makeWorld().organizations).length).toBe(18);
-    expect(Object.keys(makeWorld().characters).length).toBe(51);
-    expect(content.events.length).toBeGreaterThanOrEqual(18);
+    expect(Object.keys(makeWorld().organizations).length).toBe(21);
+    expect(Object.keys(makeWorld().characters).length).toBe(54);
+    expect(content.events.length).toBeGreaterThanOrEqual(22);
   });
 });

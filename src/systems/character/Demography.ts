@@ -202,12 +202,21 @@ function familyNameOf(character: Character): string {
 export function linkFamily(state: WorldState, a: Character, b: Character): FamilyId {
   const aFamily = a.familyId;
   const bFamily = b.familyId;
+  const leaveFamily = (member: Character, familyId: FamilyId | null): void => {
+    if (familyId === null) return;
+    const family = state.families[familyId];
+    if (!family) return;
+    family.memberIds = family.memberIds.filter((id) => id !== member.id);
+    if (family.memberIds.length === 0) delete state.families[familyId];
+  };
   const mergeInto = aFamily === null ? bFamily : bFamily === null ? aFamily : null;
 
   if (mergeInto !== null) {
     const existing = state.families[mergeInto];
     if (existing) {
-      existing.memberIds.push(a.id, b.id);
+      leaveFamily(a, a.familyId === mergeInto ? null : a.familyId);
+      leaveFamily(b, b.familyId === mergeInto ? null : b.familyId);
+      existing.memberIds = [...new Set([...existing.memberIds, a.id, b.id])];
     } else {
       state.families[mergeInto] = {
         id: mergeInto,
@@ -228,7 +237,9 @@ export function linkFamily(state: WorldState, a: Character, b: Character): Famil
     culture: cultureOf(a.regionId),
     memberIds: [],
   };
-  family.memberIds.push(a.id, b.id);
+  leaveFamily(a, aFamily);
+  leaveFamily(b, bFamily);
+  family.memberIds = [...new Set([...family.memberIds, a.id, b.id])];
   state.families[familyId] = family;
   a.familyId = familyId;
   b.familyId = familyId;
