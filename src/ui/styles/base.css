@@ -2557,3 +2557,34 @@ select.input {
 .suggestions__go {
   align-self: center;
 }
+
+/* 此地的机会：把「为什么要来」写成可算账的条目。 */
+.opportunities {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(217, 180, 91, 0.06);
+}
+.opportunities__list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text);
+}
+.opportunities__list li::marker {
+  color: var(--gold);
+}
+.opportunities__empty {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+.opportunities__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}

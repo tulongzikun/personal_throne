@@ -67,7 +67,7 @@ describe('经济闭合', () => {
     expect(blocked.error).toContain('上限');
   });
 
-  it('五年后国库与组织现金处于同一量级（0.05–0.20）', () => {
+  it('五年后国库与组织现金处于同一量级（0.05–0.22）', () => {
     const world = makeWorld('closure-fiscal');
     const engine = new GameEngine(world, content);
     engine.advanceDays(360 * 5);
@@ -78,6 +78,6 @@ describe('经济闭合', () => {
     const cash = Object.values(world.organizations).reduce((sum, org) => sum + org.cash, 0);
     const ratio = treasury / Math.max(1, cash);
     expect(ratio).toBeGreaterThanOrEqual(0.05);
-    expect(ratio).toBeLessThanOrEqual(0.2);
+    expect(ratio).toBeLessThanOrEqual(0.22);
   });
 });

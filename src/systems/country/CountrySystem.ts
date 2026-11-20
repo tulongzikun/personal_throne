@@ -86,7 +86,7 @@ export function settleMonthlyCountry(
     // 既是财政泄压阀，也让"长期盈余 → 国库无限膨胀"不发生。
     const reserveTarget = baseExpense * 30;
     const publicWorks =
-      country.treasury > reserveTarget ? Math.round((country.treasury - reserveTarget) * 0.5) : 0;
+      country.treasury > reserveTarget ? Math.round((country.treasury - reserveTarget) * 0.55) : 0;
     country.treasury -= publicWorks;
 
     country.monthlyRevenue = revenue;

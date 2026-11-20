@@ -14,6 +14,7 @@
 
 import type { OrgId, WorldContent, WorldState } from '../../core/WorldState';
 import { marketKeyOf, sortedIds } from '../../core/WorldState';
+import { careerSalary } from '../character/SkillEffects';
 
 export interface FinanceEntry {
   readonly orgId: OrgId;
@@ -79,8 +80,10 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     org.lastMonthTariff = 0;
     org.lastMonthTradeRevenue = 0;
 
+    const careerWages = careerWageBill(state, org);
+    const totalWages = payroll + careerWages;
     const grossProfit =
-      revenue + tradeRevenue - tradeCogs - materialCost - payroll - admin - interest;
+      revenue + tradeRevenue - tradeCogs - materialCost - totalWages - admin - interest;
     // 有效税率随国家税制变化：政策税率 0.1 → 基准的 75%，0.35 → 基准的 137.5%。
     const homeRegion = state.regions[org.homeRegionId];
     const taxCountry = homeRegion ? state.countries[homeRegion.countryId] : undefined;
@@ -94,15 +97,15 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     const equityBefore = equityOf(org);
     const net =
       org.cash + revenue + tradeRevenue - tradeCogs - materialCost - admin - interest - tax;
-    let wagesPaid = payroll;
+    let wagesPaid = totalWages;
     let unpaid = 0;
     let arrears = 0;
     if (net < 0) {
-      unpaid = payroll;
+      unpaid = totalWages;
       wagesPaid = 0;
       arrears = -net;
-    } else if (net < payroll) {
-      unpaid = payroll - net;
+    } else if (net < totalWages) {
+      unpaid = totalWages - net;
       wagesPaid = net;
     }
     org.cash = Math.max(0, net - wagesPaid);
@@ -110,7 +113,7 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     org.liabilities += unpaid + arrears;
 
     org.lastMonthRevenue = revenue + tradeRevenue;
-    org.lastMonthCost = tradeCogs + materialCost + payroll + admin + interest + tax;
+    org.lastMonthCost = tradeCogs + materialCost + totalWages + admin + interest + tax;
     org.lastMonthProfit = grossProfit - tax;
     state.stats.profitTotal += org.lastMonthProfit;
     org.lastMonthTax = tax;
@@ -120,6 +123,16 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     const region = state.regions[org.homeRegionId];
     const country = region ? state.countries[region.countryId] : undefined;
     if (country && tax > 0) country.treasury += tax;
+
+    // 生涯月俸：工资已经计入支出，现金也扣过，这里把钱记到成员名下；
+    // 发不出全额工资时按比例不发，避免凭空造钱。
+    if (careerWages > 0 && wagesPaid >= totalWages) {
+      for (const member of Object.values(state.characters)) {
+        if (!member?.alive || member.organizationId !== org.id) continue;
+        const salary = careerSalary(member.careerRank);
+        if (salary > 0) member.wealth += salary;
+      }
+    }
 
     // 现金恢复后先补欠薪：现金↓、负债↓，权益不变。
     if (org.unpaidWages > 0 && org.cash > payroll * 2) {
@@ -275,4 +288,14 @@ function fallbackPrice(state: WorldState, org: { homeRegionId: string; industry:
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+/** 组织里所有有生涯等级的成员，每月该拿的月俸合计。 */
+function careerWageBill(state: WorldState, org: { id: string }): number {
+  let total = 0;
+  for (const member of Object.values(state.characters)) {
+    if (!member?.alive || member.organizationId !== org.id) continue;
+    total += careerSalary(member.careerRank);
+  }
+  return total;
 }

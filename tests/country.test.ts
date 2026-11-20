@@ -7,6 +7,7 @@ import { content, makeWorld } from './helpers/index';
 import { applyCommand } from '../src/core/CommandBus';
 import { Random } from '../src/core/Random';
 import { monthKeyOf } from '../src/core/WorldState';
+import { capitalOf } from '../src/systems/country/Offices';
 import { settleMonthlyCountry } from '../src/systems/country/CountrySystem';
 import {
   capitalWeight,
@@ -111,6 +112,11 @@ describe('游说命令', () => {
     const country = world.countries['c_kingdom'];
     expect(country).toBeDefined();
     if (!country) return;
+    const player = world.characters[world.playerId]!;
+    player.regionId = capitalOf(world, 'c_kingdom')!;
+    const cashBefore = new Map(
+      Object.values(world.organizations).map((org) => [org.id, org.cash] as const),
+    );
     const before = country.policies.tariffRate;
 
     const result = applyCommand(
@@ -121,7 +127,9 @@ describe('游说命令', () => {
 
     expect(result.ok).toBe(true);
     expect(country.policies.tariffRate).toBeLessThan(before);
-    const spent = Object.values(world.organizations).some((org) => org.cash < org.assets);
+    const spent = Object.values(world.organizations).some(
+      (org) => org.cash < (cashBefore.get(org.id) ?? org.cash),
+    );
     expect(spent).toBe(true);
   });
 

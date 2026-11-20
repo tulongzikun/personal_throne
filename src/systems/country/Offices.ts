@@ -13,6 +13,7 @@ import type {
   CharacterOffice,
   Country,
   CountryOffice,
+  RegionId,
   WorldState,
 } from '../../core/WorldState';
 import { sortedIds } from '../../core/WorldState';
@@ -239,6 +240,14 @@ export function applyForOffice(
   if (!country) return { ok: false, reason: '这个国家不存在' };
   const character = state.characters[characterId];
   if (!character || !character.alive) return { ok: false, reason: '你不在人世' };
+  const capital = capitalOf(state, countryId);
+  const here = state.regions[character.regionId]?.name ?? character.regionId;
+  if (capital && character.regionId !== capital) {
+    return {
+      ok: false,
+      reason: `谋求官职要亲赴${country.name}的首都${state.regions[capital]?.name ?? ''}（你现在在${here}）`,
+    };
+  }
   if (!residents(state, country).some((resident) => resident.id === characterId)) {
     return { ok: false, reason: `你不在${country.name}居住，谋求不了这里的官职` };
   }
@@ -290,4 +299,27 @@ export function applyForOffice(
   });
 
   return { ok: true, reason: `${character.name} 出任${country.name}${seat.title}` };
+}
+
+/**
+ * 国家首都：优先取统治者的所在地，统治者不在国内则退化为人口最多的地区。
+ * 「谋求公职必须亲赴首都」这条规则依赖它，所以单列出来便于 UI 复用。
+ */
+export function capitalOf(state: WorldState, countryId: string): RegionId | null {
+  const country = state.countries[countryId];
+  if (!country) return null;
+  const ruler = country.rulerId ? state.characters[country.rulerId] : undefined;
+  const rulerRegion = ruler?.alive ? ruler.regionId : null;
+  if (rulerRegion && country.regionIds.includes(rulerRegion)) return rulerRegion;
+  let best: RegionId | null = null;
+  let bestPopulation = -1;
+  for (const regionId of country.regionIds) {
+    const region = state.regions[regionId];
+    if (!region) continue;
+    if (region.population > bestPopulation) {
+      bestPopulation = region.population;
+      best = region.id;
+    }
+  }
+  return best;
 }

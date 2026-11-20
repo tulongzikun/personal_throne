@@ -22,7 +22,7 @@ export type ContractId = string;
 export type ArmyId = string;
 export type EntityId = string;
 
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 /* ------------------------------------------------------------------ */
 /* 人物档案（schema，M4）                                               */
@@ -859,6 +859,8 @@ export interface WorldState {
   characterSeq: number;
   /** 家族表：M4 出生/婚姻时写入。 */
   families: Record<FamilyId, Family>;
+  /** 已考察的市场：regionId → 情报到期日（含当日）。 */
+  inspections: Record<RegionId, number>;
   stats: WorldStats;
 }
 
@@ -1156,6 +1158,7 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
     tiers,
     pendingEvents: [],
     pendingChoices: [],
+    inspections: {},
     rngCounters: {},
     cooldowns: {},
     history: [],

@@ -6,6 +6,7 @@ import { Phase } from '../src/core/GameClock';
 import { GameEngine } from '../src/core/GameEngine';
 import { Random } from '../src/core/Random';
 import { cloneWorld, createWorld, marketKeyOf } from '../src/core/WorldState';
+import { capitalOf } from '../src/systems/country/Offices';
 import { runPolicyRound } from '../src/systems/country/PolicySystem';
 import { signLoanContract } from '../src/systems/organization/ContractSystem';
 import { equityOf } from '../src/systems/organization/Finance';
@@ -133,6 +134,8 @@ describe('§13 B 商业干预', () => {
     const low = cloneWorld(base);
     const high = cloneWorld(base);
 
+    // 游说要亲赴首都。
+    low.characters[low.playerId]!.regionId = capitalOf(low, 'c_league')!;
     const lobby = applyCommand(
       low,
       { kind: 'lobby', countryId: 'c_league', policy: 'tariffRate', delta: -0.04 },

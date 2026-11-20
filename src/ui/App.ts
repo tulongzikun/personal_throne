@@ -97,7 +97,7 @@ export class App {
 
   private activeTab: TabId = 'region';
   private selectedRegionId: string | null = null;
-  private speed: Speed = 0;
+  private speed: Speed = 1;
   private lastSpeed: Speed = 1;
   private observing = false;
   private timer: number | null = null;
@@ -227,6 +227,8 @@ export class App {
     this.lastAutoSaveDay = state.clock.day;
 
     this.switchTab('region');
+    // 进入游戏即以 1× 推进；玩家可随时暂停。
+    this.setSpeed(1);
     this.refresh(true);
     if (message) this.notify(message, 'ok');
     if (options.tour !== false) this.tour.maybeStart();

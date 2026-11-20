@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { content } from '../src/content/index';
-import { influenceOf, officeSeatsFor, syncOffices } from '../src/systems/country/Offices';
+import {
+  capitalOf,
+  influenceOf,
+  officeSeatsFor,
+  syncOffices,
+} from '../src/systems/country/Offices';
 import { applyCommand } from '../src/core/CommandBus';
 import { makeEngine, makeWorld } from './helpers/index';
 
@@ -83,6 +88,10 @@ describe('谋求公职', () => {
     const state = engine.state;
     const player = state.characters[state.playerId]!;
     const home = state.regions[player.homeRegionId]!.countryId;
+    // 谋职须亲赴首都。
+    const capital = capitalOf(state, home)!;
+    player.regionId = capital;
+    player.location.regionId = capital;
     return { engine, state, player, home };
   }
 
@@ -140,6 +149,7 @@ describe('谋求公职', () => {
   it('不在该国居住时拒绝', () => {
     const { engine, state, player, home } = setup();
     const other = Object.values(state.countries).find((item) => item.id !== home)!;
+    player.regionId = other.regionIds[0]!;
     player.location.regionId = other.regionIds[0]!;
     player.homeRegionId = other.regionIds[0]!;
     player.skills.trade = 20;

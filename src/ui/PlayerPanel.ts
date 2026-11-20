@@ -9,7 +9,18 @@ import type { Organization } from '../core/WorldState';
 import type { UiDeps } from './context';
 import { button, clear, el, fmtMoney, fmtPct } from './dom';
 import { alignmentLabel } from '../systems/character/Profile';
-import { CAREER_CLASSES, careerTitle, canSwitchCareer } from '../systems/character/Career';
+import {
+  CAREER_CLASSES,
+  careerLadder,
+  careerTitle,
+  canSwitchCareer,
+  nextCareerStep,
+} from '../systems/character/Career';
+import {
+  careerSalary,
+  skillEffectSummary,
+  tradeCarryCapacity,
+} from '../systems/character/SkillEffects';
 import { ambitionOf, chapterOf } from '../systems/goals/Ambition';
 import { CLASS_LABELS, RACE_LABELS, SKILL_LABELS, SEX_LABELS, labelOf } from './labels';
 
@@ -70,9 +81,28 @@ export class PlayerPanel {
     rows.append(
       this.row(
         '生涯',
-        `${careerTitle(player.classId, player.careerRank)}（${player.careerRank}/3）`,
+        `${careerTitle(player.classId, player.careerRank)}（${player.careerRank}/3）· 月俸 ${careerSalary(player.careerRank)} 铜`,
       ),
     );
+    const nextStep = nextCareerStep(player);
+    if (nextStep) {
+      const wealthOk = player.wealth >= nextStep.minWealth;
+      const skill = careerLadder(player.classId)[0]
+        ? player.classId === 'merchant'
+          ? 'trade'
+          : player.classId === 'mercenary'
+            ? 'melee'
+            : 'persuasion'
+        : 'trade';
+      const current = player.skills[skill] ?? 0;
+      const skillOk = current >= nextStep.minSkill;
+      rows.append(
+        this.row(
+          '下一阶',
+          `${nextStep.title}：${nextStep.minWealth} 铜（${wealthOk ? '✓' : fmtMoney(player.wealth)}）· ${labelOf(SKILL_LABELS, skill)} ${nextStep.minSkill}（${skillOk ? '✓' : current}）`,
+        ),
+      );
+    }
     const ambition = ambitionOf(state);
     const chapter = chapterOf(state);
     if (ambition) {
@@ -116,6 +146,7 @@ export class PlayerPanel {
           'small',
         );
         action.disabled = player.wealth < cost;
+        action.title = `${skillEffectSummary(skill, level)}；练到 ${level + 1} 级：${skillEffectSummary(skill, level + 1)}`;
         train.append(action);
       }
       this.host.append(train);
@@ -127,7 +158,11 @@ export class PlayerPanel {
     quick.append(
       this.actionGroup('修养', [this.act('休息', { kind: 'rest' }, player.health >= 100)]),
       this.actionGroup('生计', [
-        this.act('贩货 5 单位', { kind: 'trade_goods', goodId: 'grain', units: 5 }),
+        this.act(`贩货 ${tradeCarryCapacity(player)} 单位`, {
+          kind: 'trade_goods',
+          goodId: 'grain',
+          units: tradeCarryCapacity(player),
+        }),
       ]),
       this.actionGroup('钱庄', [
         this.act('存 100', { kind: 'deposit', amount: 100 }, player.wealth < 100),
@@ -148,7 +183,9 @@ export class PlayerPanel {
     if (skillEntries.length > 0) {
       const chips = el('div', 'player-card__chips');
       for (const [name, value] of skillEntries) {
-        chips.append(el('span', 'chip', `${labelOf(SKILL_LABELS, name)} ${value}`));
+        const chip = el('span', 'chip', `${labelOf(SKILL_LABELS, name)} ${value}`);
+        chip.title = skillEffectSummary(name, value);
+        chips.append(chip);
       }
       this.host.append(chips);
     }

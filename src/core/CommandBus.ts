@@ -42,7 +42,13 @@ import {
   sharePrice,
 } from '../systems/organization/Shares';
 import { shareOf } from '../systems/organization/Organization';
-import { applyForOffice } from '../systems/country/Offices';
+import { applyForOffice, capitalOf, influenceOf } from '../systems/country/Offices';
+import {
+  lobbyBonus,
+  purchaseFactor,
+  saleFactor,
+  tradeCarryCapacity,
+} from '../systems/character/SkillEffects';
 import {
   actionBlocker,
   heal,
@@ -126,7 +132,11 @@ export type Command =
   | (CommandBase & { kind: 'gossip' })
   | (CommandBase & { kind: 'rest' })
   | (CommandBase & { kind: 'deposit'; orgId?: OrgId; amount: number })
-  | (CommandBase & { kind: 'withdraw'; orgId?: OrgId; amount: number });
+  | (CommandBase & { kind: 'withdraw'; orgId?: OrgId; amount: number })
+  /** 赴宴：只能在首都使用，换取与统治者/大臣的关系。 */
+  | (CommandBase & { kind: 'attend_court' })
+  /** 考察市场：在异地花 1 点行动力，30 天内看得见该地实时价格。 */
+  | (CommandBase & { kind: 'inspect_market'; regionId: RegionId });
 
 export type CommandKind = Command['kind'];
 
@@ -190,6 +200,12 @@ export function applyCommand(
       const org = state.organizations[command.orgId];
       if (!org) return fail(`组织 ${command.orgId} 不存在`);
       if (!canControl(state, org.id)) return fail('你没有该组织的控制权');
+      const player = state.characters[state.playerId]!;
+      if (player.regionId !== org.homeRegionId) {
+        return fail(
+          `签约要亲自到${org.name}的总部${state.regions[org.homeRegionId]?.name ?? ''}（你现在在${state.regions[player.regionId]?.name ?? ''}）`,
+        );
+      }
       if (!isAmount(command.amount)) return fail('投资额必须是正整数铜币');
       if (org.cash < command.amount)
         return fail(`现金不足：需要 ${command.amount}，现有 ${org.cash}`);
@@ -342,6 +358,12 @@ export function applyCommand(
       const org = state.organizations[command.orgId];
       if (!org) return fail(`组织 ${command.orgId} 不存在`);
       if (!canControl(state, org.id)) return fail('你没有该组织的控制权');
+      const signer = state.characters[state.playerId]!;
+      if (signer.regionId !== org.homeRegionId) {
+        return fail(
+          `签约要亲自到${org.name}的总部${state.regions[org.homeRegionId]?.name ?? ''}（你现在在${state.regions[signer.regionId]?.name ?? ''}）`,
+        );
+      }
       if (!Number.isInteger(command.months) || command.months < 1 || command.months > 24) {
         return fail('契约期限必须是 1–24 个月');
       }
@@ -571,9 +593,18 @@ export function applyCommand(
         return fail('游说强度必须是非零有限数');
       }
       if (Math.abs(command.delta) > 0.2) return fail('单次游说幅度不得超过 0.2');
+      const player = state.characters[state.playerId]!;
+      const capital = capitalOf(state, country.id);
+      const seated = influenceOf(state, player.id, country.id) >= 0.4;
+      if (!seated && capital && player.regionId !== capital) {
+        return fail(
+          `游说要在${country.name}首都${state.regions[capital]?.name ?? ''}当面谈（远程游说需要至少 0.4 影响力）`,
+        );
+      }
+      const effectiveDelta = command.delta + Math.sign(command.delta) * lobbyBonus(player);
       const current = country.policies[command.policy];
       if (typeof current !== 'number') return fail(`未知政策 ${command.policy}`);
-      const cost = Math.max(100, Math.round(Math.abs(command.delta) * 5_000));
+      const cost = Math.max(100, Math.round(Math.abs(effectiveDelta) * 5_000));
       const org = Object.values(state.organizations).find(
         (candidate) => canControl(state, candidate.id) && candidate.cash >= cost,
       );
@@ -581,12 +612,12 @@ export function applyCommand(
       org.cash -= cost;
       const next = Math.min(
         POLICY_MAX,
-        Math.max(POLICY_MIN, Number((current + command.delta).toFixed(4))),
+        Math.max(POLICY_MIN, Number((current + effectiveDelta).toFixed(4))),
       );
       country.policies[command.policy] = next;
       return {
         ok: true,
-        summary: `${org.name} 游说 ${country.name}：${command.policy} ${current} → ${next}，花费 ${cost}`,
+        summary: `${org.name} 游说 ${country.name}：${command.policy} ${current} → ${next}（说服加成 +${lobbyBonus(player).toFixed(2)}），花费 ${cost}`,
         refs: [
           { kind: 'country', id: country.id },
           { kind: 'organization', id: org.id },
@@ -805,7 +836,11 @@ export function applyCommand(
       const blocked = actionBlocker(state, state.playerId);
       if (blocked) return fail(blocked);
       const player = state.characters[state.playerId]!;
+      const capacity = tradeCarryCapacity(player);
       const units = Math.max(1, Math.round(command.units));
+      if (units > capacity) {
+        return fail(`一次最多贩 ${capacity} 单位（贸易每级 +1）`);
+      }
       const sourceKey = marketKeyOf(player.regionId, command.goodId);
       const source = state.markets[sourceKey];
       if (!source) return fail('本地没有这种货');
@@ -817,20 +852,24 @@ export function applyCommand(
         .map((link) => {
           const market = state.markets[marketKeyOf(link.id, command.goodId)];
           return market
-            ? { link, market, margin: market.price * 0.95 - source.price * 1.05 }
+            ? {
+                link,
+                market,
+                margin: market.price * saleFactor(player) - source.price * purchaseFactor(player),
+              }
             : null;
         })
         .filter((item): item is NonNullable<typeof item> => item !== null)
         .sort((a, b) => b.margin - a.margin);
       const best = candidates[0];
       if (!best) return fail('没有可去的相邻市场');
-      const buy = Math.round(source.price * 1.05) * units;
+      const buy = Math.round(source.price * purchaseFactor(player)) * units;
       // 运费按每单位每天 0.05 铜计：4 天路程约 0.2 铜/单位，量大利薄。
       const freight = Math.max(1, Math.round(best.link.days * units * 0.05));
       if (player.wealth < buy + freight) {
         return fail(`本钱不足：需要 ${buy + freight} 铜币`);
       }
-      const revenue = Math.round(best.market.price * 0.95) * units;
+      const revenue = Math.round(best.market.price * saleFactor(player)) * units;
       const profit = revenue - buy - freight;
       if (profit <= 0) return fail('这趟货不赚钱，换个地方或等价格变化');
       player.wealth += profit;
@@ -839,7 +878,7 @@ export function applyCommand(
       spendAction(player, 1);
       return {
         ok: true,
-        summary: `你贩了 ${units} 单位${content.goods.find((good) => good.id === command.goodId)?.name ?? command.goodId}，净赚 ${profit} 铜币`,
+        summary: `你贩了 ${units} 单位${content.goods.find((good) => good.id === command.goodId)?.name ?? command.goodId}（贸易 ${player.skills.trade ?? 0} 级让利 ${Math.round((1.05 - purchaseFactor(player)) * 100)}%），净赚 ${profit} 铜币`,
         refs: [{ kind: 'region', id: best.link.id }],
       };
     }
@@ -903,6 +942,60 @@ export function applyCommand(
             ? `你在市集上打听风声，听说${names.join('、')}最近有些麻烦（洞察 +${insight < cap ? 1 : 0}）`
             : '你在市集上转了一圈，只听到些无关紧要的闲话',
         refs: [],
+      };
+    }
+
+    case 'attend_court': {
+      const blocked = actionBlocker(state, state.playerId);
+      if (blocked) return fail(blocked);
+      const player = state.characters[state.playerId]!;
+      const own = ownCountryOf(state);
+      if (!own) return fail('你还没有效忠的国家');
+      const capital = capitalOf(state, own.id);
+      if (!capital || player.regionId !== capital) {
+        return fail(
+          `王庭不在${state.regions[player.regionId]?.name ?? '此地'}：赴宴要去${state.regions[capital ?? '']?.name ?? '首都'}`,
+        );
+      }
+      if (player.wealth < 50) return fail('赴宴至少要 50 铜币的置装费');
+      const hosts = [own.rulerId, ...own.offices.map((office) => office.holderId)]
+        .map((id) => state.characters[id])
+        .filter((character): character is NonNullable<typeof character> =>
+          Boolean(character?.alive),
+        );
+      player.wealth -= 50;
+      spendAction(player, 1);
+      let gain = 0;
+      for (const host of hosts.slice(0, 2)) {
+        bumpRelation(state, player.id, host.id, 'ally', 8);
+        gain += 8;
+      }
+      const hostName = hosts[0]?.name ?? own.name;
+      return {
+        ok: true,
+        summary: `你在${own.name}王庭赴宴，与${hostName}等人寒暄（关系 +${gain || 8}，花费 50 铜）`,
+        refs: [{ kind: 'country', id: own.id }],
+      };
+    }
+
+    case 'inspect_market': {
+      const blocked = actionBlocker(state, state.playerId);
+      if (blocked) return fail(blocked);
+      const player = state.characters[state.playerId]!;
+      const region = state.regions[command.regionId];
+      if (!region) return fail('目标地区不存在');
+      if (player.regionId !== command.regionId) {
+        return fail('考察市场要人到了当地才行（先「前往」再考察）');
+      }
+      if ((state.inspections[region.id] ?? 0) > state.clock.day) {
+        return fail('你最近已经考察过这里了');
+      }
+      state.inspections[region.id] = state.clock.day + 30;
+      spendAction(player, 1);
+      return {
+        ok: true,
+        summary: `你花了一天摸清${region.name}的行情：未来 30 天这里的价格对你是透明的`,
+        refs: [{ kind: 'region', id: region.id }],
       };
     }
 
@@ -1072,5 +1165,9 @@ export function describeCommand(command: Command): string {
       return `存入 ${command.amount} 铜币`;
     case 'withdraw':
       return `取出 ${command.amount} 铜币`;
+    case 'attend_court':
+      return '赴宴';
+    case 'inspect_market':
+      return `考察 ${command.regionId} 的市场`;
   }
 }
