@@ -2429,6 +2429,61 @@ select.input {
   color: var(--muted, #9a8f7c);
 }
 
+/* 行动分组：修养 / 生计 / 钱庄各自成行，动作多了也不会糊成一团。 */
+.action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 0 2px;
+  border-top: 1px dashed var(--line, rgba(0, 0, 0, 0.12));
+}
+
+.action-group:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.action-group__title {
+  font-size: 0.74em;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft, #6c6154);
+}
+
+.action-group__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.player-card__hint {
+  width: 100%;
+  margin: 4px 0 0;
+  font-size: 0.74em;
+  line-height: 1.5;
+  color: var(--ink-soft, #6c6154);
+}
+
+/* 地区页的「前往」：路程、路费与消耗写清楚，按钮在主行动色上。 */
+.travel {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.12));
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface-2, rgba(0, 0, 0, 0.02));
+}
+
+.travel .section-title {
+  margin-top: 0;
+}
+
+.travel__hint {
+  margin: 0 0 var(--space-2);
+  font-size: 0.84em;
+  line-height: 1.55;
+  color: var(--ink-soft, #6c6154);
+}
+
 /* 建议事项：左下角常驻，给出「下一步做什么」的三条真实建议。 */
 .suggestions {
   display: flex;

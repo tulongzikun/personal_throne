@@ -6,7 +6,6 @@
 
 import type { Command } from '../core/CommandBus';
 import type { Organization } from '../core/WorldState';
-import { neighborsOf } from '../systems/character/Activity';
 import type { UiDeps } from './context';
 import { button, clear, el, fmtMoney, fmtPct } from './dom';
 import { alignmentLabel } from '../systems/character/Profile';
@@ -122,23 +121,25 @@ export class PlayerPanel {
       this.host.append(train);
     }
 
-    // 个人动词：移动 / 贩货 / 休息 / 存取。每项消耗 1 点行动力（移动 1 点 + 2 健康）。
+    // 个人动词按用途分组，避免十几个按钮堆成一团。移动已移到右侧地区页（点城市 → 前往）。
     const quick = el('div', 'player-card__train');
     quick.append(el('p', 'player-card__train-title', '个人行动（各耗 1 行动力）'));
-    quick.append(this.act('休息', { kind: 'rest' }, player.health >= 100));
-    quick.append(this.act('贩货 5 单位', { kind: 'trade_goods', goodId: 'grain', units: 5 }));
-    quick.append(this.act('存 100', { kind: 'deposit', amount: 100 }, player.wealth < 100));
     quick.append(
-      this.act(
-        '取 100',
-        { kind: 'withdraw', amount: 100 },
-        Object.values(player.deposits).reduce((sum, value) => sum + value, 0) < 100,
-      ),
+      this.actionGroup('修养', [this.act('休息', { kind: 'rest' }, player.health >= 100)]),
+      this.actionGroup('生计', [
+        this.act('贩货 5 单位', { kind: 'trade_goods', goodId: 'grain', units: 5 }),
+      ]),
+      this.actionGroup('钱庄', [
+        this.act('存 100', { kind: 'deposit', amount: 100 }, player.wealth < 100),
+        this.act(
+          '取 100',
+          { kind: 'withdraw', amount: 100 },
+          Object.values(player.deposits).reduce((sum, value) => sum + value, 0) < 100,
+        ),
+      ]),
     );
-    for (const link of neighborsOf(state, player.regionId).slice(0, 3)) {
-      const name = state.regions[link.id]?.name ?? link.id;
-      quick.append(this.act(`去${name}`, { kind: 'move', regionId: link.id }));
-    }
+    const travelHint = el('p', 'player-card__hint', '移动：在地图或右侧地区页点城市 → 「前往」。');
+    quick.append(travelHint);
     this.host.append(quick);
 
     const skillEntries = Object.entries(player.skills)
@@ -185,6 +186,15 @@ export class PlayerPanel {
       }
     }
     this.host.append(actions);
+  }
+
+  private actionGroup(title: string, buttons: HTMLButtonElement[]): HTMLElement {
+    const group = el('div', 'action-group');
+    group.append(el('span', 'action-group__title', title));
+    const row = el('div', 'action-group__buttons');
+    for (const element of buttons) row.append(element);
+    group.append(row);
+    return group;
   }
 
   private act(label: string, command: Command, disabled = false): HTMLButtonElement {

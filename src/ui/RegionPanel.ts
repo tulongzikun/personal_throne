@@ -76,6 +76,48 @@ export class RegionPanel {
     );
     this.host.append(stats);
 
+    // 前往：只有相邻商路可直达；显示天数、路费与消耗，让玩家在决定前知道代价。
+    const player = state.characters[state.playerId];
+    if (player) {
+      const travel = el('div', 'travel');
+      travel.append(el('h3', 'section-title', '前往'));
+      if (!player.alive) {
+        travel.append(el('p', 'travel__hint', '你已经不在了，这个身体到不了任何地方。'));
+      } else if (region.id === player.regionId) {
+        travel.append(el('p', 'travel__hint', '你正在此地。'));
+      } else {
+        const hop = state.regions[player.regionId]?.links.find((link) => link.to === region.id);
+        if (!hop) {
+          travel.append(el('p', 'travel__hint', '没有直达商路：先到相邻地区，再从这里转乘。'));
+        } else {
+          const fee = hop.days * 2;
+          travel.append(
+            el(
+              'p',
+              'travel__hint',
+              `路程 ${hop.days} 天 · 路费 ${fmtMoney(fee)} · 消耗 1 行动力与 2 健康`,
+            ),
+          );
+          const go = el('button', 'btn btn--gold', '前往');
+          go.type = 'button';
+          go.disabled = player.actionPoints <= 0 || player.health <= 5 || player.wealth < fee;
+          go.addEventListener('click', () => {
+            const result = this.deps.dispatch({ kind: 'move', regionId: region.id });
+            this.deps.notify(
+              result.ok ? (result.summary ?? '启程') : (result.error ?? '无法前往'),
+              result.ok ? 'ok' : 'error',
+            );
+            if (result.ok && result.travelDays !== undefined) {
+              this.deps.advanceDays(result.travelDays);
+            }
+            this.deps.refresh();
+          });
+          travel.append(go);
+        }
+      }
+      this.host.append(travel);
+    }
+
     this.host.append(el('h3', 'section-title', '市场行情'));
     const table = el('table', 'table');
     const thead = el('thead');
