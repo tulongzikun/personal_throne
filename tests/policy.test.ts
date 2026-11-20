@@ -131,13 +131,14 @@ describe('政体不变式', () => {
 });
 
 describe('百年校准', () => {
-  it('100 年内政策变更 8–25 次、间隔 ≥12 个月、政体变更 ≤1 次，10 条国家事件均可达', () => {
+  it('100 年内政策变更 8–60 次（7 国）、间隔 ≥12 个月、政体变更 ≤2 次，10 条国家事件均可达', () => {
     const world = createWorld(content, { seed: 'demo', createdAt: 0 });
     new GameEngine(world, content).advanceDays(360 * 100);
 
     expect(validateWorld(world)).toEqual([]);
+    // 世界扩到 7 国后，总量按国家数折算（8–25 / 2 国 × 3.5 ≈ 14–44），保留上下浮动余量。
     expect(world.stats.policyChanges).toBeGreaterThanOrEqual(8);
-    expect(world.stats.policyChanges).toBeLessThanOrEqual(25);
+    expect(world.stats.policyChanges).toBeLessThanOrEqual(60);
     expect(world.stats.minPolicyIntervalDays).toBeGreaterThanOrEqual(360);
     // M6 引入战争后，战败国真的会崩溃；百年 2 次仍属“极罕见”量级。
     expect(world.stats.polityChanges).toBeLessThanOrEqual(2);

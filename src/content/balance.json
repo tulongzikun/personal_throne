@@ -113,11 +113,11 @@
     "tariffEnabled": true
   },
   "policy": {
-    "cooldownMonths": 96,
+    "cooldownMonths": 72,
     "proposalCostBase": 120,
     "proposalCostRate": 0.02,
     "supportThreshold": 0.4,
-    "minPressure": 0.685,
+    "minPressure": 0.78,
     "maxDeltaPerRound": 0.16,
     "polityChangeMonths": 36,
     "polityChangeLegitimacy": 0.14,

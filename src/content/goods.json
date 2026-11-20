@@ -7,7 +7,7 @@
     "floorRatio": 0.8,
     "ceilingRatio": 2,
     "consumptionPerCapita": 0.012,
-    "subsistenceShare": 0.85
+    "subsistenceShare": 0.95
   },
   {
     "id": "iron",

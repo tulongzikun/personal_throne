@@ -25,12 +25,12 @@
         {
           "to": "r_portlumen",
           "days": 8,
-          "capacity": 400
+          "capacity": 600
         },
         {
           "to": "r_windsteppe",
           "days": 6,
-          "capacity": 350
+          "capacity": 500
         }
       ]
     },
@@ -46,7 +46,7 @@
         {
           "to": "r_ironpeak",
           "days": 4,
-          "capacity": 300
+          "capacity": 600
         },
         {
           "to": "r_redhollow",
