@@ -114,8 +114,10 @@ export function handleDeath(
       const next = state.characters[heir];
       if (next) next.organizationId = orgId;
       successions.push({ orgId, from: characterId, to: heir });
-    } else {
+    } else if (org.lifecycle !== 'dissolved') {
       // 无继承人：领袖空缺，组织进入危机，等待事件链（M4 的继承/分裂事件）。
+      // 已解散的组织（counts.dissolved 已计）绝不因为旧领袖死亡被改回 crisis——
+      // 那会让"解散"名存实亡：账面写死、实体仍在跑。
       org.lifecycle = 'crisis';
       org.leadership = { leaderId: characterId, legitimacy: 0.1 };
     }

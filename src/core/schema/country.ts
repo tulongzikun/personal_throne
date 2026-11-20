@@ -113,4 +113,8 @@ export interface Country {
   warExhaustion: number;
   /** 国债的债权方：组织 ID → 持有国债额。赤字借债时记名，还本付息时钱流向这里。 */
   creditors: Record<string, number>;
+  /** 连续没有领土的月数；满 60 个月判定灭亡（0 地区国不能永远挂账）。 */
+  vacantMonths: number;
+  /** 已灭亡：不再参与财政、外交与战争，也不能复活。 */
+  extinct: boolean;
 }

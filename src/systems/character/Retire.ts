@@ -15,6 +15,7 @@ import type { CharacterId, OrgId, WorldState } from '../../core/WorldState';
 import type { Organization } from '../../core/WorldState';
 import { sortedIds } from '../../core/WorldState';
 import { installRuler } from '../country/Ruler';
+import { absorbShares } from '../organization/Shares';
 import { successionOrder } from '../organization/Organization';
 
 export interface RetireReport {
@@ -54,9 +55,7 @@ function redistributeShares(
   const rest = org.shares;
   const total = rest.reduce((sum, share) => sum + share.share, 0);
   if (total > 0) {
-    for (const share of rest) {
-      share.share = round4(share.share + (amount * share.share) / total);
-    }
+    absorbShares(org, amount);
     return;
   }
   const heir = pickSuccessor(state, org.id, exclude);

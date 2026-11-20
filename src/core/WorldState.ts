@@ -237,6 +237,8 @@ export function createWorld(content: WorldContent, options: CreateWorldOptions):
       warStartDay: 0,
       warExhaustion: 0,
       creditors: {},
+      vacantMonths: 0,
+      extinct: false,
     };
   }
   // 外交初始值：同政体 20，异政体 -10，自国除外。

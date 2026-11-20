@@ -90,3 +90,32 @@ export function canClaimLeadership(
 export function rankedHolders(org: Organization): { characterId: CharacterId; share: number }[] {
   return [...org.shares].sort((a, b) => b.share - a.share);
 }
+
+/** 份额合计压回 100% 以内：只缩放超额部分，避免浮点尾差反复触发。 */
+export function clampShares(org: Organization): void {
+  const total = org.shares.reduce((sum, entry) => sum + entry.share, 0);
+  if (total > 1 + 1e-9) {
+    const scale = 1 / total;
+    for (const entry of org.shares) entry.share = roundShare(entry.share * scale);
+  }
+  org.shares = org.shares.filter((entry) => entry.share > 1e-9);
+}
+
+/** 把一份新份额记到某人名下：合并同一持有人，并把总额压回 100%。 */
+export function creditShare(org: Organization, characterId: CharacterId, share: number): void {
+  const amount = Math.max(0, share);
+  if (amount <= 0) return;
+  const existing = org.shares.find((entry) => entry.characterId === characterId);
+  if (existing) existing.share = roundShare(existing.share + amount);
+  else org.shares.push({ characterId, share: roundShare(amount) });
+  clampShares(org);
+}
+
+/** 遗产/退出时把份额并给现有股东：无人接手则留作未登记份额。 */
+export function absorbShares(org: Organization, total: number): void {
+  const living = org.shares.filter((entry) => entry.share > 0);
+  const base = living.reduce((sum, entry) => sum + entry.share, 0);
+  if (base <= 0) return;
+  for (const entry of living) entry.share = roundShare(entry.share + (total * entry.share) / base);
+  clampShares(org);
+}

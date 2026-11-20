@@ -20,7 +20,7 @@ export class SaveError extends Error {
 }
 
 /** 当前信封结构版本。 */
-export const SAVE_FORMAT_VERSION = 11;
+export const SAVE_FORMAT_VERSION = 12;
 export const SAVE_FORMAT = 'throne-and-gold-save';
 
 interface LegacyState extends Record<string, unknown> {
@@ -252,6 +252,16 @@ function migrateV3toV4(raw: Record<string, unknown>): void {
 }
 
 /** v4 → v5：补生涯阶梯字段（关系网不需要新字段，复用现有 relations）。 */
+function migrateV11toV12(raw: Record<string, unknown>): void {
+  // v12 引入"灭国"状态：没有领土的国家计数 60 个月后灭亡，不允许复活。
+  const countries = raw['countries'];
+  if (!countries || typeof countries !== 'object') return;
+  for (const country of Object.values(countries as Record<string, Record<string, unknown>>)) {
+    country['vacantMonths'] ??= 0;
+    country['extinct'] ??= false;
+  }
+}
+
 function migrateV10toV11(raw: Record<string, unknown>): void {
   // v11 引入国债债权人：旧档把已有债务记到本国最大的银行/组织名下，避免凭空消失。
   const countries = raw['countries'];
@@ -402,6 +412,11 @@ export function migrateWorldState(raw: unknown): WorldState {
     if (version === 10) {
       migrateV10toV11(state);
       version = 11;
+      continue;
+    }
+    if (version === 11) {
+      migrateV11toV12(state);
+      version = 12;
       continue;
     }
     throw new SaveError(`缺少 v${version} → v${SCHEMA_VERSION} 的迁移步骤`);

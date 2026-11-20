@@ -57,6 +57,7 @@ import {
   type CharacterCreationResult,
 } from '../systems/character/CharacterCreator';
 import { settleMonthlyCountry } from '../systems/country/CountrySystem';
+import { seedRulerDynasties } from '../systems/character/Dynasty';
 import { assignOffices, influenceOf, syncOffices } from '../systems/country/Offices';
 import { runPolicyRound } from '../systems/country/PolicySystem';
 import {
@@ -84,6 +85,8 @@ export class GameEngine {
     if (Object.values(state.countries).every((country) => country.offices.length === 0)) {
       assignOffices(state);
     }
+    // 给在位者补上配偶与子女：没有王朝就没有继承法可言。
+    seedRulerDynasties(state, content);
   }
 
   /** 等待玩家抉择的事件（UI 用）。 */

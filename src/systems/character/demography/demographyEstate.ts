@@ -1,6 +1,7 @@
 import type { CharacterId, OrgId, WorldState } from '../../../core/WorldState';
 import { sortedIds } from '../../../core/WorldState';
 import { kinOf } from './demographyFamily';
+import { clampShares, creditShare } from '../../organization/Shares';
 import type { EstateShare } from './demographyTypes';
 
 /**
@@ -45,9 +46,7 @@ export function settleEstate(state: WorldState, deadId: CharacterId): EstateShar
     if (heirList.length > 0) {
       const per = total / heirList.length;
       for (const heirId of heirList) {
-        const existing = org.shares.find((entry) => entry.characterId === heirId);
-        if (existing) existing.share += per;
-        else org.shares.push({ characterId: heirId, share: per });
+        creditShare(org, heirId, per);
       }
     } else {
       // 无继承人：按现有股东比例分配（没有股东则给领袖）。
@@ -59,10 +58,10 @@ export function settleEstate(state: WorldState, deadId: CharacterId): EstateShar
       if (base > 0) {
         for (const entry of living) entry.share += (total * entry.share) / base;
       } else if (state.characters[org.leadership.leaderId]?.alive) {
-        org.shares.push({ characterId: org.leadership.leaderId, share: total });
+        creditShare(org, org.leadership.leaderId, total);
       }
     }
-    org.shares = org.shares.filter((entry) => entry.share > 1e-9);
+    clampShares(org);
   }
 
   const cash = Math.max(0, dead.wealth);

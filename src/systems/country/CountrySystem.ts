@@ -38,7 +38,31 @@ export function settleMonthlyCountry(
 
   for (const countryId of sortedIds(state.countries)) {
     const country = state.countries[countryId];
-    if (!country) continue;
+    if (!country || country.extinct) continue;
+
+    // 灭国状态机：领土被别人全部占走的国家先挂账 48 个月（可能被和约还回来），
+    // 之后判定灭亡——清掉债务、退出所有战争与外交，避免"0 地区 0 人口却背着 9 亿国债"。
+    if (country.regionIds.length === 0) {
+      country.vacantMonths += 1;
+      country.population = 0;
+      country.monthlyRevenue = 0;
+      country.monthlyExpense = 0;
+      if (country.vacantMonths >= 48) {
+        country.extinct = true;
+        country.treasury = 0;
+        country.debt = 0;
+        country.creditors = {};
+        country.atWarWith = [];
+        country.warExhaustion = 0;
+        country.military = 0;
+        for (const other of Object.values(state.countries)) {
+          other.atWarWith = other.atWarWith.filter((id) => id !== countryId);
+          delete other.diplomacy[countryId];
+        }
+      }
+      continue;
+    }
+    country.vacantMonths = 0;
 
     const regions = country.regionIds.map((id) => state.regions[id]).filter(Boolean);
     const population = regions.reduce((sum, region) => sum + (region?.population ?? 0), 0);

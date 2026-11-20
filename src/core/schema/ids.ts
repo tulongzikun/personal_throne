@@ -18,7 +18,7 @@ export type ArmyId = string;
 
 export type EntityId = string;
 
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 /* ------------------------------------------------------------------ */
 /* 人物档案（schema，M4）                                               */
