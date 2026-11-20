@@ -1,20 +1,9 @@
 /** 人物面板：玩家属性卡 + 可点击的 NPC 只读卡。 */
 
-import { ATTRIBUTE_KEYS } from '../core/WorldState';
-import type { Character, Organization } from '../core/WorldState';
-import { alignmentCell, alignmentLabel } from '../systems/character/Profile';
-import { careerTitle } from '../systems/character/Career';
-import { RELATION_LABELS, relationsOf } from '../systems/character/Relations';
 import type { UiDeps } from './context';
-import { clear, el, fmtMoney, fmtPct, statCell } from './dom';
-import {
-  ATTRIBUTE_LABELS,
-  CLASS_LABELS,
-  RACE_LABELS,
-  SEX_LABELS,
-  SITE_LABELS,
-  labelOf,
-} from './labels';
+import { renderCharacterCard } from './CharacterCard';
+import { clear, el, fmtMoney } from './dom';
+import { CLASS_LABELS, RACE_LABELS, labelOf } from './labels';
 
 export class CharacterPanel {
   private readonly host: HTMLElement;
@@ -80,135 +69,7 @@ export class CharacterPanel {
       this.host.append(back);
     }
 
-    const org = selected.organizationId ? state.organizations[selected.organizationId] : undefined;
-    const stats = el('div', 'stat-grid');
-    stats.append(
-      statCell(
-        '财富',
-        fmtMoney(selected.wealth),
-        'neutral',
-        '个人现金：不以铜币计价的资产不在其中',
-      ),
-      statCell('年龄', `${selected.age} 岁`, 'neutral', '年龄影响生涯晋升与死亡风险'),
-      statCell(
-        '地区',
-        state.regions[selected.regionId]?.name ?? '—',
-        'neutral',
-        '当前所在地：市场与商路从这里计算',
-      ),
-      statCell(
-        '组织职位',
-        this.roleOf(selected, org),
-        'neutral',
-        '在所属组织中的层级；层级越高分到的收益越多',
-      ),
-    );
-    this.host.append(stats);
-
-    this.host.append(el('h3', 'section-title', '档案'));
-    const faithName =
-      selected.faith === null
-        ? '无信仰'
-        : (this.deps.content().faiths?.find((faith) => faith.id === selected.faith)?.name ??
-          '未知信仰');
-    const family = selected.familyId ? state.families[selected.familyId] : undefined;
-    const dossier = el('div', 'stat-grid');
-    dossier.append(
-      statCell('性别', labelOf(SEX_LABELS, selected.sex)),
-      statCell('信仰', faithName),
-      statCell(
-        '所在',
-        `${state.regions[selected.regionId]?.name ?? '—'} · ${labelOf(SITE_LABELS, selected.location.site)}`,
-      ),
-      statCell(
-        '家族',
-        family
-          ? `${family.name}${(family.prestige ?? 0) > 0 ? `（声望 ${family.prestige}）` : ''}`
-          : '无',
-      ),
-      statCell('代际', `第 ${selected.generation} 代`),
-      statCell('出身', state.regions[selected.homeRegionId]?.name ?? '—'),
-    );
-    this.host.append(dossier);
-
-    const alignment = el('div', 'alignment-block');
-    const label = alignmentLabel(selected.alignment);
-    alignment.append(el('p', 'alignment-block__label', `阵营：${label}`));
-    const grid = el('div', 'alignment-grid');
-    const activeCell = alignmentCell(selected.alignment);
-    for (let index = 0; index < 9; index += 1) {
-      const cell = el('span', `alignment-grid__cell${index === activeCell ? ' is-active' : ''}`);
-      grid.append(cell);
-    }
-    alignment.append(grid);
-    alignment.append(
-      el(
-        'p',
-        'alignment-block__axes',
-        `守序 ${selected.alignment.law} · 善良 ${selected.alignment.good}（负值为混乱 / 邪恶）`,
-      ),
-    );
-    this.host.append(alignment);
-
-    const career = el(
-      'p',
-      'alignment-block__axes',
-      `生涯：${careerTitle(selected.classId, selected.careerRank)}（${selected.careerRank}/3）`,
-    );
-    this.host.append(career);
-
-    const relations = relationsOf(state, selected.id).slice(0, 6);
-    if (relations.length > 0) {
-      this.host.append(el('h3', 'section-title', '关系'));
-      const list = el('ul', 'bar-list');
-      for (const relation of relations) {
-        const other = state.characters[relation.to];
-        const sign = relation.value > 0 ? '+' : '';
-        const item = el(
-          'li',
-          'stat-line',
-          `${other?.name ?? relation.to} · ${RELATION_LABELS[relation.type]} ${sign}${relation.value}`,
-        );
-        list.append(item);
-      }
-      this.host.append(list);
-    }
-
-    this.host.append(el('h3', 'section-title', '六维'));
-    const attributes = el('ul', 'bar-list');
-    for (const key of ATTRIBUTE_KEYS) {
-      const value = selected.attributes[key];
-      attributes.append(this.bar(ATTRIBUTE_LABELS[key], value, 20, `${value}`));
-    }
-    this.host.append(attributes);
-
-    if (org) {
-      const orgRow = el('div', 'inline-link');
-      const open = el('button', 'btn btn--small', `查看 ${org.name}`);
-      open.type = 'button';
-      open.addEventListener('click', () => this.deps.openOrganization(org.id));
-      orgRow.append(open);
-      this.host.append(orgRow);
-    }
-
-    this.host.append(el('h3', 'section-title', '技能'));
-    const skills = el('ul', 'bar-list');
-    const skillEntries = Object.entries(selected.skills).sort((a, b) => b[1] - a[1]);
-    const skillMax = Math.max(10, ...skillEntries.map(([, value]) => value));
-    for (const [name, value] of skillEntries) {
-      skills.append(this.bar(`skill.${name}`, value, skillMax, `${value}`));
-    }
-    if (skillEntries.length === 0) skills.append(el('li', 'empty', '没有记录在案的技能'));
-    this.host.append(skills);
-
-    this.host.append(el('h3', 'section-title', '性格'));
-    const traits = el('ul', 'bar-list');
-    const traitEntries = Object.entries(selected.traits).sort((a, b) => b[1] - a[1]);
-    for (const [name, value] of traitEntries) {
-      traits.append(this.bar(`trait.${name}`, value, 1, fmtPct(value)));
-    }
-    if (traitEntries.length === 0) traits.append(el('li', 'empty', '没有显著性格'));
-    this.host.append(traits);
+    renderCharacterCard(this.host, this.deps, selected);
 
     this.host.append(el('h3', 'section-title', '其他人（只读）'));
     this.host.append(el('p', 'hint', '你自己固定在左上角的玩家卡；这里只列出世界中的其他人物。'));
@@ -245,26 +106,5 @@ export class CharacterPanel {
     this.host.append(roster);
 
     this.host.append(el('p', 'panel__note', `共 ${characters.length} 位在世人物 · 点击姓名查看`));
-  }
-
-  private roleOf(character: Character, org: Organization | undefined): string {
-    if (!org) return '无组织';
-    if (org.leadership.leaderId === character.id) return `领袖 · ${org.name}`;
-    const share = org.shares.find((entry) => entry.characterId === character.id);
-    if (share) return `股东 ${fmtPct(share.share)}`;
-    if (character.organizationId === org.id) return `成员 · ${org.name}`;
-    return `关联 ${org.name}`;
-  }
-
-  private bar(label: string, value: number, max: number, display: string): HTMLElement {
-    const row = el('li', 'bar');
-    const meta = el('div', 'bar__meta');
-    meta.append(el('span', 'bar__label', label), el('span', 'bar__value', display));
-    const track = el('div', 'bar__track');
-    const fill = el('div', 'bar__fill');
-    fill.style.width = `${Math.max(0, Math.min(100, (value / Math.max(1, max)) * 100))}%`;
-    track.append(fill);
-    row.append(meta, track);
-    return row;
   }
 }

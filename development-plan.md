@@ -1029,6 +1029,17 @@ interface EventDef {
 
 ## 9. 测试与质量策略
 
+### 8.36 玩家人物卡与占位符修复（2026-11-20）
+
+| 项 | 内容 |
+|---|---|
+| 左栏人物卡 | 新增 `src/ui/CharacterCard.ts` 的 `renderCharacterCard(host, deps, selected, { compact })`，把人物面板正文（四格概览、档案六格、阵营九宫格、生涯、关系、六维、组织入口、技能、性格）抽成共用渲染；玩家卡底部以 `<details open>`「我的人物卡」嵌入 `compact` 版（两行摘要 + 档案 + 阵营 + 六维），不切面板即可看到成长数据 |
+| 人物面板 | `CharacterPanel` 改为调用同一渲染，删掉重复的 `roleOf`/`bar`；技能与性格改用 `SKILL_LABELS`/`TRAIT_LABELS`，不再泄漏 `skill.trade` 之类的英文键 |
+| 占位符 | `EventEngine.eventTextForRefs` 按 `HistoryRef.type` 解析主体；`App` 的抉择/见闻/预兆与 `GameEngine` 的等待与超时标题统一走 `eventText`，修复「{country}的秋收宴银月王国」这类裸占位符 |
+| 默认速度 | `App` 的初始 `speed = 1`，`start()` 里显式 `setSpeed(1)`，进入游戏即按 1× 推进（相关事件自动暂停仍保留） |
+| 测试 | `tests/ui-panels.test.ts` 加「左侧玩家卡也展示人物卡」；`tests/local-events.test.ts` 加「历史与弹窗里的标题、正文都不残留占位符」；全套 **28 文件 / 189 例** |
+| 产物 | `release/index.html` **363,804 字节**（23.1%） |
+
 ### 8.35 成长与旅行的实现（P1–P3，2026-11-20）
 
 | 项 | 内容 |

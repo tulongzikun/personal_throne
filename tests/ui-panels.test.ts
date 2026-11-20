@@ -128,4 +128,16 @@ describe('右侧地区页：前往', () => {
     expect(host.querySelector('.travel__hint')?.textContent).toContain('没有直达商路');
     expect(host.querySelector('.travel button')).toBeNull();
   });
+  it('左侧玩家卡也展示玩家人物卡（六维、阵营、档案）', () => {
+    const { deps } = makeHarness();
+    const host = document.createElement('aside');
+    new PlayerPanel(host, deps);
+    const dossier = host.querySelector('.player-card__dossier');
+    expect(dossier).not.toBeNull();
+    expect(dossier?.textContent).toContain('我的人物卡');
+    expect(host.querySelectorAll('.player-card__dossier .alignment-grid__cell').length).toBe(9);
+    expect(host.querySelectorAll('.player-card__dossier .bar').length).toBeGreaterThanOrEqual(6);
+    expect(host.querySelector('.player-card__dossier')?.textContent).toContain('六维');
+    expect(host.querySelector('.player-card__dossier')?.textContent).toContain('档案');
+  });
 });

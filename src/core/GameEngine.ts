@@ -16,6 +16,7 @@ import {
   applyBaseEffects,
   applyEvent,
   evaluate,
+  eventText,
   readFeature,
   CHOICE_WINDOW_DAYS,
   collectCandidates,
@@ -535,7 +536,7 @@ export class GameEngine {
       resolveChoice(this.state, this.content, def, target, choice, this.rng);
       this.record(
         'event',
-        `${formatDate(day)} ${def.text.title}：超时未决，按「${choice.label}」处理`,
+        `${formatDate(day)} ${eventText(this.state, def, target).title}：超时未决，按「${choice.label}」处理`,
         [{ kind: pending.scope, id: pending.entityId }],
         def.id,
       );
@@ -559,7 +560,7 @@ export class GameEngine {
       this.state.cooldowns[`${def.id}@${target.entityId}`] = day + cooldown;
       this.record(
         'event',
-        `${formatDate(day)} ${def.text.title}：等待你的决定`,
+        `${formatDate(day)} ${eventText(this.state, def, target).title}：等待你的决定`,
         [{ kind: target.scope, id: target.entityId }],
         def.id,
       );

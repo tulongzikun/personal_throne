@@ -20,7 +20,7 @@ import { SuggestionsPanel } from './SuggestionsPanel';
 import { ambitionOf, chapterOf } from '../systems/goals/Ambition';
 import { EventDialog, type DigestItem, type WorldSignal } from './EventDialog';
 import { RELATION_LABELS, isRelated, relationOf, subjectOf } from './signals';
-import { CHOICE_WINDOW_DAYS } from '../core/EventEngine';
+import { CHOICE_WINDOW_DAYS, eventText, eventTextForRefs } from '../core/EventEngine';
 import { HistoryPanel } from './HistoryPanel';
 import { MapView, countryPalette } from './MapView';
 import { OrganizationPanel } from './OrganizationPanel';
@@ -638,10 +638,14 @@ export class App {
     const def = this.engine.content.events.find((event) => event.id === pending.eventId);
     if (!def?.choices) return;
 
+    const choiceText = eventText(state, def, {
+      scope: pending.scope,
+      entityId: pending.entityId,
+    });
     this.eventDialog.pushMany([
       {
-        title: def.text.title,
-        body: def.text.body,
+        title: choiceText.title,
+        body: choiceText.body,
         meta: `${formatDate(pending.day)} · 这一步由你决定（${CHOICE_WINDOW_DAYS} 天内有效）`,
         tone: 'choice',
         options: def.choices.map((choice) => ({
@@ -673,8 +677,9 @@ export class App {
         : undefined;
       const subject = subjectOf(state, record);
       const relation = relationOf(state, record);
-      const title = def?.text.title ?? '世界事件';
-      const text = def?.text.body ?? record.summary;
+      const filled = def ? eventTextForRefs(state, def, record.refs) : undefined;
+      const title = filled?.title ?? '世界事件';
+      const text = filled?.body ?? record.summary;
 
       if (!isRelated(relation)) {
         digest.push({ title, subject: subject?.label ?? '远方', body: text });
@@ -699,8 +704,15 @@ export class App {
       this.seenPending.add(key);
       if (scheduled.day <= state.clock.day) continue;
       const def = this.engine.content.events.find((event) => event.id === scheduled.refId);
+      const omenTitle =
+        def && scheduled.targetScope && scheduled.targetEntityId
+          ? eventText(state, def, {
+              scope: scheduled.targetScope,
+              entityId: scheduled.targetEntityId,
+            }).title
+          : (def?.text.title ?? '未明之事');
       related.push({
-        title: `预兆 · ${def?.text.title ?? '未明之事'}`,
+        title: `预兆 · ${omenTitle}`,
         body: `风声正在流传：这件事预计在 ${formatDate(scheduled.day)} 前后见分晓，没有人知道它会以何种面目到来。`,
         meta: `待办 ${formatDate(scheduled.day)} · ${this.entityLabel(scheduled.targetScope, scheduled.targetEntityId)}`,
         tone: 'omen',

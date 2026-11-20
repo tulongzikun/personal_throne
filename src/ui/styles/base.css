@@ -2588,3 +2588,53 @@ select.input {
   gap: 8px;
   margin-top: 10px;
 }
+
+/* 左栏人物卡：玩家不用切面板也能看到六维与阵营。 */
+.player-card__dossier {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.player-card__dossier-title {
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--gold-soft);
+  letter-spacing: 0.04em;
+  list-style: none;
+}
+.player-card__dossier-title::-webkit-details-marker {
+  display: none;
+}
+.player-card__dossier-title::before {
+  content: '▸ ';
+}
+.player-card__dossier[open] .player-card__dossier-title::before {
+  content: '▾ ';
+}
+.player-card__dossier-body {
+  padding-top: 6px;
+}
+.player-card__dossier .character-card__line {
+  margin: 2px 0;
+  font-size: 0.72rem;
+  color: var(--text-muted, #9a8f7d);
+}
+.player-card__dossier .section-title {
+  margin: 8px 0 4px;
+  font-size: 0.7rem;
+}
+.player-card__dossier .bar__label,
+.player-card__dossier .bar__value {
+  font-size: 0.68rem;
+}
+.player-card__dossier .alignment-grid {
+  gap: 2px;
+}
+.player-card__dossier .alignment-grid__cell {
+  width: 12px;
+  height: 12px;
+}
+.player-card__dossier .alignment-block__label,
+.player-card__dossier .alignment-block__axes {
+  font-size: 0.68rem;
+}

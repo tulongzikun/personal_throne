@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import {
   collectCandidates,
   eventText,
+  eventTextForRefs,
   matchesWhen,
   targetCountryOf,
 } from '../src/core/EventEngine';
@@ -72,5 +73,22 @@ describe('本地事件', () => {
       }
     }
     expect(fired.size).toBeGreaterThanOrEqual(5);
+  });
+  it('历史与弹窗里的标题、正文都不残留占位符', () => {
+    const world = createWorld(content, { seed: 'local-placeholder', createdAt: 0 });
+    const engine = new GameEngine(world, content);
+    engine.advanceDays(360 * 3);
+    let checked = 0;
+    for (const record of world.history) {
+      if (record.kind !== 'event' || !record.causeEventId) continue;
+      const def = content.events.find((event) => event.id === record.causeEventId);
+      if (!def) continue;
+      const filled = eventTextForRefs(world, def, record.refs);
+      expect(filled.title).not.toMatch(/{w+}/);
+      expect(filled.body).not.toMatch(/{w+}/);
+      expect(record.summary).not.toMatch(/{(country|place|subject)}/);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThan(0);
   });
 });

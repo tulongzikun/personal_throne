@@ -25,6 +25,7 @@ import type {
   WorldContent,
   WorldState,
 } from './WorldState';
+import type { HistoryRef } from './History';
 import { marketKeyOf, sortedIds } from './WorldState';
 
 /** 默认抽样窗口（天）：月度抽样点，与 `balance.events.samplingDays` 对应。 */
@@ -583,6 +584,21 @@ export function eventText(
   const fill = (text: string): string =>
     text.replace(/\{(\w+)\}/g, (match, key: string) => vars[key] ?? match);
   return { title: fill(def.text.title), body: fill(def.text.body) };
+}
+
+/** 按历史记录里的 refs 找到主体，套用同一套占位符替换。 */
+export function eventTextForRefs(
+  state: WorldState,
+  def: EventDef,
+  refs: readonly HistoryRef[] | undefined,
+): { title: string; body: string } {
+  const scopes = new Set(['character', 'organization', 'country', 'region']);
+  const first = refs?.find((ref) => scopes.has(ref.type));
+  if (!first) return { title: def.text.title, body: def.text.body };
+  return eventText(state, def, {
+    scope: first.type as EventTarget['scope'],
+    entityId: first.id,
+  });
 }
 
 export function applyEvent(
