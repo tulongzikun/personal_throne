@@ -25,6 +25,12 @@ function stripDate(summary: string): string {
   return summary.replace(/^\d+年\d+月\d+日\s*/, '');
 }
 
+/** 老存档没有 importance 字段：按类别兜底。 */
+function isMajor(record: HistoryRecord): boolean {
+  if (record.importance) return record.importance === 'major';
+  return record.kind !== 'trade' && record.kind !== 'finance';
+}
+
 function monthOf(day: number): string {
   const year = Math.floor((day - 1) / 360) + 1;
   const month = Math.floor(((day - 1) % 360) / 30) + 1;
@@ -36,6 +42,7 @@ export class HistoryPanel {
   private readonly deps: UiDeps;
   private filter: HistoryKind | 'all' = 'all';
   private mineOnly = false;
+  private majorOnly = true;
 
   constructor(host: HTMLElement, deps: UiDeps) {
     this.host = host;
@@ -46,6 +53,7 @@ export class HistoryPanel {
   reset(): void {
     this.filter = 'all';
     this.mineOnly = false;
+    this.majorOnly = true;
     this.render();
   }
 
@@ -100,6 +108,18 @@ export class HistoryPanel {
     });
     this.host.append(mine);
 
+    const major = el('button', 'chip chip--small chip--major', '只看大事');
+    major.type = 'button';
+    major.dataset.filter = 'major';
+    major.title = '隐藏按月折叠的账本，只留事件、战争、更替与死亡';
+    major.setAttribute('aria-pressed', String(this.majorOnly));
+    if (this.majorOnly) major.classList.add('is-active');
+    major.addEventListener('click', () => {
+      this.majorOnly = !this.majorOnly;
+      this.render();
+    });
+    this.host.append(major);
+
     const body = el('div', 'history__body');
     if (records.length === 0) {
       body.append(el('p', 'empty', '还没有记录。推进时间，世界会自己写下历史。'));
@@ -139,6 +159,7 @@ export class HistoryPanel {
     const ids = this.mineOnly ? this.mineIds() : null;
     return history
       .filter((record) => this.filter === 'all' || record.kind === this.filter)
+      .filter((record) => !this.majorOnly || isMajor(record))
       .filter((record) => ids === null || record.refs.some((ref) => ids.has(ref.id)))
       .slice(-LIMIT)
       .reverse();
@@ -162,12 +183,15 @@ export class HistoryPanel {
     ) {
       tags.append(el('span', 'history__mine', '你'));
     }
+    const note = record.body ? el('span', 'history__note', record.body) : null;
     row.append(
       el('span', 'history__day', formatDate(record.day)),
       el('span', `history__kind history__kind--${record.kind}`, HISTORY_KIND_LABELS[record.kind]),
       text,
       tags,
     );
+    if (note) row.append(note);
+    row.classList.toggle('history__row--noted', note !== null);
     return row;
   }
 

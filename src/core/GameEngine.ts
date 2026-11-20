@@ -39,7 +39,7 @@ import {
   type WorldContent,
   type WorldState,
 } from './WorldState';
-import { isQuarterEnd, isYearEnd } from './GameClock';
+import { isMonthEnd, isQuarterEnd, isYearEnd } from './GameClock';
 import { settleMonthlyDecisions, settleCountryDecisions } from '../systems/npc/DecisionSystem';
 import { monthlyOrganizationSettlement } from '../systems/organization/OrganizationSystem';
 import { settleMonthlyProduction } from '../systems/economy/ProductionSystem';
@@ -65,6 +65,9 @@ import {
   settleMonthlyMilitary,
   settleMonthlyWar,
 } from '../systems/military/WarSystem';
+
+/** 日常琐事：记进编年史但在"只看大事"里折叠起来。 */
+const ROUTINE_COMMANDS = new Set<string>(['rest', 'train', 'inspect_market']);
 
 export class GameEngine {
   readonly content: WorldContent;
@@ -186,7 +189,20 @@ export class GameEngine {
       const actor = this.state.characters[this.state.playerId];
       if (actor?.alive) actor.lastActionDay = this.state.clock.day;
       const summary = result.summary ?? command.kind;
-      this.record('command', `${formatDate(this.day)} ${summary}`, result.refs ?? []);
+      // 玩家做的事必须留在编年史里，并且记在玩家名下——否则"我的故事"只剩系统事件。
+      const refs = [...(result.refs ?? [])];
+      if (this.state.playerId && !refs.some((ref) => ref.id === this.state.playerId)) {
+        refs.push({ kind: 'character', id: this.state.playerId });
+      }
+      const routine = ROUTINE_COMMANDS.has(command.kind);
+      this.record(
+        'command',
+        `${formatDate(this.day)} ${summary}`,
+        refs,
+        null,
+        null,
+        routine ? 'minor' : 'major',
+      );
     } else {
       this.syncCounters();
     }
@@ -268,6 +284,88 @@ export class GameEngine {
     }
   }
 
+  /** 死亡的两三句话：谁、在哪、活了多少年、生前是什么人、留下了什么。 */
+  private recordDeath(id: CharacterId, day: number): void {
+    const person = this.state.characters[id];
+    const name = person?.name ?? id;
+    const place = person ? this.state.regions[person.regionId]?.name : undefined;
+    const org = person?.organizationId ? this.state.organizations[person.organizationId] : null;
+    const country = person
+      ? Object.values(this.state.countries).find((item) => item.regionIds.includes(person.regionId))
+      : undefined;
+    const role = org
+      ? `${org.name}的${org.leadership.leaderId === id ? '掌舵人' : '成员'}`
+      : country?.rulerId === id
+        ? `${country.name}的统治者`
+        : country
+          ? `${country.name}的居民`
+          : '云游四方的人';
+    const age = person ? Math.max(0, Math.round(person.age)) : 0;
+    const cash = person ? Math.max(0, Math.round(person.wealth)) : 0;
+    const body = person
+      ? `${name}在${place ?? '旅途上'}去世，享年 ${age} 岁。生前是${role}。身后留下 ${cash} 铜，由家人依照律法与习俗分派。`
+      : `${name}去世了，没有留下太多可说的。`;
+    this.record(
+      'death',
+      `${formatDate(day)} ${name} 去世`,
+      [{ kind: 'character', id }],
+      null,
+      body,
+    );
+  }
+
+  /** 更替的三句话：谁接了谁、凭什么、接手时的局面。 */
+  private recordSuccession(
+    countryId: string,
+    beforeId: CharacterId,
+    afterId: CharacterId,
+    day: number,
+  ): void {
+    const country = this.state.countries[countryId];
+    const next = this.state.characters[afterId];
+    const before = this.state.characters[beforeId];
+    if (!country || !next) return;
+    const kin = before
+      ? next.parentIds.includes(before.id)
+        ? '先代的子嗣'
+        : next.spouseId === before.id
+          ? '先代的配偶'
+          : before.familyId !== null && next.familyId === before.familyId
+            ? '同族的近亲'
+            : '群臣推举的新君'
+      : '新君';
+    const seat = country.succession === 'elective' ? '执政权' : '王位';
+    const body = `${country.name}的${seat}由 ${next.name} 接掌，身份是${kin}。${before && !before.alive ? `先代 ${before.name} 已经入土，` : ''}新君面前的局面是稳定度 ${Math.round(country.stability * 100)}%、合法性 ${Math.round(country.legitimacy * 100)}%。`;
+    this.record(
+      'milestone',
+      `${formatDate(day)} ${country.name} ${seat}更替：${next.name} 继位`,
+      [
+        { kind: 'country', id: countryId },
+        { kind: 'character', id: afterId },
+      ],
+      null,
+      body,
+    );
+  }
+
+  /** 玩家的月度开销：既是钱的事，也是"你的生活"在编年史里的落点。 */
+  private recordMonthlyUpkeep(ctx: SettleContext): void {
+    const player = this.state.characters[this.state.playerId];
+    if (!player?.alive) return;
+    const before = player.wealth;
+    settleMonthlyUpkeep(this.state);
+    const spent = Math.max(0, Math.round(before - player.wealth));
+    if (spent <= 0) return;
+    this.record(
+      'finance',
+      `${formatDate(ctx.day)} 你的生活开销 ${spent} 铜`,
+      [{ kind: 'character', id: player.id }],
+      null,
+      null,
+      'minor',
+    );
+  }
+
   private onActionPhase(day: number): void {
     // 玩家与重要 NPC 的日常行动：M1 只处理"跳下一重要事件"所需的调度检查。
     void day;
@@ -308,7 +406,7 @@ export class GameEngine {
 
   private onOrganizationPhase(ctx: SettleContext): void {
     refreshMonthlyActions(this.state);
-    settleMonthlyUpkeep(this.state);
+    this.recordMonthlyUpkeep(ctx);
     const settlement = monthlyOrganizationSettlement(this.state, this.content, ctx);
     const decisions = settleMonthlyDecisions(this.state, ctx);
     const stipends = settleMonthlyCharacters(this.state, this.content, ctx);
@@ -345,10 +443,20 @@ export class GameEngine {
     const budgets = settleMonthlyCountry(this.state, this.content, ctx);
     settleMonthlyMilitary(this.state, this.content, ctx);
     for (const declaration of settleMonthlyDiplomacy(this.state, this.content, ctx)) {
-      this.record('war', `${formatDate(ctx.day)} ${declaration.summary ?? '宣战'}`, [], null);
+      this.record(
+        'war',
+        `${formatDate(ctx.day)} ${declaration.summary ?? '宣战'}`,
+        [],
+        null,
+        `${declaration.summary ?? '宣战'}。两国的争端从使节的往返走到了战场，边地的村庄开始囤粮、修寨，商队绕道而行。`,
+      );
     }
     const warOutcomes = settleMonthlyWar(this.state, this.content, ctx);
     for (const outcome of warOutcomes) {
+      const place = outcome.regionId ? this.state.regions[outcome.regionId]?.name : null;
+      const tally = outcome.casualties
+        ? `这一仗攻方折了 ${outcome.casualties.attacker} 人，守方折了 ${outcome.casualties.defender} 人。`
+        : '';
       this.record(
         'war',
         `${formatDate(ctx.day)} ${outcome.summary}`,
@@ -357,6 +465,9 @@ export class GameEngine {
           { kind: 'country', id: outcome.defenderId },
         ],
         null,
+        [`${place ? place + '的' : ''}战报传回两国朝堂：${outcome.summary}。`, tally]
+          .filter((line) => line.length > 0)
+          .join(''),
       );
     }
 
@@ -426,6 +537,9 @@ export class GameEngine {
   }
 
   private onWrapUpPhase(ctx: SettleContext): void {
+    // 月末：把当月的贸易与收支并成一条账本，编年史只留大事。
+    if (isMonthEnd(ctx.day)) this.history.compactMonth(ctx.day);
+
     // 季度：分层重算（L1/L2/L3）。
     if (isQuarterEnd(ctx.day)) {
       const report = computeTiers(this.state, this.content);
@@ -434,9 +548,19 @@ export class GameEngine {
 
     // 年度：衰老、死亡、遗产、婚姻与出生（M4.1 人口学）。
     if (isYearEnd(ctx.day)) {
+      const rulersBefore = new Map(
+        Object.values(this.state.countries).map(
+          (country) => [country.id, country.rulerId] as const,
+        ),
+      );
       const yearly = settleYearlyDemography(this.state, this.content, ctx);
       for (const id of yearly.deaths) {
-        this.record('death', `${formatDate(ctx.day)} ${id} 去世`, [{ kind: 'character', id }]);
+        this.recordDeath(id, ctx.day);
+      }
+      for (const country of Object.values(this.state.countries)) {
+        const before = rulersBefore.get(country.id);
+        if (!before || before === country.rulerId) continue;
+        this.recordSuccession(country.id, before, country.rulerId, ctx.day);
       }
       for (const estate of yearly.estates) {
         const heirs = estate.heirs.length > 0 ? estate.heirs.join('、') : '所在国';
@@ -551,11 +675,14 @@ export class GameEngine {
     }
 
     const outcome = applyEvent(this.state, this.content, { def, target }, this.rng);
+    const narrative = eventText(this.state, def, target);
+    const details = outcome.changes.filter((line) => !line.startsWith('忽略未知路径'));
     this.record(
       'event',
       `${formatDate(day)} ${outcome.summary}`,
       [{ kind: target.scope, id: target.entityId }],
       def.id,
+      [narrative.body, details.join('；')].filter((part) => part.length > 0).join('\n'),
     );
   }
 
@@ -582,6 +709,8 @@ export class GameEngine {
     summary: string,
     refs: readonly { kind: string; id: string }[],
     causeEventId: string | null = null,
+    body: string | null = null,
+    importance?: 'major' | 'minor',
   ): void {
     const typed = refs.map((ref) => ({ type: ref.kind, id: ref.id }));
     const chronicle = composeChronicle(this.state, summary, typed);
@@ -594,6 +723,8 @@ export class GameEngine {
       causeEventId,
       subject: chronicle.subject,
       place: chronicle.place,
+      body,
+      importance: importance ?? (kind === 'trade' || kind === 'finance' ? 'minor' : 'major'),
     });
   }
 

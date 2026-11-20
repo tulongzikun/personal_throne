@@ -42,15 +42,17 @@ describe('编年史', () => {
     engine.advanceDays(360 * 10);
     const names = [...entityNames(world).values()];
     const records = world.history;
-    expect(records.length).toBeGreaterThan(1000);
+    expect(records.length).toBeGreaterThan(500);
     const named = records.filter((record) => names.some((name) => record.summary.includes(name)));
     expect(named.length / records.length).toBeGreaterThanOrEqual(0.8);
     const raw = records.filter((record) => /\b[ocr]_[a-z0-9_]{2,}/.test(record.summary));
     expect(raw).toHaveLength(0);
-    const withSubject = records.filter(
+    // 按月折叠的账本是一个月里几十条流水的并集，不对应单一主体；其余记录必须有主体。
+    const major = records.filter((record) => record.importance !== 'minor');
+    const withSubject = major.filter(
       (record) => record.subject !== null && record.subject !== undefined,
     );
-    expect(withSubject.length / records.length).toBeGreaterThanOrEqual(0.95);
+    expect(withSubject.length / major.length).toBeGreaterThanOrEqual(0.95);
   });
 
   it('实体改名后编年史跟着变（缓存不得以数量为失效键）', () => {

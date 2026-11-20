@@ -2643,3 +2643,19 @@ select.input {
 .player-card__dossier .alignment-block__axes {
   font-size: 0.68rem;
 }
+
+/* 叙事正文：事件与里程碑后面的两三句话，默认折行显示在条目下方。 */
+.history__note {
+  grid-column: 1 / -1;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-line;
+  padding: 2px 0 2px 2px;
+  border-left: 2px solid rgba(201, 162, 76, 0.35);
+  padding-left: 8px;
+}
+
+.history__row--noted {
+  padding-bottom: 8px;
+}

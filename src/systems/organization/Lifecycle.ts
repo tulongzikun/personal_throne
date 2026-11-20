@@ -145,7 +145,7 @@ function sellAssets(
 
   void state;
   return {
-    kind: 'finance',
+    kind: 'milestone',
     summary: `${ctx.day} ${org.name} 重组：出售资产 ${sale}（变现 ${proceeds}，损失 ${loss}），偿还债主 ${payCreditors}、欠薪 ${payWages}，裁员 ${cut}`,
     refs: [{ kind: 'organization', id: org.id }],
   };

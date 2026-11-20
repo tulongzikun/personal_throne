@@ -26,6 +26,10 @@ export interface HistoryRecord {
   readonly subject?: HistoryRef | null;
   /** 事发地点（v2）。 */
   readonly place?: string | null;
+  /** 叙事正文（v2）：事件正文与结算结果、死亡与继位的两三句话。 */
+  readonly body?: string | null;
+  /** 重要度：账本类记录按月折叠成 minor，界面默认只显示 major。 */
+  readonly importance?: 'major' | 'minor';
 }
 
 export interface HistoryQuery {
@@ -37,7 +41,12 @@ export interface HistoryQuery {
 }
 
 export class History {
-  constructor(private readonly records: HistoryRecord[]) {}
+  /** 记录 id 单调递增：折叠会删掉整段流水，若仍用 length+1 会与旧记录撞号。 */
+  private nextId: number;
+
+  constructor(private readonly records: HistoryRecord[]) {
+    this.nextId = records.reduce((max, record) => Math.max(max, record.id), 0) + 1;
+  }
 
   get size(): number {
     return this.records.length;
@@ -48,7 +57,8 @@ export class History {
   }
 
   append(record: Omit<HistoryRecord, 'id'>): HistoryRecord {
-    const next: HistoryRecord = { ...record, id: this.records.length + 1 };
+    const next: HistoryRecord = { ...record, id: this.nextId };
+    this.nextId += 1;
     this.records.push(next);
     return next;
   }
@@ -63,6 +73,54 @@ export class History {
       return true;
     });
     return limit === undefined ? matched : matched.slice(-limit);
+  }
+
+  /**
+   * 账本按月折叠：把 `trade`/`finance` 流水并成一条月度记录。
+   *
+   * 贸易与工资是"世界的背景噪声"，一天几十条会把编年史淹掉；
+   * 折叠之后编年史里剩下的才是事件、战争、更替与死亡。
+   */
+  compactMonth(day: number): number {
+    const start = day - 29;
+    // 记录按天递增：本月的流水一定在数组尾部，倒着找窗口起点即可，
+    // 不用每次扫全表（100 年 × 1200 个月会扫掉上千万条）。
+    let cut = this.records.length;
+    while (cut > 0 && this.records[cut - 1]!.day >= start) cut -= 1;
+    const window = this.records.slice(cut);
+    const minor = window.filter((record) => record.kind === 'trade' || record.kind === 'finance');
+    if (minor.length < 3) return 0;
+    const trades = minor.filter((record) => record.kind === 'trade').length;
+    const flows = minor.length - trades;
+    const body = minor
+      .slice(-3)
+      .map((record) => record.summary.replace(/^\d+年\d+月\d+日\s*/, ''))
+      .join('\n');
+    const refs: HistoryRef[] = [];
+    for (const record of minor) {
+      for (const ref of record.refs) {
+        if (!refs.some((item) => item.id === ref.id)) refs.push(ref);
+      }
+    }
+    const removed = new Set(minor);
+    const kept = window.filter((record) => !removed.has(record));
+    const aggregate: HistoryRecord = {
+      id: this.nextId,
+      day,
+      phase: minor[minor.length - 1]!.phase,
+      kind: 'finance',
+      summary: `本月账本：交易 ${trades} 笔、收支 ${flows} 笔`,
+      refs: refs.slice(0, 12),
+      causeEventId: null,
+      subject: null,
+      place: null,
+      body,
+      importance: 'minor',
+    };
+    this.nextId += 1;
+    this.records.length = cut;
+    this.records.push(...kept, aggregate);
+    return minor.length;
   }
 
   latest(limit = 20): HistoryRecord[] {
