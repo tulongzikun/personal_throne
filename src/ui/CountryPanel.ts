@@ -4,6 +4,7 @@ import type { CommandResult } from '../core/CommandBus';
 import type { PolicyVector } from '../core/WorldState';
 import type { UiDeps } from './context';
 import { clear, el, fmtInt, fmtMoney, fmtPct, withHint } from './dom';
+import { officeIdOf, officeSeatsFor } from '../systems/country/Offices';
 import { POLITY_LABELS, POLICY_LABELS, labelOf } from './labels';
 
 const POLICY_KEYS: readonly (keyof PolicyVector)[] = [
@@ -140,7 +141,7 @@ export class CountryPanel {
       );
       card.append(stats);
 
-      if (country.offices.length > 0) {
+      if (country.offices.length > 0 || officeSeatsFor(country).length > 0) {
         const seats = el('p', 'panel__note', '公职');
         const list = el('ul', 'plain-list');
         for (const office of country.offices) {
@@ -157,6 +158,40 @@ export class CountryPanel {
           list.append(item);
         }
         card.append(seats, list);
+
+        const applyRow = el('div', 'btn-row');
+        for (const seat of officeSeatsFor(country)) {
+          const office = country.offices.find(
+            (item) => item.id === officeIdOf(country.id, seat.id),
+          );
+          if (office?.holderId === state.playerId) continue;
+          const incumbent = office ? state.characters[office.holderId] : null;
+          const label = office
+            ? `谋求${seat.title}（现任 ${incumbent?.name ?? '—'}）`
+            : `谋求${seat.title}（空缺）`;
+          const button = el('button', 'btn btn--ghost', label);
+          button.type = 'button';
+          button.addEventListener('click', () => {
+            const result: CommandResult = this.deps.dispatch({
+              kind: 'seek_office',
+              countryId: country.id,
+              officeId: seat.id,
+            });
+            this.last = result.ok
+              ? { ok: true, text: result.summary ?? '任命完成' }
+              : { ok: false, text: result.error ?? '谋求失败' };
+            this.render();
+          });
+          applyRow.append(button);
+        }
+        if (applyRow.childElementCount > 0) card.append(applyRow);
+        card.append(
+          el(
+            'p',
+            'field__hint',
+            '谋求公职看专业技能、财力与既有影响力；应在该国居住，且要压过现任者。',
+          ),
+        );
       }
 
       const policyTitle = el('h3', 'section-title', '政策刻度');

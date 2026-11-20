@@ -41,6 +41,7 @@ import {
   sharePrice,
 } from '../systems/organization/Shares';
 import { shareOf } from '../systems/organization/Organization';
+import { applyForOffice } from '../systems/country/Offices';
 
 export interface CommandBase {
   /** 命令唯一序号，由 GameEngine 分配；用于幂等与审计。 */
@@ -97,7 +98,9 @@ export type Command =
   /** 把自己持有的份额卖回给最大的能付得起钱的股东，或退回未登记份额。 */
   | (CommandBase & { kind: 'sell_shares'; orgId: OrgId; share: number })
   /** 持股超过现任领袖且达到 34% 时接管字号。 */
-  | (CommandBase & { kind: 'claim_leadership'; orgId: OrgId });
+  | (CommandBase & { kind: 'claim_leadership'; orgId: OrgId })
+  /** 谋求本国公职（分数过线且压过现任者才会成功）。 */
+  | (CommandBase & { kind: 'seek_office'; countryId: CountryId; officeId: string });
 
 export type CommandKind = Command['kind'];
 
@@ -709,6 +712,21 @@ export function applyCommand(
       };
     }
 
+    case 'seek_office': {
+      const application = applyForOffice(
+        state,
+        state.playerId,
+        command.countryId,
+        command.officeId,
+      );
+      if (!application.ok) return fail(application.reason);
+      return {
+        ok: true,
+        summary: application.reason,
+        refs: [{ kind: 'country', id: command.countryId }],
+      };
+    }
+
     default: {
       const exhaustive: never = command;
       return fail(`未知命令 ${(exhaustive as { kind?: string }).kind ?? '?'}`);
@@ -785,5 +803,7 @@ export function describeCommand(command: Command): string {
       return `卖出 ${(command.share * 100).toFixed(1)}% 股份`;
     case 'claim_leadership':
       return '接管字号';
+    case 'seek_office':
+      return `谋求 ${command.countryId} 的 ${command.officeId} 公职`;
   }
 }

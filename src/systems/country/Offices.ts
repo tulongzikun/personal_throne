@@ -193,3 +193,101 @@ export function syncOffices(state: WorldState): { countryId: string; text: strin
   }
   return notes;
 }
+
+/** 某国某个职位的规范 id。 */
+export function officeIdOf(countryId: string, seatId: string): string {
+  return `${countryId}:${seatId}`;
+}
+
+/** 谋求公职的最低评分：低于此值连门都进不去。 */
+export const OFFICE_MIN_SCORE = 0.45;
+
+/**
+ * 谋求公职的评分：专业能力为主，财力与既有影响力为辅。
+ * 全部落在 0–1，便于和门槛、现任者直接比较。
+ */
+export function officeScore(
+  state: WorldState,
+  characterId: CharacterId,
+  countryId: string,
+  seat: OfficeSeat,
+): number {
+  const character = state.characters[characterId];
+  if (!character) return 0;
+  const skill = Math.min(20, Math.max(0, character.skills[seat.skill] ?? 0)) / 20;
+  const wealth = Math.min(1, Math.max(0, character.wealth) / 20000);
+  const influence = influenceOf(state, characterId, countryId);
+  return Math.min(1, skill * 0.55 + wealth * 0.2 + influence * 0.25);
+}
+
+export interface OfficeApplication {
+  readonly ok: boolean;
+  readonly reason: string;
+}
+
+/**
+ * 谋职：活着、住在本国、评分过线且不被现任者压过，才能坐上席位。
+ * 成功时同时改写 `Country.offices` 与当事人 `Character.offices`。
+ */
+export function applyForOffice(
+  state: WorldState,
+  characterId: CharacterId,
+  countryId: string,
+  seatId: string,
+): OfficeApplication {
+  const country = state.countries[countryId];
+  if (!country) return { ok: false, reason: '这个国家不存在' };
+  const character = state.characters[characterId];
+  if (!character || !character.alive) return { ok: false, reason: '你不在人世' };
+  if (!residents(state, country).some((resident) => resident.id === characterId)) {
+    return { ok: false, reason: `你不在${country.name}居住，谋求不了这里的官职` };
+  }
+  const seat = officeSeatsFor(country).find((item) => item.id === seatId);
+  if (!seat) return { ok: false, reason: '这个国家没有这个职位' };
+
+  const id = officeIdOf(country.id, seat.id);
+  const office = country.offices.find((item) => item.id === id);
+  if (office?.holderId === characterId) {
+    return { ok: false, reason: `你已经是${seat.title}` };
+  }
+
+  const score = officeScore(state, characterId, countryId, seat);
+  if (score < OFFICE_MIN_SCORE) {
+    return {
+      ok: false,
+      reason: `你的资历还不足以出任${seat.title}（评分 ${(score * 100).toFixed(0)}，门槛 ${(OFFICE_MIN_SCORE * 100).toFixed(0)}）`,
+    };
+  }
+
+  const incumbent = office ? state.characters[office.holderId] : null;
+  if (office && incumbent?.alive) {
+    const theirs = officeScore(state, incumbent.id, countryId, seat);
+    if (theirs + 0.05 >= score) {
+      return { ok: false, reason: `现任${seat.title}${incumbent.name}根基更深，暂时动不了` };
+    }
+    incumbent.offices = incumbent.offices.filter((item) => item.id !== id);
+  }
+
+  if (office) {
+    office.holderId = characterId;
+  } else {
+    country.offices.push({
+      id,
+      title: seat.title,
+      holderId: characterId,
+      influence: seat.influence,
+      salaryMonthly: seat.salaryMonthly,
+    });
+  }
+  character.offices.push({
+    id,
+    countryId: country.id,
+    orgId: null,
+    title: seat.title,
+    rank: 1,
+    salaryMonthly: seat.salaryMonthly,
+    sinceDay: state.clock.day,
+  });
+
+  return { ok: true, reason: `${character.name} 出任${country.name}${seat.title}` };
+}
