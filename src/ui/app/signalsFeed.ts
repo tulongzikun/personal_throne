@@ -1,6 +1,6 @@
 /* 信号收集：把历史记录与已排定事件翻译成要弹给玩家的「世界信号」。 */
 
-import { formatDate } from '../../core/GameClock';
+import { formatDate, monthIndex } from '../../core/GameClock';
 import { eventText, eventTextForRefs } from '../../core/EventEngine';
 import type { WorldContent, WorldState } from '../../core/WorldState';
 import { regionNews } from '../../systems/region/RegionNews';
@@ -12,12 +12,15 @@ import { signalKey } from './appTypes';
 export interface SignalTracker {
   lastHistoryId: number;
   seenPending: Set<string>;
+  /** 上次播报远方见闻的月份序号（见 `monthIndex`）：每月只播一次。 */
+  lastNewsMonth: number;
 }
 
 export function newSignalTracker(state: WorldState): SignalTracker {
   return {
     lastHistoryId: state.history.at(-1)?.id ?? 0,
     seenPending: new Set(state.pendingEvents.map(signalKey)),
+    lastNewsMonth: monthIndex(state.clock.day),
   };
 }
 
@@ -103,20 +106,24 @@ export function collectSignals(context: SignalContext): WorldSignal[] {
     });
   }
 
-  // 远方见闻只挑要紧的地区局势说，不再逐条转述陌生人的遭遇。
-  const news = regionNews(state, 3);
-  if (news.length > 0) {
-    related.push({
-      title: `${news.length} 条远方见闻`,
-      body: '只挑要紧的说；传闻会变，亲自去一趟看到的情况才算数。',
-      meta: `${formatDate(state.clock.day)} · 世界在别处继续`,
-      tone: 'digest',
-      items: news.map((item) => ({
-        title: item.title,
-        subject: entityLabel(state, 'region', item.regionId),
-        body: item.body,
-      })),
-    });
+  // 远方见闻按月汇总：一个月只弹一次，免得逐日推进时反复打断玩家。
+  const month = monthIndex(state.clock.day);
+  if (month > tracker.lastNewsMonth) {
+    tracker.lastNewsMonth = month;
+    const news = regionNews(state, 3);
+    if (news.length > 0) {
+      related.push({
+        title: `${news.length} 条远方见闻`,
+        body: '每月汇总一次，只挑要紧的说；传闻会变，亲自去一趟看到的情况才算数。',
+        meta: `${formatDate(state.clock.day)} · 月度汇总 · 世界在别处继续`,
+        tone: 'digest',
+        items: news.map((item) => ({
+          title: item.title,
+          subject: entityLabel(state, 'region', item.regionId),
+          body: item.body,
+        })),
+      });
+    }
   }
   return related;
 }

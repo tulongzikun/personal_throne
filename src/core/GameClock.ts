@@ -61,6 +61,11 @@ export function fromDateParts(year: number, month: number, dayOfMonth: number): 
   return (year - 1) * DAYS_PER_YEAR + (month - 1) * DAYS_PER_MONTH + dayOfMonth;
 }
 
+/** 第几个月（0 起），用于「每月一次」这类按月汇总的判断。 */
+export function monthIndex(day: number): number {
+  return Math.floor(Math.max(0, day - 1) / DAYS_PER_MONTH);
+}
+
 export function isMonthEnd(day: number): boolean {
   return toDateParts(day).dayOfMonth === DAYS_PER_MONTH;
 }
