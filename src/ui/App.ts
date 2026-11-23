@@ -24,6 +24,7 @@ import { StartDialog } from './StartDialog';
 import { SuggestionsPanel } from './SuggestionsPanel';
 import { EventDialog } from './EventDialog';
 import { HistoryPanel } from './HistoryPanel';
+import { MonthReportPanel } from './MonthReportPanel';
 import { MapView } from './MapView';
 import { OrganizationPanel } from './OrganizationPanel';
 import { PlayerPanel } from './PlayerPanel';
@@ -72,6 +73,7 @@ export class App {
   private readonly debugDialog: DebugDialog;
   private readonly confirmDialog: ConfirmDialog;
   private readonly tour: Tour;
+  private readonly monthReport: MonthReportPanel;
   private readonly tabs = new Map<TabId, HTMLButtonElement>();
   private readonly sections = new Map<TabId, HTMLElement>();
   private readonly speedButtons = new Map<Speed, HTMLButtonElement>();
@@ -215,6 +217,7 @@ export class App {
       {
         setSpeed: (speed) => this.setSpeed(speed),
         jumpToNextEvent: () => this.jumpToNextEvent(),
+        endMonth: () => this.endMonthNow(),
       },
       this.speedButtons,
     );
@@ -245,6 +248,7 @@ export class App {
     this.confirmDialog = new ConfirmDialog(this.shell, (visible) =>
       this.holdForModal('confirm', visible),
     );
+    this.monthReport = new MonthReportPanel(this.shell);
     this.tour = new Tour(this.shell);
     installShortcuts({
       shell: this.shell,
@@ -338,6 +342,9 @@ export class App {
     this.pendingButton.hidden = pendingCount === 0;
     this.pendingButton.textContent = pendingCount > 0 ? `待决抉择 ${pendingCount}` : '待决抉择';
 
+    const report = this.engine.consumeMonthReport();
+    if (report) this.monthReport.show(report);
+
     this.mapView.update(state);
     this.playerPanel.update();
     this.suggestionsPanel.render();
@@ -346,6 +353,13 @@ export class App {
     for (const [speed, node] of this.speedButtons) {
       node.classList.toggle('is-active', speed === this.speed);
     }
+  }
+
+  /** 结束本月：剩下的日子当休养，推进到月末并弹月报。 */
+  private endMonthNow(): void {
+    const result = this.engine.dispatch({ kind: 'end_month' });
+    if (!result.ok) this.notify(result.summary ?? '这个月已经到底了', 'info');
+    this.refresh(true);
   }
 
   private panelFor(tab: TabId): { update(): void } {

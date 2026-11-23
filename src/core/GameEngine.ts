@@ -25,8 +25,17 @@ import {
   selectTriggered,
   type EventTarget,
 } from './EventEngine';
-import { formatDate, GameClock, Phase, settlementPoints, type SettlementPoint } from './GameClock';
+import {
+  DAYS_PER_MONTH,
+  formatDate,
+  GameClock,
+  Phase,
+  settlementPoints,
+  toDateParts,
+  type SettlementPoint,
+} from './GameClock';
 import { History } from './History';
+import { buildMonthlyReport, type MonthlyReport } from './MonthlyReport';
 import { composeChronicle } from './Chronicler';
 import { Random } from './Random';
 import { applyTiers, computeTiers } from './SimulationTier';
@@ -76,6 +85,8 @@ export class GameEngine {
   private rng: Random;
   private readonly history: History;
   private readonly stopAtChoices: boolean;
+  /** 最近一次月报；界面取走后清空，避免同一个月弹两次。 */
+  private monthReport: MonthlyReport | null = null;
 
   constructor(state: WorldState, content: WorldContent, options: { stopAtChoices?: boolean } = {}) {
     this.state = state;
@@ -184,6 +195,11 @@ export class GameEngine {
       this.syncCounters();
       return result;
     }
+    if (command.kind === 'end_month') {
+      const result = this.endMonth();
+      this.syncCounters();
+      return result;
+    }
     const result = applyCommand(this.state, command, this.content);
     if (result.ok) {
       const actor = this.state.characters[this.state.playerId];
@@ -207,6 +223,47 @@ export class GameEngine {
       this.syncCounters();
     }
     return result;
+  }
+
+  /**
+   * 结束本月：把剩下的日子按休养处理（没有收入，身体缓过来一点），推进到月末。
+   * 这是玩家唯一不需要行动力的「跳过时间」入口，也是月报的触发点。
+   */
+  endMonth(): CommandResult {
+    const player = this.state.characters[this.state.playerId];
+    if (!player?.alive) return { ok: false, summary: '你已经不在人世，无法再结束这个月' };
+    // 结算到本月最后一天（含）：日历指针停在「下个月第 1 天」。
+    const left = DAYS_PER_MONTH - toDateParts(this.state.clock.day).dayOfMonth + 1;
+    player.actionPoints = 0;
+    this.advanceDays(left);
+    const after = this.state.characters[this.state.playerId];
+    const rest = after?.alive === true ? Math.min(6, Math.ceil(left / 5)) : 0;
+    if (after?.alive === true) after.health = Math.min(100, after.health + rest);
+    const summary =
+      after?.alive === true
+        ? `你把剩下的 ${left} 天用来休养，健康 +${rest}（当前 ${after.health}），这个月收尾了`
+        : '这个月还没走完，人就不在了';
+    this.record(
+      'command',
+      `${formatDate(this.state.clock.day)} ${summary}`,
+      [{ kind: 'character', id: this.state.playerId }],
+      null,
+      null,
+      'minor',
+    );
+    return { ok: true, summary, refs: [{ kind: 'character', id: this.state.playerId }] };
+  }
+
+  /** 取走最近一次月报（取走后清空）。 */
+  consumeMonthReport(): MonthlyReport | null {
+    const report = this.monthReport;
+    this.monthReport = null;
+    return report;
+  }
+
+  /** 只看一眼，不取走。 */
+  get lastMonthReport(): MonthlyReport | null {
+    return this.monthReport;
   }
 
   /**
@@ -538,7 +595,19 @@ export class GameEngine {
 
   private onWrapUpPhase(ctx: SettleContext): void {
     // 月末：把当月的贸易与收支并成一条账本，编年史只留大事。
-    if (isMonthEnd(ctx.day)) this.history.compactMonth(ctx.day);
+    if (isMonthEnd(ctx.day)) {
+      this.history.compactMonth(ctx.day);
+      const report = buildMonthlyReport(this.state, ctx.day);
+      this.monthReport = report;
+      this.record(
+        'month',
+        `${formatDate(ctx.day)} ${report.title}：${this.state.characters[this.state.playerId]?.name ?? '你'}的月末小结（${report.changes[0] ?? '无事发生'}）`,
+        this.state.playerId ? [{ kind: 'character', id: this.state.playerId }] : [],
+        null,
+        report.body,
+        'minor',
+      );
+    }
 
     // 季度：分层重算（L1/L2/L3）。
     if (isQuarterEnd(ctx.day)) {
@@ -705,7 +774,16 @@ export class GameEngine {
   }
 
   private record(
-    kind: 'event' | 'finance' | 'policy' | 'command' | 'trade' | 'milestone' | 'death' | 'war',
+    kind:
+      | 'event'
+      | 'finance'
+      | 'policy'
+      | 'command'
+      | 'trade'
+      | 'milestone'
+      | 'death'
+      | 'war'
+      | 'month',
     summary: string,
     refs: readonly { kind: string; id: string }[],
     causeEventId: string | null = null,

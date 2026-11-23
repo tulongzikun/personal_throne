@@ -2864,3 +2864,91 @@ select.input {
 .suggestions__item--wait .suggestions__order {
   color: var(--text-muted);
 }
+
+/* ---- P1：月报与「结束本月」 ---------------------------------------------- */
+
+.timebar__end {
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.timebar__end:hover {
+  background: var(--bg-hover-strong);
+  border-color: var(--gold-dim);
+}
+
+.month-report {
+  position: fixed;
+  right: 20px;
+  bottom: 76px;
+  z-index: 40;
+  width: 340px;
+  max-height: 62vh;
+  overflow: auto;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.month-report[hidden] {
+  display: none;
+}
+
+.month-report__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.month-report__title {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--gold-bright);
+  letter-spacing: 0.04em;
+}
+
+.month-report__close {
+  margin-left: auto;
+  min-width: 28px;
+  padding: 0 6px;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.month-report__label {
+  margin: 10px 0 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+.month-report__list {
+  margin: 0;
+  padding-left: 1.1em;
+  display: grid;
+  gap: 3px;
+}
+
+.month-report__item {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.month-report__list--looming .month-report__item {
+  color: var(--gold-mid);
+}
+
+.month-report__item--quiet {
+  color: var(--text-muted);
+  list-style: none;
+  margin-left: -1.1em;
+}

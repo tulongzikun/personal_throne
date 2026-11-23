@@ -62,6 +62,7 @@ export type Command =
     })
   /** 对挂起的玩家事件做出抉择；不传 choiceId 表示按效用择优。 */
   | (CommandBase & { kind: 'choose'; choiceId?: string })
+  | (CommandBase & { kind: 'end_month' })
   | (CommandBase & { kind: 'declare_war'; targetCountryId: CountryId })
   | (CommandBase & { kind: 'offer_peace'; targetCountryId: CountryId })
   | (CommandBase & { kind: 'levy_army'; units: number })

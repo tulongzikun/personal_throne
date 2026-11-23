@@ -6,6 +6,7 @@ import { SPEED_KEYS, type Speed, type TimebarRefs } from './appTypes';
 export interface TimebarHost {
   setSpeed(speed: Speed): void;
   jumpToNextEvent(): void;
+  endMonth(): void;
 }
 
 export function buildTimebar(
@@ -40,10 +41,15 @@ export function buildTimebar(
   const jump = button('跳到下一事件', () => host.jumpToNextEvent(), 'ghost');
   jump.classList.add('timebar__jump');
 
+  const endMonth = button('结束本月', () => host.endMonth(), 'ghost');
+  endMonth.classList.add('timebar__end');
+  endMonth.title = '把剩下的日子用来休养，直接看这个月的结算';
+  endMonth.dataset.tour = 'end-month';
+
   const hint = el('span', 'timebar__hint');
   hint.title = '空格暂停 / 继续 · 1 2 3 切速度 · 4 暂停 · ? 看引导 · Esc 关闭弹窗';
   const saveHint = el('span', 'timebar__hint timebar__hint--right', '存档仅写入本地浏览器');
-  timebar.append(segmented, jump, hint, saveHint);
+  timebar.append(segmented, jump, endMonth, hint, saveHint);
   shell.append(timebar);
   return { element: timebar, hint };
 }

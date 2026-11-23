@@ -176,6 +176,9 @@ export function applyCommand(
       return depositOrWithdraw(state, command);
     case 'withdraw':
       return depositOrWithdraw(state, command);
+    case 'end_month':
+      // 结束本月要推进日历，由引擎自己处理；走到这里说明调用方绕过了 dispatch。
+      return fail('结束本月必须经由引擎推进');
     default: {
       const exhaustive: never = command;
       return fail(`未知命令 ${(exhaustive as { kind?: string }).kind ?? '?'}`);
@@ -185,6 +188,8 @@ export function applyCommand(
 
 export function describeCommand(command: Command): string {
   switch (command.kind) {
+    case 'end_month':
+      return '结束本月';
     case 'invest':
       return `投资 ${command.amount}`;
     case 'recruit':

@@ -70,6 +70,7 @@ export const HISTORY_KIND_LABELS: Record<HistoryKind, string> = {
   milestone: '里程碑',
   death: '死亡',
   war: '战争',
+  month: '月报',
 };
 
 export const SKILL_LABELS: Record<string, string> = {
