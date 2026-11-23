@@ -1145,7 +1145,7 @@ interface EventDef {
 | 焦点陷阱 | `src/ui/dom.ts` 新增 `trapFocus(container)`：弹窗打开时 Tab/Shift+Tab 在弹窗内循环，不再跑到底下的世界；开局、事件、创建人物、存档四个弹窗都接上 |
 | 开局暂停 | `StartDialog` 与创建人物弹窗打开时 `holdForModal` 暂停，选完默认人物或创建成功后恢复 1×（此前开局界面后面时间在跑） |
 | 引导 | 第二步从「让时间流动」改为「行动力花在哪」，指向左栏建议卡（`data-tour="suggestions"`），解释每月 30 点行动力与三条建议 |
-| 性能 | 编年史按月折叠改为只扫数组尾部窗口（100 年 × 1200 个月不再每次全表扫描）；`tests/simulation.test.ts` 的 100 年门禁由 8000ms 收紧到 **4000ms**；`scripts/sim.ts --check` 输出单跑与复跑耗时 |
+| 性能 | 编年史按月折叠改为只扫数组尾部窗口（100 年 × 1200 个月不再每次全表扫描）；`tests/simulation.test.ts` 的 100 年门禁由 8000ms 收紧到 **4000ms**，并改用 `process.cpuUsage()` 计时——整套用例并行跑时墙钟会被同机其它测试拖长，门禁要衡量的是模拟本身的算力成本；`scripts/sim.ts --check` 输出单跑与复跑耗时 |
 | 测试 | 新增 `tests/stage6-ui.test.ts` 5 例（对比度、字号、焦点陷阱、开局暂停、方向键切换标签）。全套 **39 文件 / 237 例** |
 | 实测 | 100 年 demo：单跑 **3.4 s**（门禁 4.0 s）、复跑 3.8 s，`--check` 一致；历史 8,675 条 |
 
