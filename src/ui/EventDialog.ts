@@ -1,6 +1,6 @@
 /** 事件对话框：世界事件与待办预兆共用一个模态队列，关闭后自动显示下一条。 */
 
-import { el } from './dom';
+import { el, trapFocus } from './dom';
 
 /** 模态队列上限：超出的信号直接折叠进编年史，避免 30× 下无限堆积。 */
 export interface EventDialogOptions {
@@ -81,6 +81,7 @@ export class EventDialog {
     this.root.addEventListener('click', (event) => {
       if (event.target === this.root) this.dismiss();
     });
+    trapFocus(this.root);
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && this.visible) {
         event.preventDefault();

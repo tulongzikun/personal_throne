@@ -23,8 +23,8 @@
   /* 文字 */
   --text-primary: #e8dcc2;
   --text-secondary: #a89a82;
-  --text-muted: #6f6555;
-  --text-dim: #6f6555;
+  --text-muted: #9a8d77;
+  --text-dim: #9a8d77;
   --text-on-gold: #0d0b09;
 
   /* 金色系 */
@@ -286,7 +286,7 @@ a {
 
 .player-card__chips .chip {
   padding: 3px 8px;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   cursor: default;
 }
 
@@ -337,7 +337,7 @@ a {
 }
 
 .topbar__label {
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   letter-spacing: 0.18em;
   color: var(--text-muted);
 }
@@ -450,13 +450,13 @@ a {
 
 .panel__subtitle {
   margin-top: 2px;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
 .panel__note {
   margin-top: var(--space-3);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   line-height: 1.6;
   color: var(--text-muted);
 }
@@ -505,7 +505,7 @@ a {
   display: inline-block;
   flex: none;
   padding: 1px 8px;
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   letter-spacing: 0.12em;
   white-space: nowrap;
   color: var(--text-secondary);
@@ -629,7 +629,7 @@ a {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
 }
 
@@ -642,7 +642,7 @@ a {
 
 .legend__hint {
   margin-left: auto;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -721,7 +721,7 @@ a {
 
 .detail-head__meta {
   margin-top: 2px;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
 }
 
@@ -771,7 +771,7 @@ a {
 }
 
 .alignment-block__axes {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -787,7 +787,7 @@ a {
 }
 
 .stat__label {
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   letter-spacing: 0.12em;
   color: var(--text-muted);
 }
@@ -826,7 +826,7 @@ a {
 }
 
 .finance-cell__label {
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   letter-spacing: 0.1em;
   color: var(--text-muted);
 }
@@ -865,7 +865,7 @@ a {
 
 .table th {
   padding: 6px 8px;
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-align: left;
@@ -935,7 +935,7 @@ a {
 
 .link-list__meta {
   font-family: var(--font-num);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -981,7 +981,7 @@ a {
 
 .row-list__meta {
   grid-area: meta;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -1060,12 +1060,12 @@ a {
 
 .chip--small {
   padding: 2px 9px;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
 }
 
 .chip__badge {
   padding: 0 4px;
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   color: var(--bg-void);
   background: var(--gold);
   border-radius: 2px;
@@ -1094,13 +1094,13 @@ a {
 
 .bar__label {
   font-family: var(--font-num);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
 }
 
 .bar__value {
   font-family: var(--font-num);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -1153,13 +1153,13 @@ a {
 }
 
 .field__label {
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   letter-spacing: 0.1em;
   color: var(--text-muted);
 }
 
 .field__hint {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   line-height: 1.5;
   color: var(--text-muted);
 }
@@ -1236,7 +1236,7 @@ select.input {
 
 .btn--small {
   padding: 3px 10px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .btn--ghost {
@@ -1307,7 +1307,7 @@ select.input {
 
 .country-card__meta {
   margin-top: 2px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -1321,7 +1321,7 @@ select.input {
   align-items: center;
   gap: var(--space-2);
   padding: 3px 0;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
 }
 
 .policy-row__label {
@@ -1330,7 +1330,7 @@ select.input {
 
 .policy-row__value {
   font-family: var(--font-num);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   text-align: right;
 }
@@ -1368,7 +1368,7 @@ select.input {
   margin-top: var(--space-2);
   padding: 4px 8px;
   font-family: var(--font-num);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   letter-spacing: 0.12em;
   color: var(--gold-dim);
   border-bottom: 1px solid var(--border);
@@ -1383,7 +1383,7 @@ select.input {
 
 .history__place {
   padding: 0 6px;
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -1392,7 +1392,7 @@ select.input {
 
 .history__mine {
   padding: 0 6px;
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   color: #1b1712;
   background: var(--gold);
   border-radius: 999px;
@@ -1415,13 +1415,13 @@ select.input {
 
 .history__day {
   font-family: var(--font-num);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
 .history__kind {
-  font-size: 0.64rem;
+  font-size: 0.75rem;
   letter-spacing: 0.08em;
   color: var(--text-secondary);
   text-align: center;
@@ -1528,7 +1528,7 @@ select.input {
 .modal__badge {
   flex: none;
   padding: 1px 8px;
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   letter-spacing: 0.14em;
   color: var(--gold);
   background: var(--gold-soft);
@@ -1637,7 +1637,7 @@ select.input {
 }
 
 .timebar__hint {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -1802,17 +1802,17 @@ select.input {
 
 .create-bg__meta,
 .create-bg__skills {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--text-dim);
 }
 
 .create-bg__desc {
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   line-height: 1.45;
 }
 
 .create-counter {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   letter-spacing: 0.06em;
   color: var(--text-dim);
 }
@@ -1851,13 +1851,13 @@ select.input {
 }
 
 .create-talent__attr {
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   letter-spacing: 0.06em;
   color: var(--gold);
 }
 
 .create-talent__desc {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   line-height: 1.4;
   color: var(--text-dim);
 }
@@ -1870,7 +1870,7 @@ select.input {
 
 .create-error {
   margin: var(--space-2) 0 0;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   color: var(--danger, var(--danger));
 }
 
@@ -2095,19 +2095,19 @@ select.input {
 }
 
 .save-slot__note {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
 .save-slot__when {
   font-family: var(--font-num);
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
 }
 
 .save-slot__meta {
   font-family: var(--font-num);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -2119,7 +2119,7 @@ select.input {
 }
 
 .save-slot__confirm {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--warning);
 }
 
@@ -2208,14 +2208,14 @@ select.input {
 }
 
 .tour__step {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   letter-spacing: 0.16em;
   color: var(--gold);
 }
 
 .tour__skip {
   padding: 2px 4px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   cursor: pointer;
   background: none;
@@ -2445,9 +2445,9 @@ select.input {
 }
 
 .action-group__title {
-  font-size: 0.74em;
+  font-size: 0.75rem;
   letter-spacing: 0.06em;
-  color: var(--ink-soft, #6c6154);
+  color: var(--text-muted, #9a8d77);
 }
 
 .action-group__buttons {
@@ -2459,9 +2459,9 @@ select.input {
 .player-card__hint {
   width: 100%;
   margin: 4px 0 0;
-  font-size: 0.74em;
+  font-size: 0.75rem;
   line-height: 1.5;
-  color: var(--ink-soft, #6c6154);
+  color: var(--text-muted, #9a8d77);
 }
 
 /* 地区页的「前往」：路程、路费与消耗写清楚，按钮在主行动色上。 */
@@ -2481,7 +2481,7 @@ select.input {
   margin: 0 0 var(--space-2);
   font-size: 0.84em;
   line-height: 1.55;
-  color: var(--ink-soft, #6c6154);
+  color: var(--text-muted, #9a8d77);
 }
 
 .travel__hint--risk {
@@ -2508,7 +2508,7 @@ select.input {
 .suggestions__subtitle {
   margin: 2px 0 0;
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
 }
 
 .suggestions__list {
@@ -2537,7 +2537,7 @@ select.input {
   width: 18px;
   height: 18px;
   color: var(--ink-strong);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   background: var(--gold-soft);
   border-radius: 50%;
 }
@@ -2550,13 +2550,13 @@ select.input {
 .suggestions__detail {
   margin: 2px 0 0;
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   line-height: 1.45;
 }
 
 .suggestions__empty {
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .suggestions__go {
@@ -2621,16 +2621,16 @@ select.input {
 }
 .player-card__dossier .character-card__line {
   margin: 2px 0;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-muted, #9a8f7d);
 }
 .player-card__dossier .section-title {
   margin: 8px 0 4px;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
 }
 .player-card__dossier .bar__label,
 .player-card__dossier .bar__value {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
 }
 .player-card__dossier .alignment-grid {
   gap: 2px;
@@ -2641,13 +2641,13 @@ select.input {
 }
 .player-card__dossier .alignment-block__label,
 .player-card__dossier .alignment-block__axes {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
 }
 
 /* 叙事正文：事件与里程碑后面的两三句话，默认折行显示在条目下方。 */
 .history__note {
   grid-column: 1 / -1;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   line-height: 1.55;
   color: var(--text-secondary);
   white-space: pre-line;

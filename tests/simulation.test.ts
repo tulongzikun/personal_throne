@@ -50,13 +50,13 @@ describe('模拟确定性（R1）', () => {
     expect(state.history.length).toBeGreaterThan(1200);
   }, 60_000);
 
-  it('100 年快进在性能预算内（计划 §9.3 / D7：14 区 < 3.5s，CI 留 2 倍余量）', () => {
+  it('100 年快进在性能预算内（计划 §9.3 / D7：14 区 < 3.5s，门禁 4.0s）', () => {
     const engine = makeEngine('r1-perf');
     const started = performance.now();
     engine.advanceDays(DAYS_PER_YEAR * 100);
     const elapsed = performance.now() - started;
 
-    expect(elapsed).toBeLessThan(8000);
+    expect(elapsed).toBeLessThan(4000);
   }, 60_000);
 
   it('不同种子会得到不同世界', () => {

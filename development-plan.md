@@ -1135,6 +1135,20 @@ interface EventDef {
 | 测试 | 新增 `tests/stage3-fuzz.test.ts` 5 例：5000 条恶意命令 0 异常、状态深度扫描无 NaN、`validateWorld` 通过；死亡拒绝；原型键拒绝；数组契约迁移；缺哈希拒绝。全套 **36 文件 / 221 例** |
 | 产物 | `release/index.html` 378,757 字节（预算 24.1%） |
 
+### 8.46 阶段 6：界面与性能（2026-11-20）
+
+| 项 | 内容 |
+|---|---|
+| 对比度 | `--text-muted`/`--text-dim` 由 `#6f6555` 提到 `#9a8d77`；`var(--ink-soft, #6c6154)` 的落色改为 `--text-muted`。四种底色（void/sunken/panel/elevated）上四档文字全部 ≥ 4.5:1（原 3.14:1） |
+| 字号 | 全仓 `font-size` 低于 `0.75rem` 的一律抬到 `0.75rem`（原最小 0.6rem ≈ 9.6px）；`tests/stage6-ui.test.ts` 直接扫 CSS 断言无小于 12px 的字号 |
+| 标签页 | `role="tab"` 补 `id`/`tabindex`（只有当前页可 Tab 进入）、`role="tabpanel"` 补 `aria-labelledby`；方向键 `←/→`、`Home`/`End` 切换并把焦点带过去 |
+| 焦点陷阱 | `src/ui/dom.ts` 新增 `trapFocus(container)`：弹窗打开时 Tab/Shift+Tab 在弹窗内循环，不再跑到底下的世界；开局、事件、创建人物、存档四个弹窗都接上 |
+| 开局暂停 | `StartDialog` 与创建人物弹窗打开时 `holdForModal` 暂停，选完默认人物或创建成功后恢复 1×（此前开局界面后面时间在跑） |
+| 引导 | 第二步从「让时间流动」改为「行动力花在哪」，指向左栏建议卡（`data-tour="suggestions"`），解释每月 30 点行动力与三条建议 |
+| 性能 | 编年史按月折叠改为只扫数组尾部窗口（100 年 × 1200 个月不再每次全表扫描）；`tests/simulation.test.ts` 的 100 年门禁由 8000ms 收紧到 **4000ms**；`scripts/sim.ts --check` 输出单跑与复跑耗时 |
+| 测试 | 新增 `tests/stage6-ui.test.ts` 5 例（对比度、字号、焦点陷阱、开局暂停、方向键切换标签）。全套 **39 文件 / 237 例** |
+| 实测 | 100 年 demo：单跑 **3.4 s**（门禁 4.0 s）、复跑 3.8 s，`--check` 一致；历史 8,675 条 |
+
 ### 8.45 阶段 5：叙事（2026-11-20）
 
 | 项 | 内容 |

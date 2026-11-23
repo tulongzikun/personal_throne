@@ -16,7 +16,7 @@ import {
   type SaveEnvelope,
 } from '../storage/SaveManager';
 import type { NoticeTone } from './context';
-import { clear, el, messageOf } from './dom';
+import { clear, el, messageOf, trapFocus } from './dom';
 
 interface SaveSlotSpec {
   readonly slot: string;
@@ -125,6 +125,7 @@ export class SaveDialog {
       if (event.target === this.root) this.close();
     });
     parent.append(this.root);
+    trapFocus(this.root);
   }
 
   get isOpen(): boolean {

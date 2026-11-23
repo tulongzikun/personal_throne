@@ -54,6 +54,8 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
   const entries: FinanceEntry[] = [];
   const { interestRateMonthly, profitTaxRate, adminRateOfRevenue } = content.balance.finance;
   const positions = computePositions(state, content);
+  // 每月的月俸名单只扫一遍人物：组织多、人物多时逐组织全表扫描是平方级的。
+  const wageLines = wageLinesByOrg(state, state.clock.day);
 
   for (const orgId of sortedIds(state.organizations)) {
     const org = state.organizations[orgId];
@@ -81,7 +83,8 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     org.lastMonthTariff = 0;
     org.lastMonthTradeRevenue = 0;
 
-    const careerWages = careerWageBill(state, org, state.clock.day);
+    const lines = wageLines.get(org.id) ?? [];
+    const careerWages = lines.reduce((sum, line) => sum + line.salary, 0);
     state.stats.wagesBooked = (state.stats.wagesBooked ?? 0) + careerWages;
     const totalWages = payroll + careerWages;
     const grossProfit =
@@ -131,7 +134,7 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
     // 这样"账上发出去的工资"与"人手里收到的钱"始终对得上。
     if (careerWages > 0) {
       const payrollPool = Math.min(careerWages, wagesPaid);
-      const plan = wagePlan(state, org, careerWages);
+      const plan = lines;
       let distributed = 0;
       for (const line of plan) {
         const amount = Math.round((payrollPool * line.salary) / careerWages);
@@ -153,7 +156,7 @@ export function settleMonthlyFinance(state: WorldState, content: WorldContent): 
         org.cash -= repay;
         org.liabilities = Math.max(0, org.liabilities - repay);
         org.unpaidWages -= repay;
-        payWageArrears(state, org, repay);
+        payWageArrears(state, org, repay, wageLines.get(org.id) ?? []);
       }
     }
 
@@ -303,27 +306,36 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/** 组织里所有有生涯等级的成员，每月该拿的月俸合计。 */
+/** 一个在岗成员的月俸。 */
 interface WageLine {
   readonly characterId: string;
   readonly salary: number;
 }
 
-/** 组织里在岗、且有生涯月俸的成员，按人头列出来（用于按比例发薪）。 */
-function wagePlan(state: WorldState, org: { id: string }, day: number): WageLine[] {
-  const lines: WageLine[] = [];
+/** 按组织索引当月所有在岗月俸：一次扫描，替代逐组织全表扫描。 */
+function wageLinesByOrg(state: WorldState, day: number): Map<string, WageLine[]> {
+  const index = new Map<string, WageLine[]>();
   for (const member of Object.values(state.characters)) {
-    if (!member?.alive || member.organizationId !== org.id) continue;
+    if (!member?.alive) continue;
+    const orgId = member.organizationId;
+    if (!orgId) continue;
     if (!isOnDuty(state, member, day)) continue;
     const salary = careerSalary(member.careerRank);
-    if (salary > 0) lines.push({ characterId: member.id, salary });
+    if (salary <= 0) continue;
+    const lines = index.get(orgId);
+    if (lines) lines.push({ characterId: member.id, salary });
+    else index.set(orgId, [{ characterId: member.id, salary }]);
   }
-  return lines;
+  return index;
 }
 
 /** 补发欠薪：按在岗成员的月俸比例分掉这笔现金；没人可发就退回组织现金。 */
-function payWageArrears(state: WorldState, org: { id: string; cash: number }, pool: number): void {
-  const plan = wagePlan(state, org, state.clock.day);
+function payWageArrears(
+  state: WorldState,
+  org: { id: string; cash: number },
+  pool: number,
+  plan: readonly WageLine[],
+): void {
   const total = plan.reduce((sum, line) => sum + line.salary, 0);
   if (total <= 0) {
     org.cash += pool;
@@ -341,14 +353,4 @@ function payWageArrears(state: WorldState, org: { id: string; cash: number }, po
   state.stats.wagesCredited = (state.stats.wagesCredited ?? 0) + paid;
   const leftover = pool - paid;
   if (leftover > 0) org.cash += leftover;
-}
-
-function careerWageBill(state: WorldState, org: { id: string }, day: number): number {
-  let total = 0;
-  for (const member of Object.values(state.characters)) {
-    if (!member?.alive || member.organizationId !== org.id) continue;
-    if (!isOnDuty(state, member, day)) continue;
-    total += careerSalary(member.careerRank);
-  }
-  return total;
 }

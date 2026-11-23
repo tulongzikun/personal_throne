@@ -83,3 +83,28 @@ export function button(
 export function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
+
+/**
+ * 把 Tab 焦点关在容器里：弹窗打开时，键盘用户不该能 Tab 到底下的世界。
+ * 只在容器可见时生效，因此可以常驻安装。
+ */
+export function trapFocus(container: HTMLElement): void {
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab' || container.hidden) return;
+    const focusables = Array.from(
+      container.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    ).filter((node) => !node.closest('[hidden]'));
+    if (focusables.length === 0) return;
+    const first = focusables[0]!;
+    const last = focusables[focusables.length - 1]!;
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+}

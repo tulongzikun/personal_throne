@@ -134,17 +134,38 @@ export class App {
       const node = el('button', 'tab', tab.label);
       node.type = 'button';
       node.setAttribute('role', 'tab');
+      node.id = `tab-${tab.id}`;
+      node.tabIndex = tab.id === this.activeTab ? 0 : -1;
       node.setAttribute('aria-selected', String(tab.id === this.activeTab));
       if (tab.id === this.activeTab) node.classList.add('is-active');
       node.addEventListener('click', () => this.switchTab(tab.id));
       this.tabs.set(tab.id, node);
       tabbar.append(node);
     }
+    // 方向键在标签之间移动：键盘用户只需 Tab 一次进到标签栏。
+    tabbar.addEventListener('keydown', (event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const index = TABS.findIndex((item) => item.id === this.activeTab);
+      const next =
+        event.key === 'Home'
+          ? 0
+          : event.key === 'End'
+            ? TABS.length - 1
+            : (index + (event.key === 'ArrowLeft' ? TABS.length - 1 : 1)) % TABS.length;
+      const target = TABS[next];
+      if (!target) return;
+      this.switchTab(target.id);
+      this.tabs.get(target.id)?.focus();
+    });
+
     const panels = el('div', 'panels');
     for (const tab of TABS) {
       const section = el('section', 'panel');
       section.dataset.panel = tab.id;
       section.setAttribute('role', 'tabpanel');
+      section.id = `panel-${tab.id}`;
+      section.setAttribute('aria-labelledby', `tab-${tab.id}`);
       section.hidden = tab.id !== this.activeTab;
       this.sections.set(tab.id, section);
       panels.append(section);
@@ -167,6 +188,7 @@ export class App {
     };
     const playerSlot = el('div', 'player-rail__player');
     const suggestSlot = el('div', 'player-rail__suggestions');
+    suggestSlot.dataset.tour = 'suggestions';
     playerRail.append(playerSlot, suggestSlot);
     this.playerPanel = new PlayerPanel(playerSlot, this.deps);
     this.suggestionsPanel = new SuggestionsPanel(suggestSlot, this.deps);
@@ -232,8 +254,10 @@ export class App {
     this.autoSave = { lastDay: state.clock.day, busy: false };
 
     this.switchTab('region');
-    // 进入游戏即以 1× 推进；玩家可随时暂停。
-    this.setSpeed(1);
+    // 开局弹窗期间时间停着；关掉之后再让世界走起来。
+    this.holdForModal('create', false);
+    this.holdForModal('start', false);
+    if (this.openModals.size === 0) this.setSpeed(1);
     this.refresh(true);
     if (message) this.notify(message, 'ok');
     if (options.tour !== false) this.tour.maybeStart();
@@ -243,6 +267,7 @@ export class App {
 
   /** 首次开局：在有存档时跳过，由玩家决定沿用默认人物还是自建。 */
   offerStart(): void {
+    this.holdForModal('start', true);
     this.startDialog.open({
       onDefault: () => this.start('你是金穗行的少东家：持股 22%，掌柜是叔父霍布·金穗。'),
       onCreate: () => this.openCreator(),
@@ -319,6 +344,7 @@ export class App {
     for (const [id, node] of this.tabs) {
       node.classList.toggle('is-active', id === tab);
       node.setAttribute('aria-selected', String(id === tab));
+      node.tabIndex = id === tab ? 0 : -1;
     }
     this.panelFor(tab).update();
   }
@@ -343,6 +369,8 @@ export class App {
 
   /** 打开开局人物创建；成功后重挂界面到新玩家。 */
   private openCreator(): void {
+    this.holdForModal('start', false);
+    this.holdForModal('create', true);
     this.createDialog.open(this.engine.content, (choice) => {
       try {
         const result = this.engine.createPlayer(choice);

@@ -42,8 +42,19 @@ export function entityNames(state: WorldState): Map<string, string> {
   return names;
 }
 
+/** 单个 id 的直接查表：编年史每写一条都要用，别为它重建整张名字表。 */
+export function lookupName(state: WorldState, id: string): string | null {
+  return (
+    state.regions[id]?.name ??
+    state.countries[id]?.name ??
+    state.organizations[id]?.name ??
+    state.characters[id]?.name ??
+    null
+  );
+}
+
 export function nameOf(state: WorldState, id: string): string | null {
-  return entityNames(state).get(id) ?? null;
+  return lookupName(state, id);
 }
 
 /** 主体所在地区：人物看所在地，组织看母地区，地区看自身，国家看人口最多的地区。 */
@@ -73,8 +84,7 @@ function seatOf(state: WorldState, countryId: string): RegionId | null {
 
 /** 把摘要里的裸 id 换成展示名（一次扫描，不做全表比对）。 */
 export function humanize(state: WorldState, summary: string): string {
-  const names = entityNames(state);
-  return summary.replace(ID_TOKEN, (token) => names.get(token) ?? token);
+  return summary.replace(ID_TOKEN, (token) => lookupName(state, token) ?? token);
 }
 
 export interface Chronicle {
@@ -94,12 +104,11 @@ export function composeChronicle(
   summary: string,
   refs: readonly HistoryRef[],
 ): Chronicle {
-  const names = entityNames(state);
   const text = humanize(state, summary);
   let subject: HistoryRef | null = null;
   let place: RegionId | null = null;
   for (const ref of refs) {
-    if (names.has(ref.id)) {
+    if (lookupName(state, ref.id) !== null) {
       subject ??= ref;
       place ??= regionOfRef(state, ref);
     }
@@ -107,12 +116,12 @@ export function composeChronicle(
   }
   if (!subject) {
     for (const ref of refs) {
-      if (names.has(ref.id)) subject = ref;
+      if (lookupName(state, ref.id) !== null) subject = ref;
     }
   }
   if (place) {
     // 只要发生过一次 id→名字替换，或文本里已经出现主体名，就算有专名；避免全表扫描。
-    const subjectName = subject ? (names.get(subject.id) ?? null) : null;
+    const subjectName = subject ? lookupName(state, subject.id) : null;
     const anyName = text !== summary || (subjectName !== null && text.includes(subjectName));
     if (!anyName) {
       const prefixSubject = subjectName;
@@ -120,8 +129,8 @@ export function composeChronicle(
       const prefix = [placeName, prefixSubject].filter(Boolean).join(' · ');
       if (prefix) return { summary: `${prefix}：${text}`, subject, place };
     }
-  } else if (subject && names.has(subject.id)) {
-    const name = names.get(subject.id)!;
+  } else if (subject && lookupName(state, subject.id) !== null) {
+    const name = lookupName(state, subject.id)!;
     if (!text.includes(name)) return { summary: `${name}：${text}`, subject, place };
   }
   return { summary: text, subject, place };

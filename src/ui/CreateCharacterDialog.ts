@@ -9,7 +9,7 @@ import type { CharacterCreationChoice } from '../systems/character/CharacterCrea
 import { TALENT_PICKS, TALENT_TAGS, type TalentTag } from '../systems/character/CharacterCreator';
 import type { Sex, WorldContent } from '../core/WorldState';
 import { ATTRIBUTE_KEYS } from '../core/WorldState';
-import { el, fmtMoney, messageOf } from './dom';
+import { el, fmtMoney, messageOf, trapFocus } from './dom';
 import { CLASS_LABELS, ORG_TYPE_LABELS, SKILL_LABELS, labelOf } from './labels';
 
 export interface CreateCharacterResult {
@@ -130,6 +130,7 @@ export class CreateCharacterDialog {
     this.root.addEventListener('click', (event) => {
       if (event.target === this.root) this.close();
     });
+    trapFocus(this.root);
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !this.root.hidden) this.close();
     });

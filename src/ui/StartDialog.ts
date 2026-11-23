@@ -5,7 +5,7 @@
  * 两条路都落在同一个 `GameEngine` 上，选择本身的规则不在这里实现。
  */
 
-import { el } from './dom';
+import { el, trapFocus } from './dom';
 
 export interface StartDialogHandlers {
   readonly onDefault: () => void;
@@ -57,6 +57,7 @@ export class StartDialog {
     this.root.addEventListener('click', (event) => {
       if (event.target === this.root) this.close();
     });
+    trapFocus(this.root);
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && !this.root.hidden) this.close();
     });
