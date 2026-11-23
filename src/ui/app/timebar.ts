@@ -30,6 +30,8 @@ export function buildTimebar(
         ? '暂停 / 继续（空格，或数字键 4）'
         : `${speed}× 速度（数字键 ${SPEED_KEYS[speed]}）`;
     if (speed === 0) node.classList.add('is-active');
+    // 角标：键盘按得动的按钮就把键位写在上面（空格暂停另有提示，不重复角标）。
+    node.append(el('kbd', 'kbd segmented__kbd', speed === 0 ? '4' : SPEED_KEYS[speed]));
     node.addEventListener('click', () => host.setSpeed(speed));
     speedButtons.set(speed, node);
     segmented.append(node);

@@ -7,7 +7,6 @@
 import type { Command } from '../core/CommandBus';
 import type { Organization } from '../core/WorldState';
 import type { UiDeps } from './context';
-import { renderCharacterCard } from './CharacterCard';
 import { button, clear, el, fmtMoney, fmtPct } from './dom';
 import { alignmentLabel } from '../systems/character/Profile';
 import {
@@ -222,15 +221,6 @@ export class PlayerPanel {
       }
     }
     this.host.append(actions);
-
-    // 左侧也放一张完整人物卡：不用切到「人物」面板就能看到六维与阵营。
-    const card = el('details', 'player-card__dossier');
-    card.open = true;
-    card.append(el('summary', 'player-card__dossier-title', '我的人物卡'));
-    const cardBody = el('div', 'player-card__dossier-body');
-    renderCharacterCard(cardBody, deps, player, { compact: true });
-    card.append(cardBody);
-    this.host.append(card);
   }
 
   /** 贩货按钮直接算好最优货种、目的地与预期利润，别让玩家对着一个黑箱猜。 */

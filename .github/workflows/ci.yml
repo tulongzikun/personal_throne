@@ -32,6 +32,9 @@ jobs:
       - name: 单元测试
         run: pnpm test
 
+      - name: 测量快照（10 年，四类指标）
+        run: pnpm measure --seed demo --years 10 --out .tmp/measure-demo.json
+
       - name: 构建单文件
         run: pnpm build
 

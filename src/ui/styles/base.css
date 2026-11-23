@@ -2659,3 +2659,208 @@ select.input {
 .history__row--noted {
   padding-bottom: 8px;
 }
+
+/* --------------------------------------------------------------------------
+   P0：顶栏读数与 ☰ 菜单、帮助、确认、调试
+   -------------------------------------------------------------------------- */
+
+.topbar__line {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+/* 数字用等宽字形，避免每次刷新时宽度跳动。 */
+.topbar__value,
+.topbar__delta,
+.debug__value,
+.help__term {
+  font-variant-numeric: tabular-nums;
+}
+
+.topbar__delta {
+  font-family: var(--font-num);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.topbar__delta.is-up {
+  color: var(--success, #7ba05b);
+}
+
+.topbar__delta.is-down {
+  color: var(--danger, #b4544a);
+}
+
+.topbar__menu-btn {
+  min-width: 34px;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--gold);
+  border-color: var(--gold-dim);
+}
+
+.topbar__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: var(--space-4);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  padding: 6px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+}
+
+.topbar__menu[hidden] {
+  display: none;
+}
+
+.topbar__menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--text-primary);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.topbar__menu-item:hover,
+.topbar__menu-item:focus-visible {
+  color: var(--gold);
+  background: rgba(217, 180, 91, 0.1);
+  outline: none;
+}
+
+.topbar {
+  position: relative;
+}
+
+.kbd {
+  padding: 0 5px;
+  font-family: var(--font-num);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+}
+
+/* 弹窗角上的 × 与底部按钮行 */
+.modal__x {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  font: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--text-secondary);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal__x:hover,
+.modal__x:focus-visible {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  outline: none;
+}
+
+.modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-top: var(--space-5);
+}
+
+.modal__lead {
+  margin: 0 0 var(--space-3);
+  font-size: 0.88rem;
+  line-height: 1.75;
+  color: var(--text-secondary);
+}
+
+/* 帮助：三组，每组一张小表 */
+.help__group + .help__group {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.help__title {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  letter-spacing: 0.16em;
+  color: var(--gold);
+}
+
+.help__hint {
+  margin: 0 0 var(--space-2);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.help__list {
+  margin: 0;
+}
+
+.help__row {
+  display: grid;
+  grid-template-columns: 8em 1fr;
+  gap: var(--space-3);
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.help__term {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.help__text {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+/* 调试信息 */
+.debug__row {
+  display: grid;
+  grid-template-columns: 7em 1fr;
+  gap: var(--space-3);
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.debug__term {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.debug__value {
+  margin: 0;
+  font-family: var(--font-num);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* 行动力用完时的那一条 */
+.suggestions__item--wait .suggestions__order {
+  color: var(--text-muted);
+}

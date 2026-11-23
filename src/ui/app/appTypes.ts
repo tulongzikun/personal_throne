@@ -31,10 +31,12 @@ export const SPEED_CONFIG: Record<
 
 export interface TopbarRefs {
   readonly date: HTMLElement;
-  readonly player: HTMLElement;
   readonly cash: HTMLElement;
+  readonly cashDelta: HTMLElement;
+  readonly health: HTMLElement;
+  readonly healthDelta: HTMLElement;
+  readonly actionPoints: HTMLElement;
   readonly speed: HTMLElement;
-  readonly hash: HTMLElement;
   readonly toast: HTMLElement;
 }
 

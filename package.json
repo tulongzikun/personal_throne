@@ -16,6 +16,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "sim": "tsx scripts/sim.ts",
+    "measure": "tsx scripts/measure.ts",
+    "bot": "tsx scripts/playtest-bot.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "verify": "tsc --noEmit && eslint . && prettier --check . && vitest run && vite build && node scripts/release.mjs"

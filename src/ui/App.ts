@@ -13,6 +13,9 @@ import { formatDate, nextBoundary, Phase, toDateParts } from '../core/GameClock'
 import { GameEngine } from '../core/GameEngine';
 import type { WorldState } from '../core/WorldState';
 import { CharacterPanel } from './CharacterPanel';
+import { ConfirmDialog } from './ConfirmDialog';
+import { DebugDialog } from './DebugDialog';
+import { HelpDialog } from './HelpDialog';
 import type { NoticeTone, UiDeps } from './context';
 import { ArmyPanel } from './ArmyPanel';
 import { CountryPanel } from './CountryPanel';
@@ -44,7 +47,7 @@ import { installShortcuts, labelButtons, observeButtons } from './app/keyboard';
 import { maybeFirstReport, checkPlayerDeath, type LifecycleDeps } from './app/lifecycle';
 import { collectSignals, newSignalTracker, type SignalTracker } from './app/signalsFeed';
 import { buildTimebar } from './app/timebar';
-import { buildLegend, buildTopbar } from './app/topbar';
+import { buildLegend, buildTopbar, closeTopbarMenu } from './app/topbar';
 
 export class App {
   private engine: GameEngine;
@@ -65,6 +68,9 @@ export class App {
   private readonly createDialog: CreateCharacterDialog;
   private readonly startDialog: StartDialog;
   private readonly saveDialog: SaveDialog;
+  private readonly helpDialog: HelpDialog;
+  private readonly debugDialog: DebugDialog;
+  private readonly confirmDialog: ConfirmDialog;
   private readonly tour: Tour;
   private readonly tabs = new Map<TabId, HTMLButtonElement>();
   private readonly sections = new Map<TabId, HTMLElement>();
@@ -83,11 +89,14 @@ export class App {
   private signals: SignalTracker;
   private shownChoices = new Set<string>();
   private pendingButton!: HTMLButtonElement;
-  private lastHashDay = 0;
   private deathShown = { value: false };
   private autoSave: AutoSaveState = { lastDay: 0, busy: false };
   private suggestionsPanel!: SuggestionsPanel;
   private firstReport = { value: false };
+  /** 读数基准：每 30 天记一次，顶栏的 Δ 就是「这个月的变化」。 */
+  private snapshot = { day: 0, cash: 0, health: 0, renown: 0 };
+  /** 每个标签页各自的滚动位置：切回来时回到原处。 */
+  private readonly scrollTops = new Map<TabId, number>();
 
   constructor(root: HTMLElement, engine: GameEngine) {
     this.root = root;
@@ -101,7 +110,9 @@ export class App {
       reopenChoices: () => this.reopenChoices(),
       restartTour: () => this.tour.restart(),
       exportGame: () => this.exportGame(),
-      openCreator: () => this.openCreator(),
+      openCreator: () => this.confirmNewGame(),
+      openHelp: () => this.helpDialog.open(),
+      openDebug: () => this.debugDialog.open(),
       importFile: (file) => void this.importFile(file),
     });
     this.topbar = topbar.refs;
@@ -221,6 +232,19 @@ export class App {
       notify: (message, tone) => this.notify(message, tone),
       onVisibilityChange: (visible) => this.holdForModal('save', visible),
     });
+    this.helpDialog = new HelpDialog(
+      this.shell,
+      { restartTour: () => this.tour.restart() },
+      (visible) => this.holdForModal('help', visible),
+    );
+    this.debugDialog = new DebugDialog(
+      this.shell,
+      () => this.engine,
+      (visible) => this.holdForModal('debug', visible),
+    );
+    this.confirmDialog = new ConfirmDialog(this.shell, (visible) =>
+      this.holdForModal('confirm', visible),
+    );
     this.tour = new Tour(this.shell);
     installShortcuts({
       shell: this.shell,
@@ -249,9 +273,15 @@ export class App {
 
     this.signals = newSignalTracker(state);
     this.shownChoices = new Set();
-    this.lastHashDay = 0;
     this.deathShown = { value: false };
     this.autoSave = { lastDay: state.clock.day, busy: false };
+    this.snapshot = {
+      day: state.clock.day,
+      cash: player?.wealth ?? 0,
+      health: Math.round(player?.health ?? 0),
+      renown: 0,
+    };
+    this.scrollTops.clear();
 
     this.switchTab('region');
     // 开局弹窗期间时间停着；关掉之后再让世界走起来。
@@ -283,23 +313,30 @@ export class App {
     const parts = toDateParts(state.clock.day);
     this.topbar.date.textContent = `第 ${parts.year} 年 ${parts.month} 月 ${parts.dayOfMonth} 日`;
     const player = state.characters[state.playerId];
-    this.topbar.player.textContent = player?.name ?? '未知';
-    this.topbar.cash.textContent = player ? fmtMoney(player.wealth) : '—';
+    const cash = player?.wealth ?? 0;
+    const health = player ? Math.round(player.health) : 0;
+    this.topbar.cash.textContent = player ? fmtMoney(cash) : '—';
+    this.topbar.health.textContent = player ? String(health) : '—';
+    this.topbar.actionPoints.textContent = player ? String(player.actionPoints) : '—';
     this.topbar.speed.textContent = this.speed === 0 ? '暂停' : `${this.speed}×`;
+
+    // Δ 是「和 30 天前相比」：基准每隔一个月挪一次，跨日刷新不会把变化抹掉。
+    if (
+      forceHash ||
+      state.clock.day < this.snapshot.day ||
+      state.clock.day - this.snapshot.day >= 30
+    ) {
+      this.snapshot = { day: state.clock.day, cash, health, renown: 0 };
+      this.setDelta(this.topbar.cashDelta, 0);
+      this.setDelta(this.topbar.healthDelta, 0);
+    } else {
+      this.setDelta(this.topbar.cashDelta, cash - this.snapshot.cash);
+      this.setDelta(this.topbar.healthDelta, health - this.snapshot.health);
+    }
+
     const pendingCount = state.pendingChoices.length;
     this.pendingButton.hidden = pendingCount === 0;
     this.pendingButton.textContent = pendingCount > 0 ? `待决抉择 ${pendingCount}` : '待决抉择';
-
-    if (
-      forceHash ||
-      state.clock.day < this.lastHashDay ||
-      state.clock.day - this.lastHashDay >= 30
-    ) {
-      const hash = this.engine.hash();
-      this.topbar.hash.textContent = `#${hash.slice(0, 12)}`;
-      this.topbar.hash.title = `状态哈希 ${hash}`;
-      this.lastHashDay = state.clock.day;
-    }
 
     this.mapView.update(state);
     this.playerPanel.update();
@@ -339,6 +376,9 @@ export class App {
   /* ------------------------------------------------------------------ */
 
   private switchTab(tab: TabId): void {
+    // 记下离开时的滚动位置：面板是各自独立的滚动容器。
+    const previous = this.sections.get(this.activeTab);
+    if (previous && !previous.hidden) this.scrollTops.set(this.activeTab, previous.scrollTop);
     this.activeTab = tab;
     for (const [id, section] of this.sections) section.hidden = id !== tab;
     for (const [id, node] of this.tabs) {
@@ -347,6 +387,8 @@ export class App {
       node.tabIndex = id === tab ? 0 : -1;
     }
     this.panelFor(tab).update();
+    const section = this.sections.get(tab);
+    if (section) section.scrollTop = this.scrollTops.get(tab) ?? 0;
   }
 
   private openRegion(regionId: string): void {
@@ -365,6 +407,27 @@ export class App {
   private openCharacter(characterId: string): void {
     this.characterPanel.select(characterId);
     this.switchTab('character');
+  }
+
+  /** 顶栏的 Δ：0 不显示，正负用箭头与颜色双编码。 */
+  private setDelta(node: HTMLElement, delta: number): void {
+    if (delta === 0) {
+      node.textContent = '';
+      node.className = 'topbar__delta';
+      return;
+    }
+    node.textContent = `${delta > 0 ? '↑' : '↓'}${fmtMoney(Math.abs(delta))}`;
+    node.className = `topbar__delta ${delta > 0 ? 'is-up' : 'is-down'}`;
+  }
+
+  /** 新开一局：会盖掉当前进度，所以先问一句。 */
+  private confirmNewGame(): void {
+    this.confirmDialog.open({
+      title: '新开一局？',
+      body: '当前这局会停在这里（自动存档不会被删除，随时能在存档里读回来），然后进入人物创建。',
+      confirmLabel: '新开一局',
+      onConfirm: () => this.openCreator(),
+    });
   }
 
   /** 打开开局人物创建；成功后重挂界面到新玩家。 */
@@ -431,8 +494,24 @@ export class App {
 
   /** Esc：先关存档，再关引导；都没开就交给事件弹窗自己处理。 */
   private closeOverlay(): boolean {
+    if (closeTopbarMenu()) {
+      // 菜单是轻浮层：关掉就算处理，但不该吞掉后续的 Esc（这里没有后续动作）。
+      return true;
+    }
     if (this.saveDialog.isOpen) {
       this.saveDialog.close();
+      return true;
+    }
+    if (this.helpDialog.isOpen) {
+      this.helpDialog.close();
+      return true;
+    }
+    if (this.debugDialog.isOpen) {
+      this.debugDialog.close();
+      return true;
+    }
+    if (this.confirmDialog.isOpen) {
+      this.confirmDialog.close();
       return true;
     }
     if (this.tour.isOpen) {
@@ -604,7 +683,6 @@ export class App {
     if (orgId) this.organizationPanel.select(orgId);
 
     this.signals = newSignalTracker(state);
-    this.lastHashDay = 0;
     this.deathShown = { value: false };
     this.autoSave = { lastDay: state.clock.day, busy: false };
     this.refresh(true);

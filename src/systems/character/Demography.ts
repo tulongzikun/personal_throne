@@ -99,7 +99,9 @@ export function settleYearlyDemography(
   }
 
   // 婚姻：优先同地区，其次同国，最后远嫁/远娶（概率依次衰减）。
+  // 玩家不进这个池子：婚事要自己点头（计划 W7），系统不再替玩家配婚。
   const singles = sortedIds(state.characters).filter((id) => {
+    if (id === state.playerId) return false;
     const character = state.characters[id];
     if (!character || !character.alive || character.spouseId !== null) return false;
     return character.age >= MARRIAGE_AGE_MIN && character.age <= MARRIAGE_AGE_MAX;
@@ -123,7 +125,7 @@ export function settleYearlyDemography(
     if (!a || !a.alive || a.spouseId !== null) continue;
     // 候选排序：同地区 → 同国 → 其余，同级按 ID 稳定排序。
     const candidates = singles
-      .filter((bId) => bId !== aId)
+      .filter((bId) => bId !== aId && bId !== state.playerId)
       .map((bId) => state.characters[bId])
       .filter((b): b is Character => !!b && b.alive && b.spouseId === null)
       .filter((b) => !isForbiddenMatch(a, b))

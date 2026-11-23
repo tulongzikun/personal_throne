@@ -17,7 +17,7 @@
 ## 当前状态
 
 **版本 2.0.0（2026-11-20）。M0–M7 全部完成。** 规模：**7 国 / 14 地区 / 21 组织 / 54 人物 / 90 条事件**；
-38 个测试文件 / 232 个用例；`release/index.html` 387,000 字节（体积预算 24.6%）；
+41 个测试文件 / 249 个用例；`release/index.html` 399,901 字节（体积预算 25.4%）；
 100 年无界面快进 3.33–3.77 s（8 次采样，D7 预算：14 区 < 4.0 s）、状态哈希稳定。
 CI（run 34）与 Pages 部署（run 31）均为 success，站点 <https://tulongzikun.github.io/personal_throne/> 返回 200。
 
@@ -113,10 +113,12 @@ CI（run 34）与 Pages 部署（run 31）均为 success，站点 <https://tulon
 
 **界面调整：行动分组与城市前往。** 左侧个人行动按修养/生计/钱庄分组，移动入口从左侧移除；右侧点城市会显示「路程 N 天 · 路费 M 铜」与「前往」按钮，点击后自动推进在途天数。
 
+**统一计划 P0（止血包与测量基建）：完成。** 顶栏不再显示状态哈希（搬进「☰ → 调试信息」），六个按钮收进一个菜单，「创建人物」更名「新开一局」并要求二次确认；帮助按「看 / 做 / 查」分组；左栏只留一行「完整人物」入口；每个标签页记住自己的滚动位置；行动力用完时建议面板只说「这个月没行动力了」；**玩家不再被系统自动配婚**——不点头就没有配偶与直系子嗣。新增 `pnpm measure`（玩家 / 货币 / 叙事 / 内容四类指标）与 `pnpm bot`（不含随机的盲玩 bot），CI 增加 10 年测量快照。基线见 [development-plan.md §8.48](development-plan.md)。
+
 **在线试玩**：<https://tulongzikun.github.io/personal_throne/>（GitHub Pages，发布 `release/index.html`）。
 离线也可以直接双击 `release/index.html`。
 
-**验收**：场景 A–F、存档版本链（v1→v9，`SAVE_FORMAT_VERSION = 9`）与战争段见 `docs/acceptance.md`；
+**验收**：场景 A–F、存档版本链（v1→v12，`SAVE_FORMAT_VERSION = 12`）与战争段见 `docs/acceptance.md`；
 结构评审与待整改项见 [docs/architecture-review-2026-11-20.md](docs/architecture-review-2026-11-20.md)。
 
 **尚未完成**：多军团与战线、战役地形修正；四种地图图层（M5 只做了单层地形）；神权/部落/商邦的政体差异未进入决策公式；
@@ -139,11 +141,13 @@ pnpm release        # build + 校验（无外链 / ≤ 1,572,864 字节）+ 复�
 pnpm preview        # 预览构建产物
 pnpm typecheck      # 仅类型检查
 pnpm lint           # ESLint（架构依赖方向、Math.random 与 new Date 禁令）
-pnpm test           # vitest run：33 个文件 / 207 个用例
+pnpm test           # vitest run：41 个文件 / 249 个用例
 pnpm test:watch     # 监听模式
 pnpm format         # Prettier
 pnpm sim --years 100 --seed demo-seed            # 无界面快进，打印哈希 / 耗时 / 破产率 / 分裂率 / 价格偏离 / 关税
 pnpm sim --years 100 --seed demo-seed --check    # 复跑并比对状态哈希，不一致则退出码 1
+pnpm measure --all --years 10                   # 四类测量（玩家 / 货币 / 叙事 / 内容），三 seed 一屏
+pnpm bot --seed demo --years 30                  # 盲玩 bot：不含随机，逐月做决定并打印结果
 ```
 
 `pnpm sim` 由 `tsx` 直接执行 `scripts/sim.ts`（开发期依赖，不进产物；`scripts/` 不在 `tsconfig.json` 的类型检查范围内，仅在 `pnpm build` 之外单独运行）；默认 `--years 100 --seed demo-seed`。
