@@ -62,7 +62,7 @@ describe('左侧玩家卡：个人行动分组', () => {
     expect(host.textContent).toContain('移动：在地图或右侧地区页点城市');
   });
 
-  it('休息按钮真正消耗行动力并回血', () => {
+  it('休息按钮真的回血，但不占行动力', () => {
     const { deps, engine } = makeHarness();
     const host = document.createElement('div');
     new PlayerPanel(host, deps);
@@ -77,7 +77,7 @@ describe('左侧玩家卡：个人行动分组', () => {
     rest!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(player.health).toBeGreaterThan(60);
-    expect(player.actionPoints).toBe(before - 1);
+    expect(player.actionPoints).toBe(before);
   });
 });
 

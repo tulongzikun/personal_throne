@@ -25,15 +25,23 @@ function playerRefs(state: WorldState): boolean {
   return state.playerId !== '';
 }
 
+/** 只扫数组尾部当月窗口：历史按日追加，100 年历史也不该每月全表过滤。 */
+function recent(state: WorldState, from: number, day: number) {
+  const out: WorldState['history'] = [];
+  for (let index = state.history.length - 1; index >= 0; index -= 1) {
+    const record = state.history[index]!;
+    if (record.day < from) break;
+    if (record.day <= day) out.push(record);
+  }
+  return out;
+}
+
 function pickChanges(state: WorldState, day: number): string[] {
   const from = day - DAYS_PER_MONTH + 1;
   const playerId = state.playerId;
-  const mine = state.history.filter(
-    (record) =>
-      record.day >= from &&
-      record.day <= day &&
-      record.importance !== 'minor' &&
-      record.refs.some((ref) => ref.id === playerId),
+  const monthRecords = recent(state, from, day);
+  const mine = monthRecords.filter(
+    (record) => record.importance !== 'minor' && record.refs.some((ref) => ref.id === playerId),
   );
   // 玩家自己的事优先；这个月什么都没做，就看你所在的组织/国家/地区发生了什么。
   const near = new Set<string>();
@@ -49,12 +57,8 @@ function pickChanges(state: WorldState, day: number): string[] {
   const source =
     mine.length > 0
       ? mine
-      : state.history.filter(
-          (record) =>
-            record.day >= from &&
-            record.day <= day &&
-            record.importance !== 'minor' &&
-            record.refs.some((ref) => near.has(ref.id)),
+      : monthRecords.filter(
+          (record) => record.importance !== 'minor' && record.refs.some((ref) => near.has(ref.id)),
         );
   const seen = new Set<string>();
   const picked: string[] = [];

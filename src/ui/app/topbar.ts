@@ -35,14 +35,14 @@ export function buildTopbar(shell: HTMLElement, host: TopbarHost): TopbarBuild {
   const cashDelta = el('span', 'topbar__delta');
   const health = el('span', 'topbar__value');
   const healthDelta = el('span', 'topbar__delta');
-  const actionPoints = el('span', 'topbar__value');
+  const daysLeft = el('span', 'topbar__value');
   const speed = el('span', 'topbar__value');
 
   header.append(
     topbarStat('日期', date),
     topbarStat('现金', cash, cashDelta),
     topbarStat('健康', health, healthDelta),
-    topbarStat('行动力', actionPoints),
+    topbarStat('本月剩', daysLeft),
     topbarStat('速度', speed),
   );
 
@@ -123,7 +123,7 @@ export function buildTopbar(shell: HTMLElement, host: TopbarHost): TopbarBuild {
 
   shell.append(header);
   return {
-    refs: { date, cash, cashDelta, health, healthDelta, actionPoints, speed, toast },
+    refs: { date, cash, cashDelta, health, healthDelta, daysLeft, speed, toast },
     pending,
     menu,
   };

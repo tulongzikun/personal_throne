@@ -24,6 +24,7 @@ import {
 import { monthlyUpkeep } from '../systems/character/Upkeep';
 import { ambitionOf, chapterOf } from '../systems/goals/Ambition';
 import { bestTradeRoute } from '../systems/goals/Goals';
+import { daysLeftInMonth } from '../systems/character/CommandTime';
 import { CLASS_LABELS, RACE_LABELS, SKILL_LABELS, SEX_LABELS, labelOf } from './labels';
 
 export class PlayerPanel {
@@ -123,7 +124,8 @@ export class PlayerPanel {
     }
     this.host.append(rows);
 
-    rows.append(this.row('行动力', `${player.actionPoints} / 3`));
+    rows.append(this.row('本月剩', `${daysLeftInMonth(state)} 天（月底自动结算）`));
+    rows.append(this.row('行动力', `${player.actionPoints} / 3（只用于当面周旋）`));
     rows.append(this.row('健康', `${Math.round(player.health)} / 100`));
     const upkeep = monthlyUpkeep(player.wealth);
     rows.append(this.row('每月开销', `${fmtMoney(upkeep)} 铜（身家的 0.4%，钱越多越贵）`));
@@ -244,7 +246,7 @@ export class PlayerPanel {
         units: route.units,
         targetRegionId: route.target,
       },
-      (player?.actionPoints ?? 0) < 1,
+      false,
     );
   }
   private actionGroup(title: string, buttons: HTMLButtonElement[]): HTMLElement {
@@ -265,8 +267,9 @@ export class PlayerPanel {
           result.ok ? (result.summary ?? '完成') : (result.error ?? '无法执行'),
           result.ok ? 'ok' : 'error',
         );
-        if (result.ok && result.travelDays !== undefined) {
-          this.deps.advanceDays(result.travelDays);
+        if (result.ok && result.days !== undefined && result.days > 0) {
+          // 引擎已经按「时间预算」推进过日历，这里只提示花了几天。
+          this.deps.notify('时间过去了 ' + result.days + ' 天', 'info');
         }
         this.deps.refresh();
       },

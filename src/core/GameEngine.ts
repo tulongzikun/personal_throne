@@ -36,6 +36,7 @@ import {
 } from './GameClock';
 import { History } from './History';
 import { buildMonthlyReport, type MonthlyReport } from './MonthlyReport';
+import { commandDays } from '../systems/character/CommandTime';
 import { composeChronicle } from './Chronicler';
 import { Random } from './Random';
 import { applyTiers, computeTiers } from './SimulationTier';
@@ -200,7 +201,22 @@ export class GameEngine {
       this.syncCounters();
       return result;
     }
+    // 时间预算：先花掉这件事要用的天数，再在抵达那天结算。
+    // 贩货因此按抵达日价格成交，搬家也不会瞬移。
+    const days = commandDays(this.state, command);
+    const choicesBefore = this.state.pendingChoices.length;
+    // 出门的事先走路再结算（贩货按抵达日价格成交）；在城里做的事先做再花时间，
+    // 免得「不需要拜会自己」这种校验失败也白跑两天。
+    const travels = command.kind === 'move' || command.kind === 'trade_goods';
+    if (travels && days > 0 && !this.spendTravelDays(days, choicesBefore)) {
+      this.syncCounters();
+      return { ok: false, summary: '路上出了事，你已经没法继续这件事' };
+    }
     const result = applyCommand(this.state, command, this.content);
+    if (!travels && result.ok && days > 0 && !this.spendTravelDays(days, choicesBefore)) {
+      this.syncCounters();
+      return { ok: false, summary: '你还没做完这件事，人就撑不住了' };
+    }
     if (result.ok) {
       const actor = this.state.characters[this.state.playerId];
       if (actor?.alive) actor.lastActionDay = this.state.clock.day;
@@ -222,7 +238,7 @@ export class GameEngine {
     } else {
       this.syncCounters();
     }
-    return result;
+    return days > 0 ? { ...result, days } : result;
   }
 
   /**
@@ -252,6 +268,24 @@ export class GameEngine {
       'minor',
     );
     return { ok: true, summary, refs: [{ kind: 'character', id: this.state.playerId }] };
+  }
+
+  /** 推进行动所需的天数；路上死了返回 false。 */
+  private spendTravelDays(days: number, choicesBefore: number): boolean {
+    this.advanceDays(days);
+    const traveller = this.state.characters[this.state.playerId];
+    if (!traveller?.alive) return false;
+    if (this.state.pendingChoices.length > choicesBefore) {
+      this.record(
+        'command',
+        `${formatDate(this.day)} 你在路上收到一封传书：有件事等你拿主意`,
+        [{ kind: 'character', id: this.state.playerId }],
+        null,
+        null,
+        'minor',
+      );
+    }
+    return true;
   }
 
   /** 取走最近一次月报（取走后清空）。 */

@@ -17,7 +17,7 @@
 ## 当前状态
 
 **版本 2.0.0（2026-11-20）。M0–M7 全部完成。** 规模：**7 国 / 14 地区 / 21 组织 / 54 人物 / 90 条事件**；
-42 个测试文件 / 254 个用例；`release/index.html` 406,167 字节（体积预算 25.8%）；
+43 个测试文件 / 260 个用例；`release/index.html` 407,727 字节（体积预算 25.9%）；
 100 年无界面快进 3.33–3.77 s（8 次采样，D7 预算：14 区 < 4.0 s）、状态哈希稳定。
 CI（run 34）与 Pages 部署（run 31）均为 success，站点 <https://tulongzikun.github.io/personal_throne/> 返回 200。
 
@@ -117,6 +117,8 @@ CI（run 34）与 Pages 部署（run 31）均为 success，站点 <https://tulon
 
 **统一计划 P1（月末结算与月报）：完成。** 时间条新增「结束本月」：一次把剩下的日子当成休养推完，月底照常结算，日历停在下个月第 1 天。月末生成一张月报——「这个月」列出与你有关的四件事（没有就退回到你所在组织/地区/国家的动静），「接下来」检查未决抉择、健康、开销、欠薪与国库。右下角浮出不挡操作的月报卡，不暂停时间；编年史里每月留一条 `month` 记录。100 年历史因此从 8,675 涨到 9,619 条，玩家相关记录从 28.7% 升到 37%。基线见 [development-plan.md §8.49](development-plan.md)。
 
+**统一计划 P2（时间预算）：完成。** 做每件事都要花天数：训练 30 天、谋职 7 天、打听 3 天、拜会 2 天，贩货与搬迁按商路天数走——日历由引擎推进，贩货按**抵达日**价格成交，不再有瞬移套利。行动力从「所有动作的配额」缩成「注意力」：每月 3 点，只约束当面周旋与打听，赶路、训练、休息都不再看它；顶栏读数改为「本月剩 N 天」。看门狗：`fnv1a64` 换成 32 位半字手算（结果逐位不变），100 年模拟回到 3.5 s。基线见 [development-plan.md §8.50](development-plan.md)。
+
 **在线试玩**：<https://tulongzikun.github.io/personal_throne/>（GitHub Pages，发布 `release/index.html`）。
 离线也可以直接双击 `release/index.html`。
 
@@ -143,7 +145,7 @@ pnpm release        # build + 校验（无外链 / ≤ 1,572,864 字节）+ 复�
 pnpm preview        # 预览构建产物
 pnpm typecheck      # 仅类型检查
 pnpm lint           # ESLint（架构依赖方向、Math.random 与 new Date 禁令）
-pnpm test           # vitest run：42 个文件 / 254 个用例
+pnpm test           # vitest run：43 个文件 / 260 个用例
 pnpm test:watch     # 监听模式
 pnpm format         # Prettier
 pnpm sim --years 100 --seed demo-seed            # 无界面快进，打印哈希 / 耗时 / 破产率 / 分裂率 / 价格偏离 / 关税

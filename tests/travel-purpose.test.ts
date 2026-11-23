@@ -123,9 +123,11 @@ describe('P2 到场规则', () => {
     player.actionPoints = 3;
     player.wealth = 1000;
 
+    const dayBefore = state.clock.day;
     const here = engine.dispatch({ kind: 'inspect_market', regionId: player.regionId });
     expect(here.ok).toBe(true);
-    expect(state.inspections[player.regionId]).toBe(state.clock.day + 30);
+    // 打听花两天，但有效期从出发那天算起。
+    expect(state.inspections[player.regionId]).toBe(dayBefore + 30);
 
     const again = engine.dispatch({ kind: 'inspect_market', regionId: player.regionId });
     expect(again.ok).toBe(false);

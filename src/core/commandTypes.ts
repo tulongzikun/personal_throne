@@ -102,6 +102,8 @@ export interface CommandResult {
   readonly refs?: readonly { readonly kind: string; readonly id: string }[];
   /** 移动类命令实际消耗的在途天数；UI 可据此推进时间。 */
   readonly travelDays?: number;
+  /** 这条命令花掉的天数：引擎已经推进过日历，UI 只用来提示。 */
+  readonly days?: number;
 }
 
 /** 取出某个 `kind` 对应的命令类型。 */

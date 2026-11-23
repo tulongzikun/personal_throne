@@ -35,7 +35,7 @@ export interface TopbarRefs {
   readonly cashDelta: HTMLElement;
   readonly health: HTMLElement;
   readonly healthDelta: HTMLElement;
-  readonly actionPoints: HTMLElement;
+  readonly daysLeft: HTMLElement;
   readonly speed: HTMLElement;
   readonly toast: HTMLElement;
 }

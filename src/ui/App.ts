@@ -49,6 +49,7 @@ import { maybeFirstReport, checkPlayerDeath, type LifecycleDeps } from './app/li
 import { collectSignals, newSignalTracker, type SignalTracker } from './app/signalsFeed';
 import { buildTimebar } from './app/timebar';
 import { buildLegend, buildTopbar, closeTopbarMenu } from './app/topbar';
+import { daysLeftInMonth } from '../systems/character/CommandTime';
 
 export class App {
   private engine: GameEngine;
@@ -321,7 +322,7 @@ export class App {
     const health = player ? Math.round(player.health) : 0;
     this.topbar.cash.textContent = player ? fmtMoney(cash) : '—';
     this.topbar.health.textContent = player ? String(health) : '—';
-    this.topbar.actionPoints.textContent = player ? String(player.actionPoints) : '—';
+    this.topbar.daysLeft.textContent = player ? `${daysLeftInMonth(state)} 天` : '—';
     this.topbar.speed.textContent = this.speed === 0 ? '暂停' : `${this.speed}×`;
 
     // Δ 是「和 30 天前相比」：基准每隔一个月挪一次，跨日刷新不会把变化抹掉。

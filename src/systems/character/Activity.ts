@@ -42,6 +42,11 @@ export function actionBlocker(state: WorldState, id: CharacterId): string | null
   return null;
 }
 
+/** 只花时间、不占注意力：健康掉一点，行动力不动。 */
+export function spendTime(character: Character, healthCost = 1): void {
+  character.health = Math.max(0, character.health - healthCost);
+}
+
 export function spendAction(character: Character, healthCost = 1): void {
   character.actionPoints = Math.max(0, character.actionPoints - 1);
   character.health = Math.max(0, character.health - healthCost);

@@ -27,6 +27,7 @@ export interface BotReport {
   readonly officeTitles: readonly string[];
   readonly children: number;
   readonly actionPointsSpent: number;
+  readonly daysSpent: number;
   readonly dyingDay: number | null;
 }
 
@@ -85,6 +86,7 @@ export function chooseAction(state: WorldState): Command | null {
 export interface PlayStats {
   readonly months: number;
   readonly spent: number;
+  readonly spentDays: number;
   readonly dyingDay: number | null;
 }
 
@@ -92,6 +94,7 @@ export interface PlayStats {
 export function playEngine(engine: GameEngine, months: number): PlayStats {
   const state = engine.state;
   let spent = 0;
+  let spentDays = 0;
   let dyingDay: number | null = null;
   let played = 0;
   for (let month = 0; month < months; month += 1) {
@@ -100,19 +103,20 @@ export function playEngine(engine: GameEngine, months: number): PlayStats {
       break;
     }
     const before = state.characters[state.playerId]?.actionPoints ?? 0;
+    const dayBefore = state.clock.day;
     const command = chooseAction(state);
     if (command) {
-      const result = engine.dispatch(command);
+      engine.dispatch(command);
       const after = state.characters[state.playerId]?.actionPoints ?? 0;
       spent += Math.max(0, before - after);
-      if (result.ok && result.travelDays !== undefined) engine.advanceDays(result.travelDays);
+      spentDays += state.clock.day - dayBefore;
     }
     played += 1;
     // 推到下个月的月初：AP 在这里回满。
     const target = month * 30 + 30;
     if (target > state.clock.day) engine.advanceTo(target);
   }
-  return { months: played, spent, dyingDay };
+  return { months: played, spent, spentDays, dyingDay };
 }
 
 export function runBot(seed: string, years: number): BotReport {
@@ -139,6 +143,7 @@ export function runBot(seed: string, years: number): BotReport {
     officeTitles: officesOf(state),
     children,
     actionPointsSpent: stats.spent,
+    daysSpent: stats.spentDays,
     dyingDay: stats.dyingDay,
   };
 }
@@ -162,7 +167,7 @@ function main(): void {
   console.log(`生涯        ${report.careerRank}/3 阶`);
   console.log(`官职        ${report.officeTitles.join('、') || '无'}`);
   console.log(`子女        ${report.children} 人`);
-  console.log(`花掉的行动力 ${report.actionPointsSpent} 点`);
+  console.log(`花掉的时间 ${report.daysSpent} 天（行动力 ${report.actionPointsSpent} 点）`);
   const perYear = report.years * DAYS_PER_YEAR;
   console.log(`日均为      ${(report.wealth / Math.max(1, perYear)).toFixed(2)} 铜/天`);
 }

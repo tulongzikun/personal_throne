@@ -31,14 +31,17 @@ describe('个人行动', () => {
     expect(actionPointsOf(world, world.playerId)).toBe(MONTHLY_ACTION_POINTS);
   });
 
-  it('行动力用尽时拒绝行动', () => {
+  it('行动力用尽只挡住当面周旋，休息与赶路照做', () => {
     const world = makeWorld('act-empty');
     const player = world.characters[world.playerId]!;
     player.actionPoints = 0;
     const engine = new GameEngine(world, content);
-    const result = engine.dispatch({ kind: 'rest' });
-    expect(result.ok).toBe(false);
-    expect(result.error).toContain('行动力');
+    const rest = engine.dispatch({ kind: 'rest' });
+    expect(rest.ok).toBe(true);
+    player.actionPoints = 0;
+    const audience = engine.dispatch({ kind: 'seek_audience', characterId: player.id });
+    expect(audience.ok).toBe(false);
+    expect(audience.error ?? '').toContain('行动力');
   });
 
   it('移动改地区、扣路费与行动力，并给出在途天数', () => {
@@ -86,14 +89,17 @@ describe('个人行动', () => {
     expect(player.deposits[bank.id]).toBe(0);
   });
 
-  it('休息回复健康并消耗行动力', () => {
+  it('休息不占注意力，但要花掉七天', () => {
     const world = makeWorld('act-rest');
     const player = world.characters[world.playerId]!;
     player.health = 50;
     const engine = new GameEngine(world, content);
+    const day = engine.state.clock.day;
     const result = engine.dispatch({ kind: 'rest' });
     expect(result.ok).toBe(true);
     expect(player.health).toBeGreaterThan(50);
-    expect(player.actionPoints).toBe(MONTHLY_ACTION_POINTS - 1);
+    // 休息花时间、不花注意力：行动力仍是月初那份。
+    expect(player.actionPoints).toBeGreaterThan(0);
+    expect(engine.state.clock.day - day).toBe(7);
   });
 });

@@ -242,16 +242,14 @@ export class RegionPanel {
           }
           const go = el('button', 'btn btn--gold', '前往');
           go.type = 'button';
-          go.disabled = player.actionPoints <= 0 || player.health <= 5 || player.wealth < fee;
+          go.disabled = player.health <= 5 || player.wealth < fee;
           go.addEventListener('click', () => {
             const result = this.deps.dispatch({ kind: 'move', regionId: region.id });
             this.deps.notify(
               result.ok ? (result.summary ?? '启程') : (result.error ?? '无法前往'),
               result.ok ? 'ok' : 'error',
             );
-            if (result.ok && result.travelDays !== undefined) {
-              this.deps.advanceDays(result.travelDays);
-            }
+            // 日历由引擎推进（时间预算），面板不再自己跳天。
             this.deps.refresh();
           });
           travel.append(go);

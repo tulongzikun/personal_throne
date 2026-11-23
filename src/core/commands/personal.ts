@@ -9,6 +9,7 @@ import {
   REST_HEALTH,
   actionBlocker,
   heal,
+  spendTime,
   neighborsOf,
   spendAction,
   tradeReach,
@@ -39,8 +40,6 @@ export function train(state: WorldState, command: CommandOf<'train'>): CommandRe
   const player = state.characters[state.playerId];
   if (!player) return fail('玩家不存在');
   if (!player.alive) return fail('你已经不在人世');
-  const blocked = actionBlocker(state, state.playerId);
-  if (blocked) return fail(blocked);
   const current = player.skills[command.skill] ?? 0;
   const attr = player.attributes[skillAttribute(command.skill)] ?? 10;
   const cap = 3 + Math.floor(attr / 3);
@@ -49,7 +48,7 @@ export function train(state: WorldState, command: CommandOf<'train'>): CommandRe
   if (player.wealth < cost) return fail(`学费不足：需要 ${cost}，现有 ${player.wealth}`);
   player.wealth -= cost;
   player.skills[command.skill] = current + 1;
-  spendAction(player, 1);
+  spendTime(player, 2);
   return {
     ok: true,
     summary: `你花 ${cost} 铜币训练 ${command.skill}，提升到 ${current + 1}`,
@@ -167,8 +166,6 @@ export function claimLeadership(
 }
 
 export function move(state: WorldState, command: CommandOf<'move'>): CommandResult {
-  const blocked = actionBlocker(state, state.playerId);
-  if (blocked) return fail(blocked);
   const player = state.characters[state.playerId]!;
   const target = state.regions[command.regionId];
   if (!target) return fail('目标地区不存在');
@@ -178,7 +175,7 @@ export function move(state: WorldState, command: CommandOf<'move'>): CommandResu
   const fee = hop.days * 2;
   if (player.wealth < fee) return fail(`路费不足：需要 ${fee} 铜币`);
   player.wealth -= fee;
-  spendAction(player, 2);
+  spendTime(player, 2);
   player.regionId = command.regionId;
   player.location = { regionId: command.regionId, site: 'road', sinceDay: state.clock.day };
   const encounter = settleTravelEncounter(state, player, command.regionId);
@@ -195,8 +192,6 @@ export function tradeGoods(
   command: CommandOf<'trade_goods'>,
   content: WorldContent,
 ): CommandResult {
-  const blocked = actionBlocker(state, state.playerId);
-  if (blocked) return fail(blocked);
   const player = state.characters[state.playerId]!;
   if (!isAmount(command.units)) return fail('贩运数量必须是正整数');
   const capacity = tradeCarryCapacity(player);
@@ -238,7 +233,7 @@ export function tradeGoods(
   player.wealth += profit;
   source.stock -= units;
   best.market.stock += units;
-  spendAction(player, 1);
+  spendTime(player, 1);
   return {
     ok: true,
     summary: `你贩了 ${units} 单位${content.goods.find((good) => good.id === command.goodId)?.name ?? command.goodId}（贸易 ${player.skills.trade ?? 0} 级让利 ${Math.round((1.05 - purchaseFactor(player)) * 100)}%），净赚 ${profit} 铜币`,
@@ -373,11 +368,9 @@ export function inspectMarket(
 }
 
 export function rest(state: WorldState, _command: CommandOf<'rest'>): CommandResult {
-  const blocked = actionBlocker(state, state.playerId);
-  if (blocked && !blocked.includes('健康')) return fail(blocked);
   const player = state.characters[state.playerId]!;
   const gained = heal(player, REST_HEALTH);
-  spendAction(player, 0);
+  spendTime(player, 0);
   return {
     ok: true,
     summary: `你歇了几日，健康恢复 ${gained} 点（当前 ${player.health}）`,

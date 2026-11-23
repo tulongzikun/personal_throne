@@ -31,7 +31,7 @@ export function maybeFirstReport(deps: LifecycleDeps, shown: { value: boolean })
   deps.dialog().pushMany([
     {
       title: '第一份财报',
-      body: `一个月过去了，你的现金是 ${player.wealth} 铜币，身上有 ${player.actionPoints} 点行动力、健康 ${Math.round(player.health)}。${ambition ? `你的野心是「${ambition.name}」——${ambition.goal}，现在走到 ${Math.round(ambition.progress * 100)}%（${ambition.hint}）。` : ''}左下角的三条建议会随局势换，照着做就行；想看事情怎么发生，翻右下角的编年史。`,
+      body: `一个月过去了，你的现金是 ${player.wealth} 铜币，健康 ${Math.round(player.health)}。${ambition ? `你的野心是「${ambition.name}」——${ambition.goal}，现在走到 ${Math.round(ambition.progress * 100)}%（${ambition.hint}）。` : ''}左下角的三条建议会随局势换，照着做就行；想看事情怎么发生，翻右下角的编年史。`,
       meta: `${formatDate(state.clock.day)} · 第 ${chapter.index} 章「${chapter.title}」`,
       tone: 'digest',
     },
