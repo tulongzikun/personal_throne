@@ -11,7 +11,6 @@
 - 成长与旅行设计：[docs/growth-travel-design.md](docs/growth-travel-design.md)
 - v2 重构设计（M7 实施依据）：[docs/redesign-v2.md](docs/redesign-v2.md)
 - 可玩性诊断（实测数据）：[docs/playability-review-2026-11-22.md](docs/playability-review-2026-11-22.md)
-- 可玩性重构 v3（压力驱动设计）：[docs/playability-redesign-v3.md](docs/playability-redesign-v3.md)
 - 统一演进计划 v4（v3 + 六阶段遗留，唯一执行口径）：[docs/unified-plan-2026-11-23.md](docs/unified-plan-2026-11-23.md)
 - M4 及以后的历史规划：[docs/roadmap-m4-plus.md](docs/roadmap-m4-plus.md)
 

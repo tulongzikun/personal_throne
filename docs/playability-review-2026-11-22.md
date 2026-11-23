@@ -1,7 +1,7 @@
 # 可玩性诊断与提升方案（2026-11-22 · HEAD `c77bc8a`）
 
 > 本文是**诊断**。完整的设计方案（时间预算、议程系统、对手 AI、承诺与债务、情报、
-> 阶梯解锁、终局结算、内容 2.0）见 [playability-redesign-v3.md](playability-redesign-v3.md)。
+> 阶梯解锁、终局结算、内容 2.0）已并入 [unified-plan-2026-11-23.md](unified-plan-2026-11-23.md)。
 
 方法：读源码 + 用真实引擎跑模拟（seed `throne-and-gold` / `pacing-1` / `sim-a`），
 外加四个只读子报告（循环与经济 / 事件节奏 / 目标与成长 / 界面，其中界面一路中断）。
